@@ -9,8 +9,9 @@ from .. import (
     wb_device_schema,
     register_wb_device
 )
+DEPENDENCIES = ["matrixio"]
+CODEOWNERS = ["@gnumpi"]
 
-#everloop_ns = cg.esphome_ns.namespace("matrixio_everloop")
 everloop = matrixio_ns.class_("Everloop", light.AddressableLight, wb_device)
 
 CONFIG_SCHEMA = light.ADDRESSABLE_LIGHT_SCHEMA.extend(

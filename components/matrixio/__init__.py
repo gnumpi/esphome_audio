@@ -1,9 +1,9 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import spi
-from esphome.const import CONF_ID, CONF_MODE, CONF_CS_PIN
+from esphome.const import CONF_ID
 
-DEPENDENCIES = ["matrixio"]
+DEPENDENCIES = ["esp32", "spi"]
 CODEOWNERS = ["@gnumpi"]
 
 CONF_MATRIXIO_ID = "conf_matrixio_id"

@@ -10,6 +10,9 @@ from .. import (
     register_wb_device
 )
 
+DEPENDENCIES = ["matrixio"]
+CODEOWNERS = ["@gnumpi"]
+
 matrix_speaker = matrixio_ns.class_("Speaker", speaker.Speaker, wb_device, cg.Component)
 
 CONFIG_SCHEMA = speaker.SPEAKER_SCHEMA.extend(

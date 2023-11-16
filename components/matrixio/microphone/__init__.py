@@ -11,6 +11,7 @@ from .. import (
     register_wb_device
 )
 
+DEPENDENCIES = ["matrixio"]
 CODEOWNERS = ["@gnumpi"]
 
 mics = matrixio_ns.class_("Microphone", microphone.Microphone, wb_device, cg.Component)
