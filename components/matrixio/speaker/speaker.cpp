@@ -9,9 +9,9 @@ static const size_t BUFFER_COUNT = 20;
 void Speaker::setup(){
   ESP_LOGCONFIG(TAG, "Setting up MatrixIO Speaker...");
   this->set_pcm_sampling_frequency(16000);
-  this->set_output_selector(OutputSelector::kHeadPhone);
+  this->write_output_();
   this->unmute();
-  this->set_volume(80);
+  this->write_volume_();
   this->buffer_queue_ = xQueueCreate(BUFFER_COUNT, sizeof(DataEvent));
   this->event_queue_ = xQueueCreate(BUFFER_COUNT, sizeof(TaskEvent));
 }
@@ -21,17 +21,17 @@ void Speaker::dump_config(){
   uint32_t sampling_frequency = this->read_pcm_sampling_frequency();
   uint8_t volume = this->get_volume();
   esph_log_config(TAG, "  Sampling frequency: %uHz", (unsigned) (sampling_frequency));
-  if (this->selector_hp_spk_ == kHeadPhone ){
+  if (this->output_ == kHeadPhone ){
     esph_log_config(TAG, "  Output: Headphone");
   }
-  else if (this->selector_hp_spk_ == kSpeaker ){
+  else if (this->output_ == kSpeaker ){
     esph_log_config(TAG, "  Output: Speaker");
   }
   else {
     esph_log_config(TAG, "  Output not set");
 
   }
-  esph_log_config(TAG, "Volume: %d%%", volume); 
+  esph_log_config(TAG, "  Volume: %d%%", volume); 
 }
 
 void Speaker::start() { this->state_ = speaker::STATE_STARTING; }
@@ -196,9 +196,12 @@ void Speaker::flush_fpga_fifo_() {
   this->conf_write(12, 0x0000);
 }
 
-void Speaker::set_output_selector(OutputSelector output_selector) {
-  this->conf_write(11, output_selector);
-  this->selector_hp_spk_ = output_selector;
+void Speaker::write_output_() {
+  this->conf_write(11, this->output_);
+}
+
+void Speaker::set_output(OutputSelector output_selector) {
+  this->output_ = output_selector;
 }
 
 void Speaker::mute(){
@@ -240,15 +243,18 @@ uint32_t Speaker::read_pcm_sampling_frequency(){
 }
 
 void Speaker::set_volume(uint8_t volume_percentage){
-  uint8_t vol_clip = volume_percentage > 100 ? 100 : volume_percentage; 
-  uint16_t volume_constant = (100 - vol_clip) * MAX_VOLUME_VALUE / 100;
+  this->volume_ = volume_percentage > 100 ? 100 : volume_percentage; 
+}
+
+void Speaker::write_volume_(){
+  uint16_t volume_constant = (100 - this->volume_) * MAX_VOLUME_VALUE / 100;
   this->conf_write(8, volume_constant);
 }
 
 uint8_t Speaker::get_volume(){
   uint16_t volume_constant;
   this->conf_read(8, &volume_constant);
-  return (volume_constant * 100) / MAX_VOLUME_VALUE - 100;
+  return (volume_constant * -100) / MAX_VOLUME_VALUE + 100;
 }
 
 } //namespace matrixio

@@ -59,7 +59,7 @@ struct DataEvent {
 static const char *const TAG = "matrixio_speaker";
 class Speaker : public speaker::Speaker, public matrixio::WishboneDevice, public Component {
 public:
-  Speaker() : matrixio::WishboneDevice(AUDIO_OUT_BASE_ADDRESS) {}
+  Speaker() : matrixio::WishboneDevice(AUDIO_OUT_BASE_ADDRESS), output_(OutputSelector::kHeadPhone), volume_(80) {}
   
   void setup() override;
   void dump_config() override;
@@ -72,7 +72,7 @@ public:
   void mute();
   void unmute();
   void set_volume(uint8_t volume_percentage);
-  void set_output_selector(OutputSelector output_selector);
+  void set_output(OutputSelector output_selector);
   uint8_t get_volume(); 
 
   void set_pcm_sampling_frequency(uint32_t sampling_frequency);
@@ -86,6 +86,8 @@ private:
   
   uint16_t get_fpga_fifo_status_();
   void flush_fpga_fifo_();
+  void write_output_();
+  void write_volume_();
   
   TaskHandle_t player_task_handle_{nullptr};
   QueueHandle_t buffer_queue_;
@@ -93,8 +95,9 @@ private:
   uint16_t buffer[BUFFER_SIZE] = {0};
   
   uint32_t pcm_sampling_frequency_;
-  OutputSelector selector_hp_spk_;
+  OutputSelector output_;
   MuteStatus mute_status_;
+  uint8_t volume_;
 };
 
 }
