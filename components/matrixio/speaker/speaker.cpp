@@ -4,7 +4,7 @@
 namespace esphome {
 namespace matrixio {
 
-static const size_t BUFFER_COUNT = 20;
+static const size_t BUFFER_COUNT = 32;
 
 void Speaker::setup(){
   ESP_LOGCONFIG(TAG, "Setting up MatrixIO Speaker...");
@@ -113,7 +113,9 @@ void Speaker::player_task(void *params) {
 
   DataEvent data_event;
   
-
+  const float sample_time = 1.0 / this_speaker->pcm_sampling_frequency_;
+  const int sleep = int(MAX_WRITE_LENGTH * sample_time * 1000);
+  
   while (true) {
     if (xQueueReceive(this_speaker->buffer_queue_, &data_event, 1000 / portTICK_PERIOD_MS) != pdTRUE) {
       break;  // End of audio from main thread
@@ -123,11 +125,9 @@ void Speaker::player_task(void *params) {
       xQueueReset(this_speaker->buffer_queue_);  // Flush queue
       break;
     }
-    float sample_time = 1.0 / this_speaker->pcm_sampling_frequency_;
+    
     uint16_t fifo_status = this_speaker->get_fpga_fifo_status_();
-
     if (fifo_status > FPGA_FIFO_SIZE * 3 / 4) {
-      int sleep = int(MAX_WRITE_LENGTH * sample_time * 1000);
       delay(sleep);
     }
     
@@ -171,6 +171,8 @@ size_t Speaker::play(const uint8_t *data, size_t length) {
     event.len = to_send_length;
     memcpy(event.data, reinterpret_cast<uint8_t*>(buffer) + index, to_send_length);
     if (xQueueSend(this->buffer_queue_, &event, 0) != pdTRUE) {
+      UBaseType_t spaces = uxQueueSpacesAvailable( this->buffer_queue_ );
+      ESP_LOGW(TAG, "Sending to buffer_queue failed. Spaces available: %d", spaces );
       return index / 2;
     }
     remaining -= to_send_length;
