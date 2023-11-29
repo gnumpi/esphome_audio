@@ -31,7 +31,7 @@ void Speaker::dump_config(){
     esph_log_config(TAG, "  Output not set");
 
   }
-  esph_log_config(TAG, "  Volume: %d%%", volume); 
+  esph_log_config(TAG, "  Volume: %d%%", volume);
 }
 
 void Speaker::start() { this->state_ = speaker::STATE_STARTING; }
@@ -107,15 +107,15 @@ void Speaker::player_task(void *params) {
 
   this_speaker->flush_fpga_fifo_();
   delay(10);
-  
+
   event.type = TaskEventType::STARTED;
   xQueueSend(this_speaker->event_queue_, &event, portMAX_DELAY);
 
   DataEvent data_event;
-  
+
   const float sample_time = 1.0 / this_speaker->pcm_sampling_frequency_;
   const int sleep = int(MAX_WRITE_LENGTH * sample_time * 1000);
-  
+
   while (true) {
     if (xQueueReceive(this_speaker->buffer_queue_, &data_event, 1000 / portTICK_PERIOD_MS) != pdTRUE) {
       break;  // End of audio from main thread
@@ -125,12 +125,12 @@ void Speaker::player_task(void *params) {
       xQueueReset(this_speaker->buffer_queue_);  // Flush queue
       break;
     }
-    
+
     uint16_t fifo_status = this_speaker->get_fpga_fifo_status_();
     if (fifo_status > FPGA_FIFO_SIZE * 3 / 4) {
       delay(sleep);
     }
-    
+
     this_speaker->wb_write(data_event.data, data_event.len);
     event.type = TaskEventType::PLAYING;
     xQueueSend(this_speaker->event_queue_, &event, portMAX_DELAY);
@@ -138,7 +138,7 @@ void Speaker::player_task(void *params) {
 
   event.type = TaskEventType::STOPPING;
   xQueueSend(this_speaker->event_queue_, &event, portMAX_DELAY);
-  
+
   delay(10);
 
   event.type = TaskEventType::STOPPED;
@@ -153,7 +153,7 @@ size_t Speaker::play(const uint8_t *data, size_t length) {
   if (this->state_ != speaker::STATE_RUNNING && this->state_ != speaker::STATE_STARTING) {
     this->start();
   }
-  
+
    //hardcoded mono to stereo (send each sample twice)
   uint16_t* dst = buffer;
   const uint16_t* src = reinterpret_cast<const uint16_t*>(data);
@@ -162,7 +162,7 @@ size_t Speaker::play(const uint8_t *data, size_t length) {
       memcpy( dst++, src++, sizeof(uint16_t) );
   }
   size_t remaining = length * 2;
-  
+
   size_t index = 0;
   while (remaining > 0) {
     DataEvent event;
@@ -221,8 +221,8 @@ void Speaker::set_pcm_sampling_frequency(uint32_t sampling_frequency){
   for (int i = 0;; i++) {
     if (PCM_SAMPLING_FREQUENCIES[i][0] == 0){
         ESP_LOGE(TAG, "Unsupported sampling frequency: %d", sampling_frequency);
-        this->mark_failed();  
-    } 
+        this->mark_failed();
+    }
     if ( sampling_frequency == PCM_SAMPLING_FREQUENCIES[i][0]) {
       this->pcm_sampling_frequency_ = PCM_SAMPLING_FREQUENCIES[i][0];
       pcm_constant = PCM_SAMPLING_FREQUENCIES[i][1];
@@ -245,7 +245,7 @@ uint32_t Speaker::read_pcm_sampling_frequency(){
 }
 
 void Speaker::set_volume(uint8_t volume_percentage){
-  this->volume_ = volume_percentage > 100 ? 100 : volume_percentage; 
+  this->volume_ = volume_percentage > 100 ? 100 : volume_percentage;
 }
 
 void Speaker::write_volume_(){

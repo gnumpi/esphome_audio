@@ -21,7 +21,7 @@ namespace matrixio {
 void Microphone::setup() {
   this->set_sampling_rate(16000);
   this->write_config();
- 
+
   // IRQ handling
   irq_queue = xQueueCreate(10, sizeof(gpio_num_t));
 
@@ -31,7 +31,7 @@ void Microphone::setup() {
   gpioConfig.pull_up_en = GPIO_PULLUP_DISABLE;
   gpioConfig.pull_down_en = GPIO_PULLDOWN_ENABLE;
   gpioConfig.intr_type = GPIO_INTR_ANYEDGE;
-  
+
   gpio_config(&gpioConfig);
   gpio_install_isr_service(0);
 }
@@ -58,15 +58,15 @@ void Microphone::start(){
     xQueueReset(irq_queue);
     gpio_isr_handler_add(static_cast<gpio_num_t>(MICROPHONE_ARRAY_IRQ), irq_handler, NULL);
   };
-  
+
 void Microphone::stop() {
   if (this->state_ == microphone::STATE_STOPPED || this->is_failed()) return;
   if (this->state_ == microphone::STATE_STARTING) {
       this->state_ = microphone::STATE_STOPPED;
       return;
   }
-  
-  gpio_isr_handler_remove(static_cast<gpio_num_t>(MICROPHONE_ARRAY_IRQ)); 
+
+  gpio_isr_handler_remove(static_cast<gpio_num_t>(MICROPHONE_ARRAY_IRQ));
   this->state_ = microphone::STATE_STOPPING;
 };
 
@@ -79,7 +79,7 @@ size_t Microphone::read(int16_t *buf, size_t len){
     memset( buf, 0, len );
     uint8_t* pt = reinterpret_cast<unsigned char *>(buf);
     this->wb_read( pt, len );
-    return len; 
+    return len;
   }
 
   ESP_LOGW(TAG,"Buffer underrun.");
@@ -93,7 +93,7 @@ void Microphone::set_sampling_rate(uint32_t sampling_rate){
       this->mark_failed();
       return;
     }
-        
+
     if (MIC_SAMPLING_FREQUENCIES[i][0] == sampling_rate) {
       this->sampling_rate_ = MIC_SAMPLING_FREQUENCIES[i][0];
       this->pdm_decimation_ = MIC_SAMPLING_FREQUENCIES[i][1];
@@ -108,7 +108,7 @@ void Microphone::write_fir_coeffs(){
   for (int i = 0;; i++) {
     if (coeff_list[i].rate_ == 0) {
       ESP_LOGE(TAG, "Unsupported sampling frequency for setting FIR coeffs: %d", this->sampling_rate_);
-      this->mark_failed();  
+      this->mark_failed();
       return;
     }
     if (coeff_list[i].rate_ == this->sampling_rate_) {
@@ -130,7 +130,7 @@ void Microphone::write_sampling_rate_and_gain(){
 }
 
 void Microphone::read_() {
-  const size_t samples_to_read = 512;  
+  const size_t samples_to_read = 512;
   std::vector<int16_t> samples;
   samples.resize(samples_to_read);
   size_t bytes_read = this->read(samples.data(), samples_to_read /  sizeof(int16_t) );

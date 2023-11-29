@@ -9,9 +9,9 @@ CODEOWNERS = ["@gnumpi"]
 CONF_MATRIXIO_ID = "conf_matrixio_id"
 
 matrixio_ns = cg.esphome_ns.namespace("matrixio")
-matrixio_wb = matrixio_ns.class_("WishboneBus", cg.Component, spi.SPIDevice )
+matrixio_wb = matrixio_ns.class_("WishboneBus", cg.Component, spi.SPIDevice)
 
-#### Wishbone Bus
+# Wishbone Bus
 
 CONFIG_SCHEMA = spi.spi_device_schema(True, "8MHz").extend(
     {
@@ -19,20 +19,22 @@ CONFIG_SCHEMA = spi.spi_device_schema(True, "8MHz").extend(
     }
 )
 
+
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     await spi.register_spi_device(var, config)
 
 
-#### Wishbone Devices
+# Wishbone Devices
 
 wb_device = matrixio_ns.class_("WishboneDevice")
+
+
 def wb_device_schema():
-    schema = {
-        cv.GenerateID(CONF_MATRIXIO_ID): cv.use_id(matrixio_wb)
-    }
+    schema = {cv.GenerateID(CONF_MATRIXIO_ID): cv.use_id(matrixio_wb)}
     return cv.Schema(schema)
+
 
 async def register_wb_device(var, config):
     parent = await cg.get_variable(config[CONF_MATRIXIO_ID])

@@ -9,13 +9,13 @@ static const size_t MAX_TRANSFER_SIZE = 4092;  // dictated by ESP-IDF API.
 
 static uint8_t global_tx_buffer[MAX_TRANSFER_SIZE];
 
-void WishboneBus::setup() { 
+void WishboneBus::setup() {
   ESP_LOGD(TAG, "Setting up Matrixio...");
   this->spi_setup();
   this->buffer = global_tx_buffer;
   this->buffer_size = MAX_TRANSFER_SIZE;
   this->read_fpga_firmware_version();
-  
+
   if (this->matrixio_id != MATRIX_CREATOR_ID && this->matrixio_id != MATRIX_VOICE_ID ){
     ESP_LOGE(TAG, "Didn't find any MatrixIO device. Check SPI setup.");
     this->mark_failed();
@@ -34,7 +34,7 @@ void WishboneBus::dump_config(){
   }
   else {
     esph_log_config(TAG, "  Matrixio not found! (id: %d, version: %d)", this->matrixio_id, this->matrixio_version);
-  } 
+  }
 }
 
 
@@ -49,7 +49,7 @@ void WishboneBus::reg_read(uint16_t add, uint16_t *pdata) {
 
 void WishboneBus::read(uint16_t addr, uint8_t* data, int length){
   this->lock();
-  
+
   memset( this->buffer, 0, length + sizeof(hardware_address));
   hardware_address *hw_addr = reinterpret_cast<hardware_address *>(this->buffer);
   hw_addr->reg = addr;
@@ -58,7 +58,7 @@ void WishboneBus::read(uint16_t addr, uint8_t* data, int length){
   this->transfer_array(this->buffer, length + sizeof(hardware_address) );
   this->disable();
   memcpy(data, &this->buffer[2], length);
-  
+
   this->unlock();
 }
 

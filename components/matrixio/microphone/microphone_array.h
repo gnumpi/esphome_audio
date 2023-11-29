@@ -24,7 +24,7 @@ class Microphone : public microphone::Microphone, public WishboneDevice, public 
 
 public:
   Microphone() : WishboneDevice(MICROPHONE_BASE_ADDRESS) {}
-    
+
   void set_sampling_rate(uint32_t sampling_rate);
   void setup() override;
   void dump_config() override;
@@ -35,14 +35,14 @@ public:
   void loop() override;
 
   size_t read(int16_t *buf, size_t len) override;
-    
+
 private:
   void start_();
   void stop_();
   void read_();
   void write_fir_coeffs();
   void write_sampling_rate_and_gain();
-  
+
   uint32_t sampling_rate_;
   uint16_t gain_;
   uint16_t pdm_decimation_;
