@@ -27,6 +27,7 @@ def print_error_for_file(file, body):
         print(body)
         print()
 
+
 def find_all(a_str, sub):
     if not a_str.find(sub):
         # Optimization: If str is not in whole text, then do not try
@@ -92,7 +93,7 @@ def changed_files():
             merge_base = splitlines_no_ends(get_output(*command))[0]
             break
         # pylint: disable=bare-except
-        except:
+        except:  # noqa: E722
             pass
     else:
         raise ValueError("Git not configured")

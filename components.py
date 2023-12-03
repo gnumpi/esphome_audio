@@ -8,23 +8,21 @@ from .excecptions import (
     ComponentNotFound,
     UnsupportedComponentPath,
     ManifestNotFound,
-    ManifestNameMismatch
+    ManifestNameMismatch,
 )
 
-from .constants import (
-    COMPONENT_ROOTS,
-    MANIFEST_FILE_NAME,
-    VERSION_CHECK
-)
+from .constants import COMPONENT_ROOTS, MANIFEST_FILE_NAME, VERSION_CHECK
+
 
 @dataclass
-class ExternalComponent():
+class ExternalComponent:
     """Class representing a single external component"""
-    name:str
-    version:str
-    repository_root:str
-    components_path:str
-    esphome_support:tuple[str,str] | None = None #min,max version
+
+    name: str
+    version: str
+    repository_root: str
+    components_path: str
+    esphome_support: tuple[str, str] | None = None  # min,max version
 
     @property
     def path(self) -> str:
@@ -34,8 +32,8 @@ class ExternalComponent():
     def relpath(self) -> str:
         return os.path.join(self.components_path, self.name)
 
-    def check_esphome_version(self, esphome_version:str) -> VERSION_CHECK:
-        if esphome_version < self.esphome_support[0] :
+    def check_esphome_version(self, esphome_version: str) -> VERSION_CHECK:
+        if esphome_version < self.esphome_support[0]:
             return VERSION_CHECK.EARLIER_VERSION
         elif esphome_version > self.esphome_support[1]:
             return VERSION_CHECK.LATER_VERSION
@@ -43,14 +41,14 @@ class ExternalComponent():
             return VERSION_CHECK.VERSION_IN_RANGE
 
     @classmethod
-    def from_manifest(cls, repository_root:str, manifest:str ):
+    def from_manifest(cls, repository_root: str, manifest: str):
         if not os.path.exists(manifest):
             raise ManifestNotFound
 
         path_to_component = os.path.dirname(manifest)
         components_abs_path, component_name = os.path.split(path_to_component)
         components_rel_path = os.path.relpath(components_abs_path, repository_root)
-        if not components_rel_path in COMPONENT_ROOTS:
+        if components_rel_path not in COMPONENT_ROOTS:
             raise UnsupportedComponentPath
 
         with open(manifest) as f:
@@ -64,12 +62,11 @@ class ExternalComponent():
             repository_root=repository_root,
             components_path=components_rel_path,
             version=manifest_data["version"],
-            esphome_support=tuple(manifest_data["esphome"][k] for k in ["min","max"]),
+            esphome_support=tuple(manifest_data["esphome"][k] for k in ["min", "max"]),
         )
 
-
     @classmethod
-    def from_local_repository(cls, repo_path:str, component_path:str ):
+    def from_local_repository(cls, repo_path: str, component_path: str):
         """_summary_
 
         :param repo_path: Path to the local repository.
@@ -87,7 +84,7 @@ class ExternalComponent():
             raise ComponentNotFound
 
         components_path, name = os.path.split(component_path)
-        if not components_path in COMPONENT_ROOTS:
+        if components_path not in COMPONENT_ROOTS:
             raise UnsupportedComponentPath
 
         return cls(
@@ -100,23 +97,24 @@ class ExternalComponent():
         return f"{self.name}-{self.version} ({self.components_path})"
 
 
-def get_components_from_repository(path:str) -> list[ExternalComponent] :
+def get_components_from_repository(path: str) -> list[ExternalComponent]:
     for cPath in COMPONENT_ROOTS:
         absPath = os.path.join(path, cPath)
         if os.path.exists(absPath):
             return [
                 ExternalComponent.from_manifest(
                     repository_root=path,
-                    manifest=os.path.join(cPath, comp, MANIFEST_FILE_NAME)
+                    manifest=os.path.join(cPath, comp, MANIFEST_FILE_NAME),
                 )
                 for comp in os.listdir(absPath)
-                    if os.path.exists(os.path.join(absPath, comp, MANIFEST_FILE_NAME))
+                if os.path.exists(os.path.join(absPath, comp, MANIFEST_FILE_NAME))
             ]
 
     return []
 
+
 def list_component_git_files(component: ExternalComponent) -> list[str]:
-    command = ["git", "ls-files", "-s", os.path.join(component.relpath , "*")]
+    command = ["git", "ls-files", "-s", os.path.join(component.relpath, "*")]
     proc = subprocess.Popen(command, stdout=subprocess.PIPE)
     output, err = proc.communicate()
     lines = [x.split()[3].strip() for x in output.decode("utf-8").splitlines()]

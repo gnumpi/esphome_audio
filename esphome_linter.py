@@ -4,18 +4,16 @@ from typing import Callable
 import codecs
 from dataclasses import dataclass
 import functools
-import os
 import re
 from collections.abc import Generator
-
-from .components import ExternalComponent
 
 from .constants import (
     CHECK_RET,
 )
 
+
 @dataclass
-class CheckResult():
+class CheckResult:
     ret: CHECK_RET
     text: str
     func_name: str | None = None
@@ -25,99 +23,107 @@ class CheckResult():
     col: int | None = None
 
     @classmethod
-    def success(cls, text:str ):
-        return cls(
-            ret=CHECK_RET.SUCCESS,
-            text=text
-    )
+    def success(cls, text: str):
+        return cls(ret=CHECK_RET.SUCCESS, text=text)
 
     @classmethod
-    def failed(cls, text:str ):
-        return cls(
-            ret=CHECK_RET.ERROR,
-            text=text
-    )
+    def failed(cls, text: str):
+        return cls(ret=CHECK_RET.ERROR, text=text)
 
     @property
     def status(self) -> str:
-        return "passed" if self.ret == CHECK_RET.SUCCESS else (
-            "warning" if self.ret == CHECK_RET.WARNING else
-            "error"
+        return (
+            "passed"
+            if self.ret == CHECK_RET.SUCCESS
+            else ("warning" if self.ret == CHECK_RET.WARNING else "error")
         )
+
 
 class CheckSummary(CheckResult):
     def __init__(self, **kwargs):
         ret = kwargs.get("ret", CHECK_RET.UNKNOWN)
-        text = kwargs.get("text", "" )
+        text = kwargs.get("text", "")
         super().__init__(ret=ret, text=text, **kwargs)
         self.results = []
 
-    def add( self, result:CheckResult ):
+    def add(self, result: CheckResult):
         self.results.append(result)
         self._update_state()
 
     def _update_state(self):
         for res in self.results:
-            if res.ret == CHECK_RET.ERROR :
+            if res.ret == CHECK_RET.ERROR:
                 self.ret = CHECK_RET.ERROR
                 break
-        else :
+        else:
             self.ret = CHECK_RET.SUCCESS
-        self.text = "\n".join( map(lambda r: r.text, self.results) )
-        files = list( dict.fromkeys(r.file for r in self.results if r.file) )
+        self.text = "\n".join(map(lambda r: r.text, self.results))
+        files = list(dict.fromkeys(r.file for r in self.results if r.file))
         assert len(files) == 1
         self.file = files[0]
 
-
     def __repr__(self):
-        s  = f"Summary - {self.descr_line} ({self.file})\n"
+        s = f"Summary - {self.descr_line} ({self.file})\n"
         for res in self.results:
             s += f"  {res.descr_line}: func=`{res.func_name}` ({res.status})\n"
         return s
 
-class FileRule():
+
+class FileRule:
     """Linter rule applied to a file."""
 
-    def __init__(self,
-                 func: Callable[[str], CheckResult],
-                 include: list[str] = [],
-                 exclude: list[str] = [] ):
+    def __init__(
+        self,
+        func: Callable[[str], CheckResult],
+        include: list[str] = [],
+        exclude: list[str] = [],
+    ):
         self.func = func
         self.include = include
         self.exclude = exclude
         self.verbose = True
-        self._incl = re.compile("|".join(map(lambda x: x.replace(".",r"\.").replace("*",".+") + "$", include)))
-        self._excl = re.compile("|".join(map(lambda x: x.replace(".",r"\.").replace("*",".+") + "$", exclude)))
+        self._incl = re.compile(
+            "|".join(
+                map(lambda x: x.replace(".", r"\.").replace("*", ".+") + "$", include)
+            )
+        )
+        self._excl = re.compile(
+            "|".join(
+                map(lambda x: x.replace(".", r"\.").replace("*", ".+") + "$", exclude)
+            )
+        )
 
-    def skip_file(self, fname:str) -> bool:
+    def skip_file(self, fname: str) -> bool:
         return self._excl.match(fname)
 
-    def take_file(self, fname:str) -> bool:
+    def take_file(self, fname: str) -> bool:
         return self._incl.match(fname)
 
-    def check(self, file:str) -> CheckResult:
+    def check(self, file: str) -> CheckResult:
         return self.func(file)
 
     def __str__(self):
-        s  = self.func.__doc__
+        s = self.func.__doc__
         s += " Applies to: " + ", ".join(self.include)
-        #s += " excl: " + ",".join(self.exclude)
+        # s += " excl: " + ",".join(self.exclude)
         return s
+
 
 class MatchRegExFileRule(FileRule):
     """FileRule: Checks regular expression rules against the file."""
 
-    def __init__(self, include:list[str] = [], exclude:list[str] = []):
+    def __init__(self, include: list[str] = [], exclude: list[str] = []):
         self.matchers: list[re.Pattern] = []
-        self.rules: list[Callable[[str,re.Match], CheckResult]] = []
-        super().__init__(self.check_matches, include, exclude )
+        self.rules: list[Callable[[str, re.Match], CheckResult]] = []
+        super().__init__(self.check_matches, include, exclude)
 
-    def add_regEx_rule(self, regExp: str, func: Callable[[str,re.Match], CheckResult] ) -> None:
-        self.matchers.append( re.compile(regExp, re.MULTILINE ) )
-        self.rules.append( func )
+    def add_regEx_rule(
+        self, regExp: str, func: Callable[[str, re.Match], CheckResult]
+    ) -> None:
+        self.matchers.append(re.compile(regExp, re.MULTILINE))
+        self.rules.append(func)
 
-
-    def check_matches_iter(self, file:str) -> Generator[CheckResult, None, None]:
+    def check_matches_iter(self, file: str) -> Generator[CheckResult, None, None]:
         try:
             with codecs.open(file, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -130,7 +136,7 @@ class MatchRegExFileRule(FileRule):
         for mId, matcher in enumerate(self.matchers):
             found = 0
             for match in matcher.finditer(content):
-                if "NOLINT" in match.group(0) :
+                if "NOLINT" in match.group(0):
                     continue
                 found += 1
                 yield self.rules[mId](file, match)
@@ -142,44 +148,43 @@ class MatchRegExFileRule(FileRule):
                 res.func_name = self.rules[mId].__name__
                 yield res
 
-
-    def check_matches(self, file:str) -> tuple[CHECK_RET, str]:
-        """RegExFileRules"""
+    def check_matches(self, file: str) -> tuple[CHECK_RET, str]:
+        """Regular expression checks."""
         sumRes = CheckSummary(descr_line="RexExFileRules")
-        errors  = []
-        warnings = []
-        success = []
         for res in self.check_matches_iter(file):
             sumRes.add(res)
 
         return sumRes
 
     def __str__(self):
-        s  = super().__str__() + "\n    "
-        s += "\n    ".join( map( lambda r : r.__doc__ or "" , self.rules ) )
+        s = super().__str__() + "\n    "
+        s += "\n    ".join(map(lambda r: r.__doc__ or "", self.rules))
         return s
 
-class ESPHomeExtLinter():
+
+class ESPHomeExtLinter:
     file_rules: list[FileRule] = []
     default_include: list[str] = []
     default_exclude: list[str] = []
-    file_matcher: dict[ str, tuple[Callable[[str],bool], list[FileRule]] ] = {}
+    file_matcher: dict[str, tuple[Callable[[str], bool], list[FileRule]]] = {}
 
-    def __init__(self, component ) :
+    def __init__(self, component):
         pass
 
     def print_rules(self):
         print("File rules:")
         for rule in self.file_rules:
-            print( rule )
+            print(rule)
 
-    def run_iterate(self, files ):
+    def run_iterate(self, files):
         for rule in self.file_rules:
-            for file in filter( rule.take_file, files):
+            for file in filter(rule.take_file, files):
                 yield rule.check(file)
 
-    def run(self, stop_on_error:bool = False, stop_on_warning:bool = False) -> CheckResult:
-        summary =  CheckSummary(descr_line="Linting summary.")
+    def run(
+        self, stop_on_error: bool = False, stop_on_warning: bool = False
+    ) -> CheckResult:
+        summary = CheckSummary(descr_line="Linting summary.")
         for rule in self.rules:
             for file in rule.get_files(self):
                 check = rule.check(file)
@@ -192,9 +197,14 @@ class ESPHomeExtLinter():
                     return summary
         return summary
 
-
     @classmethod
-    def add_file_rule(cls, func:Callable, include:list[str]|None = None, exclude:list[str]|None = None, **kwargs ) -> None:
+    def add_file_rule(
+        cls,
+        func: Callable,
+        include: list[str] | None = None,
+        exclude: list[str] | None = None,
+        **kwargs,
+    ) -> None:
         cls.file_rules.append(
             FileRule(
                 func=func,
@@ -204,12 +214,23 @@ class ESPHomeExtLinter():
         )
 
     @classmethod
-    def add_matched_line_rule(cls, match_str:str, func:Callable, include:list[str]|None = None, exclude:list[str]|None = None, **kwargs ) -> None:
+    def add_matched_line_rule(
+        cls,
+        match_str: str,
+        func: Callable,
+        include: list[str] | None = None,
+        exclude: list[str] | None = None,
+        **kwargs,
+    ) -> None:
         include = include or cls.default_include
         exclude = exclude or cls.default_exclude
         fRule = None
         for fileRule in cls.file_rules:
-            if isinstance(fileRule, MatchRegExFileRule) and fileRule.include == include and fileRule.exclude == exclude :
+            if (
+                isinstance(fileRule, MatchRegExFileRule)
+                and fileRule.include == include
+                and fileRule.exclude == exclude
+            ):
                 fRule = fileRule
                 break
         if fRule is None:
@@ -220,33 +241,42 @@ class ESPHomeExtLinter():
             cls.file_rules.append(fRule)
 
         fRule.add_regEx_rule(
-                regExp=match_str,
-                func=func,
+            regExp=match_str,
+            func=func,
         )
 
     @classmethod
-    def file_rule_decorator(cls, include:list[str]|None = None, exclude:list[str]|None = None) -> Callable[[str], CheckResult]:
-        def decorator(func:Callable[[str], CheckResult]) -> Callable[[str], CheckResult]:
+    def file_rule_decorator(
+        cls, include: list[str] | None = None, exclude: list[str] | None = None
+    ) -> Callable[[str], CheckResult]:
+        def decorator(
+            func: Callable[[str], CheckResult]
+        ) -> Callable[[str], CheckResult]:
             @functools.wraps(func)
-            def set_doc_string_and_name(fname:str) -> CheckResult:
+            def set_doc_string_and_name(fname: str) -> CheckResult:
                 res = func(fname)
                 res.descr_line = func.__doc__
                 res.func_name = func.__name__
                 res.file = fname
                 return res
-            cls.add_file_rule( set_doc_string_and_name, include, exclude)
+
+            cls.add_file_rule(set_doc_string_and_name, include, exclude)
             return set_doc_string_and_name
+
         return decorator
 
     @classmethod
-    def matched_line_rule_decorator( cls,
-                                     regEx:str,
-                                     include:list[str]|None = None,
-                                     exclude:list[str]|None = None
-                                    ) -> Callable[[str,re.Match], CheckResult]:
-        def decorator(func:Callable[[str,re.Match], CheckResult]) -> Callable[[str,re.Match], CheckResult]:
+    def matched_line_rule_decorator(
+        cls,
+        regEx: str,
+        include: list[str] | None = None,
+        exclude: list[str] | None = None,
+    ) -> Callable[[str, re.Match], CheckResult]:
+        def decorator(
+            func: Callable[[str, re.Match], CheckResult]
+        ) -> Callable[[str, re.Match], CheckResult]:
             @functools.wraps(func)
-            def set_doc_string_and_name(fname:str, regEx:str) -> CheckResult:
+            def set_doc_string_and_name(fname: str, regEx: str) -> CheckResult:
                 res = func(fname, regEx)
                 res.descr_line = func.__doc__
                 res.func_name = func.__name__
@@ -255,4 +285,5 @@ class ESPHomeExtLinter():
 
             cls.add_matched_line_rule(regEx, set_doc_string_and_name, include, exclude)
             return set_doc_string_and_name
+
         return decorator

@@ -3,31 +3,35 @@ import re
 
 from ..esphome_linter import ESPHomeExtLinter, CheckResult
 
+
 class ESPHomeExtCLinter(ESPHomeExtLinter):
     rules = []
     default_include = ["*.h", "*.c", "*.cpp", "*.tcc"]
     default_exclude = []
+
 
 add_file_rule = ESPHomeExtCLinter.file_rule_decorator
 add_matched_line_rule = ESPHomeExtCLinter.matched_line_rule_decorator
 
 # FileRules
 
+
 @add_file_rule(include=["*.ino"])
-def lint_ino(fname:str) -> CheckResult:
+def lint_ino(fname: str) -> CheckResult:
     """.ino files."""
-    return CheckResult.failed(f"Found {fname}. Please use either .cpp or .h" )
+    return CheckResult.failed(f"Found {fname}. Please use either .cpp or .h")
 
 
 # MatchedLineRules
 
 CPP_RE_EOL = r"\s*?(?://.*?)?$"
 
+
 @add_matched_line_rule(
     r"^#define\s+([a-zA-Z0-9_]+)\s+([0-9bx]+)" + CPP_RE_EOL,
 )
-def lint_no_defines(fname:str, match:re.Match) -> CheckResult:
-    """integer #define macros."""
+def lint_no_defines(fname: str, match: re.Match) -> CheckResult:
+    """Integer #define macros."""
     s = f"static const uint8_t {match.group(1)} = {match.group(2)};"
     return CheckResult.failed(
         "#define macros for integer constants are not allowed, please use "
@@ -35,8 +39,9 @@ def lint_no_defines(fname:str, match:re.Match) -> CheckResult:
         "datatype). See also Google style guide.".format(s)
     )
 
+
 @add_matched_line_rule(r"^\s*delay\((\d+)\);" + CPP_RE_EOL)
-def lint_no_long_delays(fname:str, match:re.Match) -> CheckResult:
+def lint_no_long_delays(fname: str, match: re.Match) -> CheckResult:
     """delay() calls > 50ms"""
     duration_ms = int(match.group(1))
     if duration_ms < 50:
@@ -54,8 +59,9 @@ RAW_PIN_ACCESS_RE = (
     r"^\s(pinMode|digitalWrite|digitalRead)\((.*)->get_pin\(\),\s*([^)]+).*\)"
 )
 
+
 @add_matched_line_rule(RAW_PIN_ACCESS_RE)
-def lint_no_raw_pin_access(fname:str, match:re.Match) -> CheckResult:
+def lint_no_raw_pin_access(fname: str, match: re.Match) -> CheckResult:
     """raw_pin_access"""
     func = match.group(1)
     pin = match.group(2)
@@ -99,7 +105,7 @@ ARDUINO_FORBIDDEN_RE = r"[^\w\d](" + r"|".join(ARDUINO_FORBIDDEN) + r")\(.*"
 
 
 @add_matched_line_rule(ARDUINO_FORBIDDEN_RE)
-def lint_no_arduino_framework_functions(fname:str, match:re.Match) -> CheckResult:
+def lint_no_arduino_framework_functions(fname: str, match: re.Match) -> CheckResult:
     """Forbidden arduino functions"""
     nolint = "// NOLINT"
     return CheckResult.failed(
@@ -122,7 +128,7 @@ IDF_CONVERSION_FORBIDDEN_RE = r"(" + r"|".join(IDF_CONVERSION_FORBIDDEN) + r").*
 
 
 @add_matched_line_rule(IDF_CONVERSION_FORBIDDEN_RE)
-def lint_no_removed_in_idf_conversions(fname:str, match:re.Match) -> CheckResult:
+def lint_no_removed_in_idf_conversions(fname: str, match: re.Match) -> CheckResult:
     """IDF conversion"""
     replacement = IDF_CONVERSION_FORBIDDEN[match.group(1)]
     return CheckResult.failed(
@@ -134,8 +140,8 @@ def lint_no_removed_in_idf_conversions(fname:str, match:re.Match) -> CheckResult
 @add_matched_line_rule(
     r"[^\w\d]byte\s+[\w\d]+\s*=",
 )
-def lint_no_byte_datatype(fname:str, match:re.Match) -> CheckResult:
-    """usage of byte data type"""
+def lint_no_byte_datatype(fname: str, match: re.Match) -> CheckResult:
+    """Usage of byte data type"""
     return CheckResult.failed(
         f"The datatype {'byte'} is not allowed to be used in ESPHome. "
         f"Please use {'uint8_t'} instead."
