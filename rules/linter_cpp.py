@@ -1,4 +1,5 @@
 """Definition of linting rules for c/c++ files."""
+from __future__ import annotations
 import re
 
 from ..esphome_linter import ESPHomeExtLinter, CheckResult
@@ -30,8 +31,10 @@ CPP_RE_EOL = r"\s*?(?://.*?)?$"
 @add_matched_line_rule(
     r"^#define\s+([a-zA-Z0-9_]+)\s+([0-9bx]+)" + CPP_RE_EOL,
 )
-def lint_no_defines(fname: str, match: re.Match) -> CheckResult:
+def lint_no_defines(fname: str, match: re.Match | None) -> CheckResult:
     """Integer #define macros."""
+    if match is None:
+        return CheckResult.success("Pattern not found.")
     s = f"static const uint8_t {match.group(1)} = {match.group(2)};"
     return CheckResult.failed(
         "#define macros for integer constants are not allowed, please use "
@@ -41,8 +44,10 @@ def lint_no_defines(fname: str, match: re.Match) -> CheckResult:
 
 
 @add_matched_line_rule(r"^\s*delay\((\d+)\);" + CPP_RE_EOL)
-def lint_no_long_delays(fname: str, match: re.Match) -> CheckResult:
+def lint_no_long_delays(fname: str, match: re.Match | None) -> CheckResult:
     """delay() calls > 50ms"""
+    if match is None:
+        return CheckResult.success("Pattern not found.")
     duration_ms = int(match.group(1))
     if duration_ms < 50:
         return CheckResult.success("")
@@ -61,8 +66,10 @@ RAW_PIN_ACCESS_RE = (
 
 
 @add_matched_line_rule(RAW_PIN_ACCESS_RE)
-def lint_no_raw_pin_access(fname: str, match: re.Match) -> CheckResult:
+def lint_no_raw_pin_access(fname: str, match: re.Match | None) -> CheckResult:
     """raw_pin_access"""
+    if match is None:
+        return CheckResult.success("Pattern not found.")
     func = match.group(1)
     pin = match.group(2)
     mode = match.group(3)
@@ -105,8 +112,12 @@ ARDUINO_FORBIDDEN_RE = r"[^\w\d](" + r"|".join(ARDUINO_FORBIDDEN) + r")\(.*"
 
 
 @add_matched_line_rule(ARDUINO_FORBIDDEN_RE)
-def lint_no_arduino_framework_functions(fname: str, match: re.Match) -> CheckResult:
+def lint_no_arduino_framework_functions(
+    fname: str, match: re.Match | None
+) -> CheckResult:
     """Forbidden arduino functions"""
+    if match is None:
+        return CheckResult.success("Pattern not found.")
     nolint = "// NOLINT"
     return CheckResult.failed(
         f"The function {match.group(1)} from the Arduino framework is forbidden to be "
@@ -128,8 +139,12 @@ IDF_CONVERSION_FORBIDDEN_RE = r"(" + r"|".join(IDF_CONVERSION_FORBIDDEN) + r").*
 
 
 @add_matched_line_rule(IDF_CONVERSION_FORBIDDEN_RE)
-def lint_no_removed_in_idf_conversions(fname: str, match: re.Match) -> CheckResult:
+def lint_no_removed_in_idf_conversions(
+    fname: str, match: re.Match | None
+) -> CheckResult:
     """IDF conversion"""
+    if match is None:
+        return CheckResult.success("Pattern not found.")
     replacement = IDF_CONVERSION_FORBIDDEN[match.group(1)]
     return CheckResult.failed(
         f"The macro {match.group(1)} can no longer be used in ESPHome directly. "
@@ -140,8 +155,10 @@ def lint_no_removed_in_idf_conversions(fname: str, match: re.Match) -> CheckResu
 @add_matched_line_rule(
     r"[^\w\d]byte\s+[\w\d]+\s*=",
 )
-def lint_no_byte_datatype(fname: str, match: re.Match) -> CheckResult:
+def lint_no_byte_datatype(fname: str, match: re.Match | None) -> CheckResult:
     """Usage of byte data type"""
+    if match is None:
+        return CheckResult.success("Pattern not found.")
     return CheckResult.failed(
         f"The datatype {'byte'} is not allowed to be used in ESPHome. "
         f"Please use {'uint8_t'} instead."

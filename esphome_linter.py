@@ -23,7 +23,7 @@ class CheckResult:
     col: int | None = None
 
     @classmethod
-    def success(cls, text: str):
+    def success(cls, text: str = ""):
         return cls(ret=CHECK_RET.SUCCESS, text=text)
 
     @classmethod
@@ -142,11 +142,7 @@ class MatchRegExFileRule(FileRule):
                 yield self.rules[mId](file, match)
 
             if found == 0:
-                res = CheckResult.success("Pattern not found")
-                res.file = file
-                res.descr_line = self.rules[mId].__doc__
-                res.func_name = self.rules[mId].__name__
-                yield res
+                yield self.rules[mId](file, None)
 
     def check_matches(self, file: str) -> tuple[CHECK_RET, str]:
         """Regular expression checks."""
