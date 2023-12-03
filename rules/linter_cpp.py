@@ -19,7 +19,7 @@ add_matched_line_rule = ESPHomeExtCLinter.matched_line_rule_decorator
 
 @add_file_rule(include=["*.ino"])
 def lint_ino(fname: str) -> CheckResult:
-    """.ino files."""
+    """Check for '.ino' files."""
     return CheckResult.failed(f"Found {fname}. Please use either .cpp or .h")
 
 

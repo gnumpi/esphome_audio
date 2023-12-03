@@ -196,7 +196,7 @@ class ESPHomeExtLinter:
     @classmethod
     def add_file_rule(
         cls,
-        func: Callable,
+        func: Callable[[str], CheckResult],
         include: list[str] | None = None,
         exclude: list[str] | None = None,
         **kwargs,
@@ -213,7 +213,7 @@ class ESPHomeExtLinter:
     def add_matched_line_rule(
         cls,
         match_str: str,
-        func: Callable,
+        func: Callable[[str, re.Match | None], CheckResult],
         include: list[str] | None = None,
         exclude: list[str] | None = None,
         **kwargs,
@@ -251,7 +251,7 @@ class ESPHomeExtLinter:
             @functools.wraps(func)
             def set_doc_string_and_name(fname: str) -> CheckResult:
                 res = func(fname)
-                res.descr_line = func.__doc__
+                res.descr_line = func.__doc__ or ""
                 res.func_name = func.__name__
                 res.file = fname
                 return res
@@ -267,14 +267,14 @@ class ESPHomeExtLinter:
         regEx: str,
         include: list[str] | None = None,
         exclude: list[str] | None = None,
-    ) -> Callable[[str, re.Match], CheckResult]:
+    ) -> Callable[[str, re.Match | None], CheckResult]:
         def decorator(
-            func: Callable[[str, re.Match], CheckResult]
-        ) -> Callable[[str, re.Match], CheckResult]:
+            func: Callable[[str, re.Match | None], CheckResult]
+        ) -> Callable[[str, re.Match | None], CheckResult]:
             @functools.wraps(func)
             def set_doc_string_and_name(fname: str, regEx: str) -> CheckResult:
                 res = func(fname, regEx)
-                res.descr_line = func.__doc__
+                res.descr_line = func.__doc__ or ""
                 res.func_name = func.__name__
                 res.file = fname
                 return res
