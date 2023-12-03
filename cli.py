@@ -12,11 +12,11 @@ from .components import (
 )
 
 from .rules.linter_cpp import ESPHomeExtCLinter
-
+from .tests import CompileTest
 from .constants import VERSION_CHECK
 
 
-def print_component_info_line(component: ExternalComponent):
+def print_component_info_line(component: ExternalComponent) -> int:
     version_check = component.check_esphome_version(ESPHOME_VERSION)
     s = str(component)
     s += (
@@ -29,18 +29,21 @@ def print_component_info_line(component: ExternalComponent):
     s += f"  ESPHome: {component.esphome_support[0]} - {component.esphome_support[1]}"
     s += Style.RESET_ALL
     print(s)
+    return 0
 
 
-def print_components_list(repo_path: str) -> None:
+def print_components_list(repo_path: str) -> int:
     components = get_components_from_repository(repo_path)
     for comp in components:
         print_component_info_line(comp)
+    return 0
 
 
-def lint_components(repo_path: str) -> None:
+def lint_components(repo_path: str) -> int:
     components = get_components_from_repository(repo_path)
     for comp in components:
         lint_esphome_rules(comp)
+    return 0
 
 
 def lint_esphome_rules(component: ExternalComponent):
@@ -51,6 +54,16 @@ def lint_esphome_rules(component: ExternalComponent):
     # print( "\n".join(list_component_git_files(component)) )
     for check in linter.run_iterate(files):
         print(check)
+
+
+def run_component_tests(repo_path: str) -> int:
+    components = get_components_from_repository(repo_path)
+    retCode = 0
+    for comp in components:
+        build = CompileTest(comp)
+        retCode += build.run_tests()
+
+    return retCode
 
 
 def main():
@@ -86,12 +99,11 @@ def main():
     print(f"ESPHome: {ESPHOME_VERSION}")
     local_path = args.local_path
     if args.command == "list":
-        print_components_list(local_path)
+        return print_components_list(local_path)
     elif args.command == "lint":
-        lint_components(local_path)
+        return lint_components(local_path)
+    elif args.command == "test":
+        return run_component_tests(local_path)
     else:
         parser.print_usage()
-
-
-if __name__ == "__main__":
-    main()
+        return -1

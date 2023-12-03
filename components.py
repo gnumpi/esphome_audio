@@ -32,6 +32,10 @@ class ExternalComponent:
     def relpath(self) -> str:
         return os.path.join(self.components_path, self.name)
 
+    @property
+    def testsRoot(self) -> str:
+        return os.path.join(self.repository_root, "tests", "components", self.name)
+
     def check_esphome_version(self, esphome_version: str) -> VERSION_CHECK:
         if esphome_version < self.esphome_support[0]:
             return VERSION_CHECK.EARLIER_VERSION
