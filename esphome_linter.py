@@ -85,8 +85,8 @@ class FileRule():
         self.include = include
         self.exclude = exclude
         self.verbose = True
-        self._incl = re.compile("|".join(map(lambda x: x.replace(".","\.").replace("*",".+") + "$", include)))
-        self._excl = re.compile("|".join(map(lambda x: x.replace(".","\.").replace("*",".+") + "$", exclude)))
+        self._incl = re.compile("|".join(map(lambda x: x.replace(".",r"\.").replace("*",".+") + "$", include)))
+        self._excl = re.compile("|".join(map(lambda x: x.replace(".",r"\.").replace("*",".+") + "$", exclude)))
 
     def skip_file(self, fname:str) -> bool:
         return self._excl.match(fname)

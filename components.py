@@ -55,7 +55,7 @@ class ExternalComponent():
         if not components_rel_path in COMPONENT_ROOTS:
             raise UnsupportedComponentPath
 
-        with open(manifest, "r") as f:
+        with open(manifest) as f:
             manifest_data = json.load(f)
 
         if manifest_data["name"] != component_name:

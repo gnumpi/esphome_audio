@@ -94,7 +94,7 @@ def main():
     test = subparsers.add_parser('test', help='run compilation and custom tests from the external components repository')
 
     args = parser.parse_args()
-    print( "ESPHome: {version}".format(version=ESPHOME_VERSION) )
+    print( f"ESPHome: {ESPHOME_VERSION}" )
     local_path = os.path.join( os.path.dirname(__file__), ".." )
     if args.command == 'list':
         print_components_list(local_path)
