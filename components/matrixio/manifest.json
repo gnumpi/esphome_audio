@@ -1,9 +1,9 @@
 {
     "name": "matrixio",
-    "version": "0.1.2",
+    "version": "0.2.0",
     "esphome": {
-        "min" : "2023.11.2",
-        "max" : "2023.11.4"
+        "min" : "2023.11.6",
+        "max" : "2023.11.6"
     },
     "url-git" : "https://github.com/gnumpi/esphome_matrixio"
 }

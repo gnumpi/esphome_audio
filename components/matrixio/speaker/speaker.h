@@ -78,6 +78,8 @@ public:
   void set_pcm_sampling_frequency(uint32_t sampling_frequency);
   uint32_t read_pcm_sampling_frequency();
 
+  bool has_buffered_data() const override;
+
 private:
   void start_();
   void watch_();

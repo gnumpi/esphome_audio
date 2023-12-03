@@ -181,6 +181,11 @@ size_t Speaker::play(const uint8_t *data, size_t length) {
   return index / 2; // caller doesn't know about duplication
 }
 
+bool Speaker::has_buffered_data() const {
+  return uxQueueMessagesWaiting(this->buffer_queue_) > 0;
+}
+
+
 uint16_t Speaker::get_fpga_fifo_status_() {
   uint16_t write_pointer;
   uint16_t read_pointer;
