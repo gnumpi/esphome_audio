@@ -117,7 +117,7 @@ void Speaker::player_task(void *params) {
   const int sleep = int(MAX_WRITE_LENGTH * sample_time * 1000);
 
   while (true) {
-    if (xQueueReceive(this_speaker->buffer_queue_, &data_event, 1000 / portTICK_PERIOD_MS) != pdTRUE) {
+    if (xQueueReceive(this_speaker->buffer_queue_, &data_event, 4000 / portTICK_PERIOD_MS) != pdTRUE) {
       break;  // End of audio from main thread
     }
     if (data_event.stop) {
@@ -154,7 +154,9 @@ size_t Speaker::play(const uint8_t *data, size_t length) {
     this->start();
   }
 
-   //hardcoded mono to stereo (send each sample twice)
+  length = std::min(length, BUFFER_SIZE);
+  
+  //hardcoded mono to stereo (send each sample twice)
   uint16_t* dst = buffer;
   const uint16_t* src = reinterpret_cast<const uint16_t*>(data);
   for (size_t c=0; c < length / sizeof(uint16_t); c++ ){
