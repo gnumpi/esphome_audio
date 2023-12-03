@@ -1,9 +1,7 @@
-from typing import Union
-import enum
+from __future__ import annotations
 from dataclasses import dataclass
 import json
 import os
-import glob
 import subprocess
 
 from .excecptions import (
@@ -26,7 +24,7 @@ class ExternalComponent():
     version:str
     repository_root:str
     components_path:str
-    esphome_support:Union[tuple[str,str], None] = None #min,max version
+    esphome_support:tuple[str,str] | None = None #min,max version
 
     @property
     def path(self) -> str:

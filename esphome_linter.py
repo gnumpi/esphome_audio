@@ -1,4 +1,5 @@
-from typing import Callable, Union
+from __future__ import annotations
+from typing import Callable
 
 import codecs
 from dataclasses import dataclass
@@ -17,11 +18,11 @@ from .constants import (
 class CheckResult():
     ret: CHECK_RET
     text: str
-    func_name: Union[str,None] = None
-    descr_line: Union[str,None] = None
-    file: Union[str,None] = None
-    row: Union[int,None] = None
-    col: Union[int,None] = None
+    func_name: str | None = None
+    descr_line: str | None = None
+    file: str | None = None
+    row: int | None = None
+    col: int | None = None
 
     @classmethod
     def success(cls, text:str ):
@@ -193,7 +194,7 @@ class ESPHomeExtLinter():
 
 
     @classmethod
-    def add_file_rule(cls, func:Callable, include:list[str] = None, exclude:list[str] = None, **kwargs ) -> None:
+    def add_file_rule(cls, func:Callable, include:list[str]|None = None, exclude:list[str]|None = None, **kwargs ) -> None:
         cls.file_rules.append(
             FileRule(
                 func=func,
@@ -203,7 +204,7 @@ class ESPHomeExtLinter():
         )
 
     @classmethod
-    def add_matched_line_rule(cls, match_str:str, func:Callable, include:list[str] = None, exclude:list[str] = None, **kwargs ) -> None:
+    def add_matched_line_rule(cls, match_str:str, func:Callable, include:list[str]|None = None, exclude:list[str]|None = None, **kwargs ) -> None:
         include = include or cls.default_include
         exclude = exclude or cls.default_exclude
         fRule = None
@@ -224,8 +225,8 @@ class ESPHomeExtLinter():
         )
 
     @classmethod
-    def file_rule_decorator(cls, include:Union[list[str],None] = None, exclude:Union[list[str],None] = None):
-        def decorator(func:Callable[[str], CheckResult]) -> Callable:
+    def file_rule_decorator(cls, include:list[str]|None = None, exclude:list[str]|None = None) -> Callable[[str], CheckResult]:
+        def decorator(func:Callable[[str], CheckResult]) -> Callable[[str], CheckResult]:
             @functools.wraps(func)
             def set_doc_string_and_name(fname:str) -> CheckResult:
                 res = func(fname)
@@ -240,10 +241,10 @@ class ESPHomeExtLinter():
     @classmethod
     def matched_line_rule_decorator( cls,
                                      regEx:str,
-                                     include:Union[list[str],None] = None,
-                                     exclude:Union[list[str],None] = None
-                                    ):
-        def decorator(func:Callable[[str,re.Match], CheckResult]) -> Callable:
+                                     include:list[str]|None = None,
+                                     exclude:list[str]|None = None
+                                    ) -> Callable[[str,re.Match], CheckResult]:
+        def decorator(func:Callable[[str,re.Match], CheckResult]) -> Callable[[str,re.Match], CheckResult]:
             @functools.wraps(func)
             def set_doc_string_and_name(fname:str, regEx:str) -> CheckResult:
                 res = func(fname, regEx)

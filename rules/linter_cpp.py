@@ -1,13 +1,7 @@
 """Definition of linting rules for c/c++ files."""
-
-from typing import Callable, Union
-import functools
 import re
 
 from ..esphome_linter import ESPHomeExtLinter, CheckResult
-from ..constants import (
-    CHECK_RET
-)
 
 class ESPHomeExtCLinter(ESPHomeExtLinter):
     rules = []
