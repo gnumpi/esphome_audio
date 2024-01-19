@@ -17,7 +17,7 @@ void Everloop::setup() {
 
   this->effect_data_ = allocator.allocate(this->size());
   if (this->effect_data_ == nullptr) {
-    esph_log_e(TAG, "Failed to allocate effect data of size %u", this->num_leds_);
+    esph_log_e(TAG, "Failed to allocate effect data of size %u", (size_t) this->num_leds_);
     this->mark_failed();
     return;
   }

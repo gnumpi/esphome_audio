@@ -227,7 +227,7 @@ void Speaker::set_pcm_sampling_frequency(uint32_t sampling_frequency){
   uint16_t pcm_constant;
   for (int i = 0;; i++) {
     if (PCM_SAMPLING_FREQUENCIES[i][0] == 0){
-        ESP_LOGE(TAG, "Unsupported sampling frequency: %d", sampling_frequency);
+        ESP_LOGE(TAG, "Unsupported sampling frequency: %lu", sampling_frequency);
         this->mark_failed();
     }
     if ( sampling_frequency == PCM_SAMPLING_FREQUENCIES[i][0]) {
@@ -247,7 +247,7 @@ uint32_t Speaker::read_pcm_sampling_frequency(){
       return PCM_SAMPLING_FREQUENCIES[i][0];
     }
   }
-  ESP_LOGE(TAG, "Reading sampling frequency faild. Got : %d", pcm_constant);
+  ESP_LOGE(TAG, "Reading sampling frequency faild. Got : %u", pcm_constant);
   return 0;
 }
 

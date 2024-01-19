@@ -27,13 +27,13 @@ void WishboneBus::dump_config(){
     esph_log_config(TAG, "  Data rate: %uMHz", (unsigned) (this->data_rate_ / 1000000));
     LOG_PIN("  CS pin: ", this->cs_);
     if (this->matrixio_id == MATRIX_VOICE_ID){
-    esph_log_config(TAG, "  Found Matrixio Voice with firmware: %d", this->matrixio_version );
+    esph_log_config(TAG, "  Found Matrixio Voice with firmware: %lu", this->matrixio_version );
   }
   else if (this->matrixio_id == MATRIX_CREATOR_ID){
-    esph_log_config(TAG, "  Found Matrixio Creator with firmware: %d", this->matrixio_version );
+    esph_log_config(TAG, "  Found Matrixio Creator with firmware: %lu", this->matrixio_version );
   }
   else {
-    esph_log_config(TAG, "  Matrixio not found! (id: %d, version: %d)", this->matrixio_id, this->matrixio_version);
+    esph_log_config(TAG, "  Matrixio not found! (id: %lu, version: %lu)", this->matrixio_id, this->matrixio_version);
   }
 }
 

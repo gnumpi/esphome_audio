@@ -2,6 +2,7 @@
 #include "microphone_fir.h"
 
 #include <driver/gpio.h>
+#include <hal/gpio_types.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 
@@ -26,7 +27,7 @@ void Microphone::setup() {
   irq_queue = xQueueCreate(10, sizeof(gpio_num_t));
 
   gpio_config_t gpioConfig;
-  gpioConfig.pin_bit_mask = GPIO_SEL_5;
+  gpioConfig.pin_bit_mask = BIT(5); //GPIO_SEL_5;
   gpioConfig.mode = GPIO_MODE_INPUT;
   gpioConfig.pull_up_en = GPIO_PULLUP_DISABLE;
   gpioConfig.pull_down_en = GPIO_PULLDOWN_ENABLE;
@@ -89,7 +90,7 @@ size_t Microphone::read(int16_t *buf, size_t len){
 void Microphone::set_sampling_rate(uint32_t sampling_rate){
   for (int i = 0;; i++) {
     if (MIC_SAMPLING_FREQUENCIES[i][0] == 0){
-      ESP_LOGE(TAG, "Unsupported sampling rate : %d", sampling_rate );
+      ESP_LOGE(TAG, "Unsupported sampling rate : %u", sampling_rate );
       this->mark_failed();
       return;
     }
@@ -107,7 +108,7 @@ void Microphone::write_fir_coeffs(){
   const FIRCoeff* coeff_list = FIR_default;
   for (int i = 0;; i++) {
     if (coeff_list[i].rate_ == 0) {
-      ESP_LOGE(TAG, "Unsupported sampling frequency for setting FIR coeffs: %d", this->sampling_rate_);
+      ESP_LOGE(TAG, "Unsupported sampling frequency for setting FIR coeffs: %lu", this->sampling_rate_);
       this->mark_failed();
       return;
     }
@@ -117,7 +118,7 @@ void Microphone::write_fir_coeffs(){
         this->wb_write(reinterpret_cast<uint8_t *>(&fir_coeff_[0]), fir_coeff_.size() * sizeof(int16_t));
         return;
       } else {
-        ESP_LOGE(TAG, "Size FIR Filter must be : %d", NUMBER_OF_FIR_TAPS );
+        ESP_LOGE(TAG, "Size FIR Filter must be : %u", NUMBER_OF_FIR_TAPS );
         this->mark_failed();
       }
     }
