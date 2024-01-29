@@ -108,7 +108,7 @@ void Microphone::write_fir_coeffs(){
   const FIRCoeff* coeff_list = FIR_default;
   for (int i = 0;; i++) {
     if (coeff_list[i].rate_ == 0) {
-      ESP_LOGE(TAG, "Unsupported sampling frequency for setting FIR coeffs: %lu", this->sampling_rate_);
+      ESP_LOGE(TAG, "Unsupported sampling frequency for setting FIR coeffs: %u", this->sampling_rate_);
       this->mark_failed();
       return;
     }
