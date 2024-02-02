@@ -9,7 +9,9 @@ namespace esp_adf {
 
 class ADFPipelineSourceElement: public ADFPipelineElement {
 public:
-  const AudioPipelineElementType const get_element_type() {return AudioPipelineElementType::AUDIO_PIPELINE_SOURCE};
+  AudioPipelineElementType get_element_type() const {
+    return AudioPipelineElementType::AUDIO_PIPELINE_SOURCE;
+  }
 };
 
 
@@ -18,8 +20,9 @@ public:
   void set_stream_uri(const char *uri);
   const std::string get_name() override {return "HTTPStreamReader";} 
 protected:
+  
   void init_adf_elements_() override;
-  void adf_event_handler_(audio_event_iface_msg_t &msg);
+  void sdk_event_handler_(audio_event_iface_msg_t &msg);
   
   audio_element_handle_t http_stream_reader_{};
   audio_element_handle_t decoder_{};

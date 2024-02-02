@@ -11,70 +11,63 @@ namespace esp_adf {
 static const char *const TAG = "adf_audio";
 
 void ADFMediaPlayer::setup() {
-  this->state = media_player::MEDIA_PLAYER_STATE_IDLE;
-  this->pipeline.setup();
+  state = media_player::MEDIA_PLAYER_STATE_IDLE;
+  pipeline.init();
 }
 
 void ADFMediaPlayer::dump_config() {
   esph_log_config(TAG, "ESP-ADF-MediaPlayer:");
-  int components = this->pipeline.get_number_of_components();
+  int components = pipeline.get_number_of_elements();
   esph_log_config(TAG, "  Number of ASPComponents: %d", components);
 }
 
-void ADFMediaPlayer::loop() {
-  this->pipeline.watch();
-}
 
 void ADFMediaPlayer::set_stream_uri(const char *uri){
-  this->http_and_decoder_.set_stream_uri(uri);
+  http_and_decoder_.set_stream_uri(uri);
 }  
 
-void ADFMediaPlayer::pipeline_event_handler(audio_event_iface_msg_t &msg) {
-    
-}
 
 void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
   if (call.get_media_url().has_value()) {
-      this->current_url_ = call.get_media_url();
+      current_url_ = call.get_media_url();
 
-    if (this->state == media_player::MEDIA_PLAYER_STATE_PLAYING
-        || this->state == media_player::MEDIA_PLAYER_STATE_PAUSED ) {
-      this->pipeline.stop();
-      this->pipeline.reset();
-      this->set_stream_uri( this->current_url_.value().c_str() );
-      this->pipeline.start();
+    if (state == media_player::MEDIA_PLAYER_STATE_PLAYING
+        || state == media_player::MEDIA_PLAYER_STATE_PAUSED ) {
+      pipeline.stop();
+      pipeline.reset();
+      set_stream_uri( current_url_.value().c_str() );
+      pipeline.start();
     } else {
-      this->pipeline.init();
-      this->set_stream_uri( this->current_url_.value().c_str() );
-      this->start();
+      pipeline.init();
+      set_stream_uri( current_url_.value().c_str() );
+      start();
     }
   }
   
   if (call.get_volume().has_value()) {
-    this->volume = call.get_volume().value();
-    this->set_volume_(volume);
-    this->unmute_();
+    set_volume_(call.get_volume().value());
+    unmute_();
   }
   
   if (call.get_command().has_value()) {
     switch (call.get_command().value()) {
       case media_player::MEDIA_PLAYER_COMMAND_PLAY:
-        this->state = media_player::MEDIA_PLAYER_STATE_PLAYING;
-        if( this->pipeline.getState() == PipelineState::STATE_STOPPED
-             || this->pipeline.getState() == PipelineState::STATE_UNAVAILABLE
+        state = media_player::MEDIA_PLAYER_STATE_PLAYING;
+        if( pipeline.getState() == PipelineState::STATE_STOPPED
+             || pipeline.getState() == PipelineState::STATE_UNAVAILABLE
         ){
-          this->pipeline.start();
+          pipeline.start();
         }
-        else if( this->pipeline.getState() == PipelineState::STATE_PAUSED)
+        else if( pipeline.getState() == PipelineState::STATE_PAUSED)
         {
-          this->pipeline.resume();
+          pipeline.resume();
         }
         break;
       case media_player::MEDIA_PLAYER_COMMAND_PAUSE:
-        this->state = media_player::MEDIA_PLAYER_STATE_PAUSED;
-        if( this->pipeline.getState() == PipelineState::STATE_RUNNING)
+        state = media_player::MEDIA_PLAYER_STATE_PAUSED;
+        if( pipeline.getState() == PipelineState::STATE_RUNNING)
         {
-          this->pipeline.pause();
+          pipeline.pause();
         }
         break;
       case media_player::MEDIA_PLAYER_COMMAND_STOP:
@@ -87,33 +80,33 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
         this->unmute_();
         break;
       case media_player::MEDIA_PLAYER_COMMAND_TOGGLE:
-        if (this->pipeline.getState() == PipelineState::STATE_STOPPED ||
-            this->pipeline.getState() == PipelineState::STATE_PAUSED
+        if (pipeline.getState() == PipelineState::STATE_STOPPED ||
+            pipeline.getState() == PipelineState::STATE_PAUSED
           ){
-          this->state = media_player::MEDIA_PLAYER_STATE_PLAYING;
+          state = media_player::MEDIA_PLAYER_STATE_PLAYING;
         } else {
-          this->state = media_player::MEDIA_PLAYER_STATE_PAUSED;
+          state = media_player::MEDIA_PLAYER_STATE_PAUSED;
         }
         break;
       case media_player::MEDIA_PLAYER_COMMAND_VOLUME_UP: {
         float new_volume = this->volume + 0.1f;
         if (new_volume > 1.0f)
           new_volume = 1.0f;
-        this->set_volume_(new_volume);
-        this->unmute_();
+        set_volume_(new_volume);
+        unmute_();
         break;
       }
       case media_player::MEDIA_PLAYER_COMMAND_VOLUME_DOWN: {
         float new_volume = this->volume - 0.1f;
         if (new_volume < 0.0f)
           new_volume = 0.0f;
-        this->set_volume_(new_volume);
-        this->unmute_();
+        set_volume_(new_volume);
+        unmute_();
         break;
       }
     }
   }
-  this->publish_state();
+  publish_state();
 }
 
 media_player::MediaPlayerTraits ADFMediaPlayer::get_traits() {
@@ -124,25 +117,35 @@ media_player::MediaPlayerTraits ADFMediaPlayer::get_traits() {
 
 
 void ADFMediaPlayer::mute_(){
-   ADFPipelineElement* last = pipeline.get_last_component();
-   last->mute(); 
-   this->muted_ = last->is_muted();  
-   publish_state();
+  AudioPipelineSettingsRequest request;
+  request.mute = 1;
+  if( pipeline.request_settings(request) )
+  {
+    muted_ = true;  
+    publish_state();
+  }
 }
 
 void ADFMediaPlayer::unmute_(){
-   ADFPipelineElement* last = pipeline.get_last_component();
-   last->unmute(); 
-   this->muted_ = last->is_muted();  
-   publish_state();
+  AudioPipelineSettingsRequest request;
+  request.mute = 0;
+  if( pipeline.request_settings(request) )
+  {
+    muted_ = false;  
+    publish_state();
+  }
 }
 
 void ADFMediaPlayer::set_volume_(float volume, bool publish){
-   ADFPipelineElement* last = pipeline.get_last_component();
-   last->set_volume( volume );
-   this->volume = last->get_volume();
-   if( publish ) publish_state();
+  AudioPipelineSettingsRequest request;
+  request.target_volume = volume;
+  if( pipeline.request_settings(request) )
+  {
+    this->volume = volume;  
+    if (publish) publish_state();
+  }
 }
+
 
 }
 }

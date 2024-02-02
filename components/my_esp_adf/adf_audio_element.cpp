@@ -19,12 +19,6 @@ void ADFPipelineElement::deinit_adf_elements_(){
   this->sdk_element_tags_.clear();
 }
 
-void ADFPipelineElement::adf_reset_states_(){
-  for( auto el : this->sdk_audio_elements_ ){
-    audio_element_reset_state(el);
-  }  
-}
-
 
 
 }

@@ -89,7 +89,7 @@ void MatrixIOStreamWriter::loop(){
 }
 
 void MatrixIOStreamWriter::init_adf_elements_(){
-  if( this->adf_audio_elements_.size() > 0 )
+  if( this->sdk_audio_elements_.size() > 0 )
     return;
   
   audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
@@ -110,8 +110,8 @@ void MatrixIOStreamWriter::init_adf_elements_(){
   this->audio_raw_stream_ = audio_element_init(&cfg);
   audio_element_setdata(this->audio_raw_stream_, this);
   
-  this->adf_audio_elements_.push_back( this->audio_raw_stream_ );
-  this->element_tags_.push_back("audio_out");   
+  sdk_audio_elements_.push_back( this->audio_raw_stream_ );
+  sdk_element_tags_.push_back("audio_out");   
 }
 
 
@@ -178,12 +178,43 @@ void MatrixIOStreamWriter::set_number_of_channels(int channels){
   this->lock_.unlock();
 }
 
-void MatrixIOStreamWriter::set_pcm_sampling_frequency(uint32_t sampling_frequency){
+void MatrixIOStreamWriter::on_settings_request(AudioPipelineSettingsRequest &request){
+  if( request.sampling_rate > 0 ){
+    bool success = set_pcm_sampling_frequency( request.sampling_rate );
+    if( !success ){
+      request.failed = true;
+      request.failed_by = this;
+      return;
+    }
+  }
+  if( request.number_of_channels > 0 ){
+    if( request.number_of_channels < 3){
+      set_number_of_channels(request.number_of_channels);
+    } else {
+      request.failed = true;
+      request.failed_by = this;
+      return;
+    } 
+  }
+  if( request.target_volume >= 0. ){
+    set_volume( request.target_volume);
+  }
+  if( request.mute == 0 ){
+    unmute();
+  } else if (request.mute == 1){
+    mute();
+  }
+
+}
+
+
+bool MatrixIOStreamWriter::set_pcm_sampling_frequency(uint32_t sampling_frequency){
   uint16_t pcm_constant;
   for (int i = 0;; i++) {
     if (PCM_SAMPLING_FREQUENCIES[i][0] == 0){
         ESP_LOGE(TAG, "Unsupported sampling frequency: %u", sampling_frequency);
         this->mark_failed();
+        return false;
     }
     if ( sampling_frequency == PCM_SAMPLING_FREQUENCIES[i][0]) {
       this->pcm_sampling_frequency_ = PCM_SAMPLING_FREQUENCIES[i][0];
@@ -192,6 +223,7 @@ void MatrixIOStreamWriter::set_pcm_sampling_frequency(uint32_t sampling_frequenc
     }
   }
   this->conf_write( 9, pcm_constant);
+  return true;
 }
 
 uint32_t MatrixIOStreamWriter::read_pcm_sampling_frequency(){

@@ -32,7 +32,7 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineCompo
   float get_setup_priority() const override { return esphome::setup_priority::LATE; }
   void setup() override;
   void dump_config() override;  
-  void loop() override;
+ 
   
   // MediaPlayer implementations
   bool is_muted() const override { return this->muted_; }
@@ -52,8 +52,7 @@ protected:
   
   void set_volume_(float volume, bool publish = true);
 
-  void pipeline_event_handler(audio_event_iface_msg_t& msg); 
-  
+   
   bool muted_{false};
   optional<std::string> current_url_{};
   

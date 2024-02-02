@@ -8,25 +8,6 @@ namespace esp_adf {
 static const char *const TAG = "esp_adf_pipeline";
 
 
-void AudioPipeline::set_state_(PipelineState state){
-    for( auto element& : pipeline_elements_ ){
-        element->on_pipeline_status_change(state);
-    }
-    state_ = state;
-}
-
-bool AudioPipeline::request_settings(AudioPipelineSettingsRequest& request){
-    for (auto it = pipeline_elements_.rbegin(); it != pipeline_elements_.rend(); ++it)
-    {
-        if(*it != request.requested_by){
-            *it->request_settings(request);
-        }
-        
-    }
-    return !request.failed;
-}
-
-
 void AudioPipeline::init(){
     if( state_ == PipelineState::STATE_UNAVAILABLE && init_()){
         set_state_(PipelineState::STATE_STOPPED);
@@ -35,7 +16,7 @@ void AudioPipeline::init(){
 
 void AudioPipeline::reset(){
     if( reset_() ){
-        set_state(PipelineState::STATE_STOPPED);
+        set_state_(PipelineState::STATE_STOPPED);
     }
 }
 
@@ -44,33 +25,34 @@ void AudioPipeline::start(){
         init();
     }
     if( state_ == PipelineState::STATE_STOPPED && start_() ){
-        set_state(PipelineState::STATE_RUNNING)
+        set_state_(PipelineState::STATE_RUNNING);
     }
          
 }
 
 void AudioPipeline::stop(){
     if( state_ == PipelineState::STATE_RUNNING && stop_() ){
-        set_state(PipelineState::STATE_STOPPED)
+        set_state_(PipelineState::STATE_STOPPED);
     }
 }
 
 void AudioPipeline::pause(){
     if( state_ == PipelineState::STATE_RUNNING && pause_() ){
-        set_state(PipelineState::STATE_PAUSED)
+        set_state_(PipelineState::STATE_PAUSED);
     }
 }
 
 void AudioPipeline::resume(){
     if( state_ == PipelineState::STATE_PAUSED && resume_() ){
-        set_state(PipelineState::STATE_RUNNING)
+        set_state_(PipelineState::STATE_RUNNING);
     }
 }
 
-void AudioPipeline::append_element(AudioPipelineElement* element){
+
+void ADFPipeline::append_element(ADFPipelineElement* element){
     const bool isFirst = pipeline_elements_.size() == 0;
     if( isFirst ){
-        if( element->get_element_type != AUDIO_PIPELINE_SOURCE ){
+        if( element->get_element_type() != AUDIO_PIPELINE_SOURCE ){
             esph_log_e(TAG, "First component should be a source element.");
             return;
         }
@@ -83,16 +65,35 @@ void AudioPipeline::append_element(AudioPipelineElement* element){
         }
     }
     pipeline_elements_.push_back(element);
+    element->set_pipeline(this);
 }
 
-std::vector<std::string> AudioPipeline::get_element_names(){
+
+std::vector<std::string> ADFPipeline::get_element_names(){
     std::vector<std::string> name_tags;
     for( auto element : pipeline_elements_ ){
         name_tags.push_back( element->get_name() );
     }
+    return name_tags;
 }
 
+bool ADFPipeline::request_settings(AudioPipelineSettingsRequest& request){
+    for ( auto it = pipeline_elements_.rbegin(); it != pipeline_elements_.rend(); ++it)
+    {
+        if(*it != request.requested_by){
+            (*it)->on_settings_request(request);
+        }
+        
+    }
+    return !request.failed;
+}
 
+void ADFPipeline::set_state_(PipelineState state){
+    for( auto element : pipeline_elements_ ){
+        element->on_pipeline_status_change();
+    }
+    state_ = state; 
+  }
 
 
 bool ADFPipeline::init_(){
@@ -119,11 +120,11 @@ bool ADFPipeline::stop_(){
     return terminate_pipeline_() && reset_();
 }
 
-void ADFPipeline::pause(){
+bool ADFPipeline::pause_(){
     return audio_pipeline_pause(adf_pipeline_) == ESP_OK;
 }
 
-void ADFPipeline::resume(){
+bool ADFPipeline::resume_(){
     return audio_pipeline_resume(adf_pipeline_) == ESP_OK;
 }
 
@@ -138,8 +139,9 @@ bool ADFPipeline::build_adf_pipeline_(){
     adf_pipeline_ = audio_pipeline_init(&pipeline_cfg);
     
     std::vector<std::string> tags_vector;
-    for( auto &comp : pipeline_elements_ )
+    for( auto &comp_base : pipeline_elements_ )
     {
+       ADFPipelineElement* comp = dynamic_cast<ADFPipelineElement*>(comp_base);
        comp->init_adf_elements();
        int i = 0;
        for( auto el : comp->get_adf_elements() )
@@ -201,7 +203,7 @@ void ADFPipeline::deinit_all_(){
 void ADFPipeline::forward_event_to_pipeline_elements_(audio_event_iface_msg_t &msg){
     for( auto &element : pipeline_elements_ )
     {
-        dynamic_cast<ADFPipelineElement*>(element)->adf_event_handler(msg);
+        element->sdk_event_handler_(msg);
     }
 }
 
@@ -220,14 +222,14 @@ void ADFPipeline::watch_(){
             switch(status){
                 case AEL_STATUS_STATE_STOPPED:
                 case AEL_STATUS_STATE_FINISHED:
-                    set_state(PipelineState::STATE_STOPPED);
+                    set_state_(PipelineState::STATE_STOPPED);
                     this->reset();
                     break;
                 case AEL_STATUS_STATE_RUNNING:
-                    set_state(PipelineState::STATE_RUNNING);
+                    set_state_(PipelineState::STATE_RUNNING);
                     break;
                 case AEL_STATUS_STATE_PAUSED:
-                    set_state(PipelineState::STATE_PAUSED);
+                    set_state_(PipelineState::STATE_PAUSED);
                     break;
                 default:
                     break;
@@ -244,6 +246,7 @@ void ADFPipeline::watch_(){
             size_t status = reinterpret_cast<size_t> (msg.data);
             esph_log_i(TAG, "[ %s ] status: %d", audio_element_get_tag(el), status );     
        }
+       /*
        audio_element_handle_t mp3_decoder = this->audio_components_[0]->get_adf_elements()[1];
        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT
             && msg.source == (void *) mp3_decoder
@@ -253,11 +256,11 @@ void ADFPipeline::watch_(){
 
             esph_log_i(TAG, "[ * ] Receive music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
                      music_info.sample_rates, music_info.bits, music_info.channels);
-            this->get_last_component()->set_sampling_frequency(music_info.sample_rates);
-            this->get_last_component()->set_number_of_channels(music_info.channels);
+            //this->get_last_component()->set_sampling_frequency(music_info.sample_rates);
+            //this->get_last_component()->set_number_of_channels(music_info.channels);
 
         }
-        
+        */
 
     }
 }

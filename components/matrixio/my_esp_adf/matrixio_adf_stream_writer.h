@@ -43,36 +43,35 @@ public:
                            output_selector_(OutputSelector::kHeadPhone), 
                            volume_(80) {}
 
+  const std::string get_name() override {return "MatrixIO-Audio-Out";} 
+  
   void setup() override;
   void dump_config() override;
   void loop() override;
   
-  void mute()   override {this->mute_();}
-  void unmute() override {this->unmute_();}
+  void mute()   {this->mute_();}
+  void unmute() {this->unmute_();}
   void set_volume(float volume);
   void set_target_volume(int volume);
   void set_output(OutputSelector output_selector);
   float get_volume();
   void read_volume();
 
-  void set_pcm_sampling_frequency(uint32_t sampling_frequency);
+  bool set_pcm_sampling_frequency(uint32_t sampling_frequency);
   void set_sampling_frequency(int sampling_frequency);
   void set_number_of_channels(int channels );  
   
   uint32_t read_pcm_sampling_frequency();
   
-  bool hasInputBuffer()   const override {return true; }
-  bool hasOutputBuffer()  const override {return false;}
-  bool hasVolumeControl() const override {return true; }
-  bool isMuteable()       const override {return true; }
-  bool is_muted()         const override {return this->mute_status_ == MuteStatus::kMute; }
+  bool is_muted() const  {return this->mute_status_ == MuteStatus::kMute; }
   
   size_t write_to_fpga_fifo( uint8_t* buffer, int len );
   int channels{2};
 
+  void on_settings_request(AudioPipelineSettingsRequest &request) override;
 protected:
   void init_adf_elements_() override;
-   
+     
 private:
   static void writing_task(void *params);
   uint16_t get_fpga_fifo_status_();
