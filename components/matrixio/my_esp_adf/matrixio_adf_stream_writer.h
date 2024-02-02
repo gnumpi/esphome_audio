@@ -5,7 +5,7 @@
 #include "esphome/core/log.h"
 #include "../wishbone.h"
 
-#include "../../my_esp_adf/adf_audio_element.h"
+#include "../../my_esp_adf/adf_audio_sinks.h"
 
 #include <audio_element.h>
 #include <audio_pipeline.h>
@@ -37,7 +37,7 @@ enum OutputSelector : uint16_t {
 
 static const char *const TAG = "matrixio_adf_stream_writer";
 
-class MatrixIOStreamWriter : public WishboneDevice, public ADFAudioComponent, public Component {
+class MatrixIOStreamWriter : public WishboneDevice, public ADFPipelineSinkElement, public Component {
 public:
   MatrixIOStreamWriter() : WishboneDevice(AUDIO_OUT_BASE_ADDRESS), 
                            output_selector_(OutputSelector::kHeadPhone), 

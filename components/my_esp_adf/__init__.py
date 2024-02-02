@@ -32,7 +32,33 @@ async def register_adf_component(var, config):
         var = cg.Pvariable(config[CONF_ID], var)
     await setup_adf_component_core_(var, config)
 
-ADF_COMPONENT_SCHEMA = cv.Schema({})
+
+COMPONENT_TYPES = ["sink", "source", "filter"]
+SELF_DESCRIPTORS = ["this","source","sink","self"]
+ADF_COMPONENT_SCHEMA = cv.Schema({
+    cv.Optional(CONF_ADF_COMPONENT_TYPE) : cv.one_of(*COMPONENT_TYPES),
+    cv.Optional(CONF_ADF_PIPELINE) : cv.ensure_list( 
+        cv.Any( 
+            cv.one_of(*SELF_DESCRIPTORS),
+            cv.use_id(ADFAudioComponent)
+        )
+    )
+})
+
+
+
+async def add_pipeline_elements(var, config):
+    if CONF_ADF_COMP_ID in config:
+        comp = await cg.get_variable(config[CONF_ADF_COMP_ID])
+        cg.add( var.add_element_to_pipeline(comp) )
+    
+    if CONF_ADF_PIPELINE in config:
+        for comp_id in config[CONF_ADF_PIPELINE]:
+            if comp_id not in SELF_DESCRIPTORS:
+                comp = await cg.get_variable(comp_id)
+                cg.add( var.add_element_to_pipeline(comp) )
+            else:
+                cg.add( var.append_own_elements() )
 
 
 
@@ -46,18 +72,16 @@ async def to_code(config):
         "board_build.embed_txtfiles", "components/dueros_service/duer_profile"
     )
 
-    #if CORE.using_esp_idf and CORE.data[KEY_CORE][KEY_FRAMEWORK_VERSION] >= cv.Version(
-    #    6, 0, 0
-    #):
-    if True:
-        add_idf_component(
-            name="mdns",
-            repo="https://github.com/espressif/esp-adf.git",
-            ref="v2.5",
-            path="components",
-            submodules=["components/esp-adf-libs","components/esp-sr"],
-            components=["*"]
-        )
+    esp32.add_idf_sdkconfig_option("CONFIG_ESP_TLS_INSECURE", True)
+    esp32.add_idf_sdkconfig_option("CONFIG_ESP_TLS_SKIP_SERVER_CERT_VERIFY", True)
+    
+    add_idf_component(
+        name="mdns",
+        repo="https://github.com/espressif/esp-adf.git",
+        ref="v2.5",
+        path="components",
+        submodules=["components/esp-adf-libs","components/esp-sr"],
+        components=["*"]
+    )
 
-        esp32.add_idf_sdkconfig_option("CONFIG_ESP_TLS_INSECURE", True)
-        esp32.add_idf_sdkconfig_option("CONFIG_ESP_TLS_SKIP_SERVER_CERT_VERIFY", True)
+    

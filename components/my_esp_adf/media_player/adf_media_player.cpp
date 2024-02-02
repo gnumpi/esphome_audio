@@ -25,68 +25,8 @@ void ADFMediaPlayer::loop() {
   this->pipeline.watch();
 }
 
-
-void ADFMediaPlayer::add_to_pipeline( ADFAudioComponent* component ){
-   if( this->pipeline.get_number_of_components() == 0 ){
-      this->pipeline.append_component(this);
-   }
-   this->pipeline.append_component(component);
-}
-
-void ADFMediaPlayer::init_adf_elements_(){
-  if( this->adf_audio_elements_.size() > 0 )
-    return;
-  
-  http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
-  http_cfg.task_core = 0;
-  http_cfg.out_rb_size = 4 * 512; 
-  this->http_stream_reader_ = http_stream_init(&http_cfg);
-  
-  audio_element_set_uri( this->http_stream_reader_, "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3");
-  
-  this->adf_audio_elements_.push_back( this->http_stream_reader_ );
-  this->element_tags_.push_back("http");
-  
-  
-  mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
-  mp3_cfg.out_rb_size = 12 * 512;
-  this->decoder_ = mp3_decoder_init(&mp3_cfg);
-  
-  this->adf_audio_elements_.push_back( this->decoder_ );
-  this->element_tags_.push_back("decoder");
-
-  rsp_filter_cfg_t rsp_cfg = {
-      .src_rate = 44100,
-      .src_ch = 2,
-      .dest_rate = 16000,
-      .dest_bits = 16,
-      .dest_ch = 2,
-      .src_bits = 16,
-      .mode = RESAMPLE_ENCODE_MODE,
-      .max_indata_bytes = 12 * 512,
-      .out_len_bytes = 4 * 512,
-      .type = ESP_RESAMPLE_TYPE_RESAMPLE,
-      .complexity = 2,
-      .down_ch_idx = 0,
-      .prefer_flag = ESP_RSP_PREFER_TYPE_SPEED,
-      .out_rb_size = RSP_FILTER_RINGBUFFER_SIZE,
-      .task_stack = 100 * 1024,
-      .task_core = RSP_FILTER_TASK_CORE,
-      .task_prio = RSP_FILTER_TASK_PRIO,
-      .stack_in_ext = false,
-  };
-  audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
-  
-  
-  //this->adf_audio_elements_.push_back( filter );
-  //this->element_tags_.push_back("resample");
-
-  
-}
-
 void ADFMediaPlayer::set_stream_uri(const char *uri){
-  
-  audio_element_set_uri(this->http_stream_reader_, uri);
+  this->http_and_decoder_.set_stream_uri(uri);
 }  
 
 void ADFMediaPlayer::pipeline_event_handler(audio_event_iface_msg_t &msg) {
@@ -115,12 +55,7 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
     this->set_volume_(volume);
     this->unmute_();
   }
-  /*
-  if (this->i2s_state_ != I2S_STATE_RUNNING) {
-    return;
-  }
-  */
-
+  
   if (call.get_command().has_value()) {
     switch (call.get_command().value()) {
       case media_player::MEDIA_PLAYER_COMMAND_PLAY:
@@ -189,21 +124,21 @@ media_player::MediaPlayerTraits ADFMediaPlayer::get_traits() {
 
 
 void ADFMediaPlayer::mute_(){
-   ADFAudioComponent* last = pipeline.get_last_component();
+   ADFPipelineElement* last = pipeline.get_last_component();
    last->mute(); 
    this->muted_ = last->is_muted();  
    publish_state();
 }
 
 void ADFMediaPlayer::unmute_(){
-   ADFAudioComponent* last = pipeline.get_last_component();
+   ADFPipelineElement* last = pipeline.get_last_component();
    last->unmute(); 
    this->muted_ = last->is_muted();  
    publish_state();
 }
 
 void ADFMediaPlayer::set_volume_(float volume, bool publish){
-   ADFAudioComponent* last = pipeline.get_last_component();
+   ADFPipelineElement* last = pipeline.get_last_component();
    last->set_volume( volume );
    this->volume = last->get_volume();
    if( publish ) publish_state();

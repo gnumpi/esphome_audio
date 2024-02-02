@@ -13,7 +13,9 @@ DEPENDENCIES = ["my_esp_adf", "media_player", "matrixio"]
 from .. import (
     esp_adf_ns,
     ADFAudioComponent,
-    CONF_ADF_COMP_ID
+    CONF_ADF_COMP_ID,
+    ADF_COMPONENT_SCHEMA,
+    add_pipeline_elements
 )
 
 ADFMediaPlayer = esp_adf_ns.class_(
@@ -23,17 +25,18 @@ ADFMediaPlayer = esp_adf_ns.class_(
 CONFIG_SCHEMA = media_player.MEDIA_PLAYER_SCHEMA.extend(
     {
       cv.GenerateID(): cv.declare_id(ADFMediaPlayer),  
-      cv.GenerateID(CONF_ADF_COMP_ID) : cv.use_id(ADFAudioComponent)
+      #cv.GenerateID(CONF_ADF_COMP_ID) : cv.use_id(ADFAudioComponent)
     }
-)
+).extend(ADF_COMPONENT_SCHEMA)
 
 #@coroutine_with_priority(100.0)
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
+    await add_pipeline_elements(var, config)
     
-    comp = await cg.get_variable(config[CONF_ADF_COMP_ID])
-    cg.add( var.add_to_pipeline(comp) )
+    #comp = await cg.get_variable(config[CONF_ADF_COMP_ID])
+    #cg.add( var.add_to_pipeline(comp) )
     
     await media_player.register_media_player(var, config)
 
