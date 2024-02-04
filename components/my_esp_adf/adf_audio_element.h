@@ -52,7 +52,7 @@ public:
 
 
 /*
-Represents and manages one or more esp-adf audio_elements which form a logical unit.
+Represents and manages one or more ADF-SDK audio elements which form a logical unit.
 e.g. HttpStreamer and Decoder, re-sampler and stream_writer  
 */
 class ADFPipelineElement : public AudioPipelineElement {

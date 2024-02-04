@@ -12,14 +12,14 @@ DEPENDENCIES = ["my_esp_adf", "media_player", "matrixio"]
 
 from .. import (
     esp_adf_ns,
-    ADFAudioComponent,
+    ADFPipelineComponent,
     CONF_ADF_COMP_ID,
     ADF_COMPONENT_SCHEMA,
     add_pipeline_elements
 )
 
 ADFMediaPlayer = esp_adf_ns.class_(
-    "ADFMediaPlayer", ADFAudioComponent, media_player.MediaPlayer, cg.Component
+    "ADFMediaPlayer", ADFPipelineComponent, media_player.MediaPlayer, cg.Component
 )
 
 CONFIG_SCHEMA = media_player.MEDIA_PLAYER_SCHEMA.extend(

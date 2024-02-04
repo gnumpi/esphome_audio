@@ -3,7 +3,7 @@
 #ifdef USE_ESP_IDF 
 
 #include "adf_audio_element.h"
-
+#include <raw_stream.h>
 namespace esphome {
 namespace esp_adf {
 
@@ -13,7 +13,6 @@ public:
     return AudioPipelineElementType::AUDIO_PIPELINE_SOURCE;
   }
 };
-
 
 class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
 public:
@@ -28,12 +27,24 @@ protected:
   audio_element_handle_t decoder_{};
 };
 
+
 class I2SReader : public ADFPipelineSourceElement {
 public:
   const std::string get_name() override {return "I2SReader";} 
 protected:
   void init_adf_elements_() override {}
   audio_element_handle_t adf_i2s_stream_reader_;
+};
+
+
+class PCMSource : public ADFPipelineSourceElement {
+public:
+  const std::string get_name() override {return "PCMSource";}
+  int stream_write(char* buffer, int len);
+  bool has_buffered_data() const; 
+protected:
+  void init_adf_elements_() override; 
+  audio_element_handle_t adf_raw_stream_writer_;
 };
 
 }

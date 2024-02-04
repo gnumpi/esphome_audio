@@ -4,6 +4,7 @@
 
 #include <http_stream.h>
 #include <mp3_decoder.h>
+#include <raw_stream.h>
 
 namespace esphome {
 namespace esp_adf {
@@ -56,6 +57,23 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
   }
 }
 
+
+void  PCMSource::init_adf_elements_(){
+  raw_stream_cfg_t raw_cfg = {
+      .type = AUDIO_STREAM_WRITER,
+      .out_rb_size = 8 * 1024,
+  };
+  adf_raw_stream_writer_ = raw_stream_init(&raw_cfg);
+}
+
+int PCMSource::stream_write(char* buffer, int len){
+  return raw_stream_write(adf_raw_stream_writer_, buffer, len);
+}
+
+bool PCMSource::has_buffered_data() const {
+  ringbuf_handle_t rb = audio_element_get_output_ringbuf(adf_raw_stream_writer_);
+  return rb_bytes_filled(rb) > 0;
+}
 
 }
 }

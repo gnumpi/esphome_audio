@@ -40,7 +40,7 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
     } else {
       pipeline.init();
       set_stream_uri( current_url_.value().c_str() );
-      start();
+      pipeline.start();
     }
   }
   
@@ -53,19 +53,19 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
     switch (call.get_command().value()) {
       case media_player::MEDIA_PLAYER_COMMAND_PLAY:
         state = media_player::MEDIA_PLAYER_STATE_PLAYING;
-        if( pipeline.getState() == PipelineState::STATE_STOPPED
-             || pipeline.getState() == PipelineState::STATE_UNAVAILABLE
+        if( pipeline.getState() == PipelineState::STOPPED
+             || pipeline.getState() == PipelineState::UNAVAILABLE
         ){
           pipeline.start();
         }
-        else if( pipeline.getState() == PipelineState::STATE_PAUSED)
+        else if( pipeline.getState() == PipelineState::PAUSED)
         {
           pipeline.resume();
         }
         break;
       case media_player::MEDIA_PLAYER_COMMAND_PAUSE:
         state = media_player::MEDIA_PLAYER_STATE_PAUSED;
-        if( pipeline.getState() == PipelineState::STATE_RUNNING)
+        if( pipeline.getState() == PipelineState::RUNNING)
         {
           pipeline.pause();
         }
@@ -80,8 +80,8 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
         this->unmute_();
         break;
       case media_player::MEDIA_PLAYER_COMMAND_TOGGLE:
-        if (pipeline.getState() == PipelineState::STATE_STOPPED ||
-            pipeline.getState() == PipelineState::STATE_PAUSED
+        if (pipeline.getState() == PipelineState::STOPPED ||
+            pipeline.getState() == PipelineState::PAUSED
           ){
           state = media_player::MEDIA_PLAYER_STATE_PLAYING;
         } else {
@@ -146,6 +146,26 @@ void ADFMediaPlayer::set_volume_(float volume, bool publish){
   }
 }
 
+void ADFMediaPlayer::on_pipeline_state_change(PipelineState state){
+  esph_log_i(TAG, "got new pipeline state: %d", (int) state );     
+  switch(state){
+    case PipelineState::UNAVAILABLE:
+    case PipelineState::STOPPED:
+       this->state = media_player::MEDIA_PLAYER_STATE_IDLE;
+       publish_state();
+       break;
+    case PipelineState::PAUSED:
+       this->state = media_player::MEDIA_PLAYER_STATE_PAUSED;
+       publish_state();
+       break;
+    case PipelineState::RUNNING:
+      this->state = media_player::MEDIA_PLAYER_STATE_PLAYING;
+      publish_state();
+      break;
+    default:
+      break;
+  }
+}
 
 }
 }

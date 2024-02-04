@@ -3,6 +3,7 @@
 #include <cstring>
 #include <vector>
 #include "esphome/core/component.h"
+#include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
 
 #ifdef USE_ESP_IDF 
@@ -16,10 +17,12 @@ namespace esphome {
 namespace esp_adf {
 
 enum PipelineState : uint8_t {
-  STATE_UNAVAILABLE = 0,
-  STATE_STOPPED,
-  STATE_RUNNING,
-  STATE_PAUSED,
+  UNAVAILABLE = 0,
+  STARTING,
+  RUNNING,
+  STOPPING,
+  STOPPED,
+  PAUSED
 };
 
 class AudioPipeline {
@@ -44,12 +47,14 @@ protected:
   
   virtual void set_state_(PipelineState state){ state_ = state;}
   
-  PipelineState state_{PipelineState::STATE_UNAVAILABLE};
+  PipelineState state_{PipelineState::UNAVAILABLE};
 };
 
+class ADFPipelineComponent;
 
 class ADFPipeline : public AudioPipeline {
 public:
+  ADFPipeline(ADFPipelineComponent* parent) {parent_ = parent;}
   virtual ~ADFPipeline(){}
   
   void loop(){this->watch_();}
@@ -82,6 +87,7 @@ protected:
     audio_event_iface_handle_t adf_pipeline_event_{};
     audio_element_handle_t adf_last_element_in_pipeline_{};
     std::vector<ADFPipelineElement*> pipeline_elements_;
+    ADFPipelineComponent* parent_{nullptr};
 };
 
 /*
@@ -89,17 +95,22 @@ An ESPHome Component for managing an ADFPipeline
 */
 class ADFPipelineComponent : public Component {
 public:
+  ADFPipelineComponent() : pipeline(this) {}
+  ~ADFPipelineComponent() {}
+  
   virtual void append_own_elements(){}
   void add_element_to_pipeline( ADFPipelineElement* element ){
     pipeline.append_element(element);
   }
 
   void setup() override {}
-  void dump_config() override;
+  void dump_config() override {};
   void loop() override {pipeline.loop();}
 
 protected:
+  friend ADFPipeline;
   virtual void pipeline_event_handler(audio_event_iface_msg_t &msg){}
+  virtual void on_pipeline_state_change(PipelineState state){}
   ADFPipeline pipeline; 
 };
 

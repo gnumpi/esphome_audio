@@ -47,12 +47,13 @@ protected:
   // MediaPlayer implementation
   void control(const media_player::MediaPlayerCall &call) override;
 
+  // Pipeline implementations
+  void on_pipeline_state_change(PipelineState state);
+
   void mute_();
   void unmute_();
-  
   void set_volume_(float volume, bool publish = true);
 
-   
   bool muted_{false};
   optional<std::string> current_url_{};
   

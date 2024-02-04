@@ -9,42 +9,42 @@ static const char *const TAG = "esp_adf_pipeline";
 
 
 void AudioPipeline::init(){
-    if( state_ == PipelineState::STATE_UNAVAILABLE && init_()){
-        set_state_(PipelineState::STATE_STOPPED);
+    if( state_ == PipelineState::UNAVAILABLE && init_()){
+        set_state_(PipelineState::STOPPED);
     }
 }
 
 void AudioPipeline::reset(){
     if( reset_() ){
-        set_state_(PipelineState::STATE_STOPPED);
+        set_state_(PipelineState::STOPPED);
     }
 }
 
 void AudioPipeline::start(){
-    if( state_ == PipelineState::STATE_UNAVAILABLE ){
+    if( state_ == PipelineState::UNAVAILABLE ){
         init();
     }
-    if( state_ == PipelineState::STATE_STOPPED && start_() ){
-        set_state_(PipelineState::STATE_RUNNING);
+    if( state_ == PipelineState::STOPPED && start_() ){
+        set_state_(PipelineState::RUNNING);
     }
          
 }
 
 void AudioPipeline::stop(){
-    if( state_ == PipelineState::STATE_RUNNING && stop_() ){
-        set_state_(PipelineState::STATE_STOPPED);
+    if( state_ == PipelineState::RUNNING && stop_() ){
+        set_state_(PipelineState::STOPPED);
     }
 }
 
 void AudioPipeline::pause(){
-    if( state_ == PipelineState::STATE_RUNNING && pause_() ){
-        set_state_(PipelineState::STATE_PAUSED);
+    if( state_ == PipelineState::RUNNING && pause_() ){
+        set_state_(PipelineState::PAUSED);
     }
 }
 
 void AudioPipeline::resume(){
-    if( state_ == PipelineState::STATE_PAUSED && resume_() ){
-        set_state_(PipelineState::STATE_RUNNING);
+    if( state_ == PipelineState::PAUSED && resume_() ){
+        set_state_(PipelineState::RUNNING);
     }
 }
 
@@ -89,10 +89,13 @@ bool ADFPipeline::request_settings(AudioPipelineSettingsRequest& request){
 }
 
 void ADFPipeline::set_state_(PipelineState state){
+    state_ = state;
     for( auto element : pipeline_elements_ ){
         element->on_pipeline_status_change();
     }
-    state_ = state; 
+    if( parent_ != nullptr ){
+        parent_->on_pipeline_state_change(state);
+    }
   }
 
 
@@ -212,6 +215,9 @@ void ADFPipeline::watch_(){
     esp_err_t ret = audio_event_iface_listen(this->adf_pipeline_event_, &msg, 0);
     if ( ret == ESP_OK ){
        forward_event_to_pipeline_elements_(msg); 
+       if( parent_ != nullptr ){
+         parent_->pipeline_event_handler(msg);
+       }
        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT
             && msg.cmd == AEL_MSG_CMD_REPORT_STATUS
             && msg.source == (void *) this->adf_last_element_in_pipeline_
@@ -222,14 +228,14 @@ void ADFPipeline::watch_(){
             switch(status){
                 case AEL_STATUS_STATE_STOPPED:
                 case AEL_STATUS_STATE_FINISHED:
-                    set_state_(PipelineState::STATE_STOPPED);
+                    set_state_(PipelineState::STOPPED);
                     this->reset();
                     break;
                 case AEL_STATUS_STATE_RUNNING:
-                    set_state_(PipelineState::STATE_RUNNING);
+                    set_state_(PipelineState::RUNNING);
                     break;
                 case AEL_STATUS_STATE_PAUSED:
-                    set_state_(PipelineState::STATE_PAUSED);
+                    set_state_(PipelineState::PAUSED);
                     break;
                 default:
                     break;
@@ -246,22 +252,6 @@ void ADFPipeline::watch_(){
             size_t status = reinterpret_cast<size_t> (msg.data);
             esph_log_i(TAG, "[ %s ] status: %d", audio_element_get_tag(el), status );     
        }
-       /*
-       audio_element_handle_t mp3_decoder = this->audio_components_[0]->get_adf_elements()[1];
-       if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT
-            && msg.source == (void *) mp3_decoder
-            && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
-            audio_element_info_t music_info = {0};
-            audio_element_getinfo(mp3_decoder, &music_info);
-
-            esph_log_i(TAG, "[ * ] Receive music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
-                     music_info.sample_rates, music_info.bits, music_info.channels);
-            //this->get_last_component()->set_sampling_frequency(music_info.sample_rates);
-            //this->get_last_component()->set_number_of_channels(music_info.channels);
-
-        }
-        */
-
     }
 }
 

@@ -2,7 +2,8 @@
 
 #ifdef USE_ESP_IDF
 
-#include "../adf_esp_adf.h"
+#include "../adf_pipeline.h"
+#include "../adf_audio_sources.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
@@ -11,38 +12,36 @@
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
 
-#include <audio_element.h>
-#include <audio_pipeline.h>
-
 namespace esphome {
 namespace esp_adf {
 
-class ADFSpeaker : public ADFAudioIn, public speaker::Speaker, public Component {
+static const size_t BUFFER_SIZE = 1024;
+
+class ADFSpeaker : public speaker::Speaker, public ADFPipelineComponent {
  public:
+  // Pipeline implementations
+  void append_own_elements(){ add_element_to_pipeline( (ADFPipelineElement*) &(this->pcm_stream_) ); }
+  
+  // ESPHome-Component implementations
   float get_setup_priority() const override { return esphome::setup_priority::LATE; }
+  void  setup() override;
+  void  dump_config() override;
+  void  loop() override;
 
-  void setup() override;
-  void loop() override;
 
+  // Speaker implemenations
   void start() override;
   void stop() override;
-
   size_t play(const uint8_t *data, size_t length) override;
-
   bool has_buffered_data() const override;
 
  protected:
   void start_();
   void watch_();
 
-  static void player_task(void *params);
-
-  TaskHandle_t player_task_handle_{nullptr};
-  struct {
-    QueueHandle_t handle;
-    uint8_t *storage;
-  } buffer_queue_;
-  QueueHandle_t event_queue_;
+  // Pipeline implementations
+  void on_pipeline_state_change(PipelineState state) override;
+  PCMSource pcm_stream_;
 };
 
 }  // namespace esp_adf

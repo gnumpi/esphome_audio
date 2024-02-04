@@ -20,8 +20,11 @@ CONF_ADF_PIPELINE = "pipeline"
 CONF_ADF_COMP_ID = "adf_comp_id"
 
 esp_adf_ns = cg.esphome_ns.namespace("esp_adf")
-ADFAudioComponent = esp_adf_ns.class_("ADFAudioComponent")
+ADFPipelineComponent = esp_adf_ns.class_("ADFPipelineComponent")
 
+ADFPipelineElement = esp_adf_ns.class_("ADFPipelineElement") 
+ADFPipelineSink    = esp_adf_ns.class_("ADFPipelineSinkElement")
+ADFPipelineSource  = esp_adf_ns.class_("ADFPipelineSourceElement")
 
 async def setup_adf_component_core_(var, config):
     pass
@@ -40,7 +43,7 @@ ADF_COMPONENT_SCHEMA = cv.Schema({
     cv.Optional(CONF_ADF_PIPELINE) : cv.ensure_list( 
         cv.Any( 
             cv.one_of(*SELF_DESCRIPTORS),
-            cv.use_id(ADFAudioComponent)
+            cv.use_id(ADFPipelineElement),
         )
     )
 })
