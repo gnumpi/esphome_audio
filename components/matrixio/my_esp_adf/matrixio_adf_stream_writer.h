@@ -3,6 +3,8 @@
 #ifdef USE_ESP_IDF 
 #include "esphome/core/component.h"
 #include "esphome/core/log.h"
+
+#include "../matrixio.h"
 #include "../wishbone.h"
 
 #include "../../my_esp_adf/adf_audio_sinks.h"
@@ -15,27 +17,6 @@ namespace esphome {
 using namespace esp_adf;
 
 namespace matrixio {
-
-const uint16_t AUDIO_OUT_BASE_ADDRESS = 0x6000;
-const uint16_t MAX_VOLUME_VALUE = 25;
-const uint32_t FPGA_FIFO_SIZE = 4096;
-const uint32_t MAX_WRITE_LENGTH = 1024;
-
-const uint32_t PCM_SAMPLING_FREQUENCIES[][2] = {
-    {8000, 975},  {16000, 492}, {32000, 245}, {44100, 177},
-    {48000, 163}, {88200, 88},  {96000, 81},  {0, 0}};
-
-enum MuteStatus : uint16_t {
-  kMute = 0x0001,
-  kUnMute = 0x0000
-};
-
-enum OutputSelector : uint16_t {
-  kHeadPhone = 0x0001,
-  kSpeaker = 0x0000
-};
-
-static const char *const TAG = "matrixio_adf_stream_writer";
 
 class MatrixIOStreamWriter : public WishboneDevice, public ADFPipelineSinkElement, public Component {
 public:

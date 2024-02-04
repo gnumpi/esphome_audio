@@ -1,5 +1,5 @@
 #include "microphone_array.h"
-#include "microphone_fir.h"
+#include "../microphone_fir.h"
 
 #include <driver/gpio.h>
 #include <hal/gpio_types.h>

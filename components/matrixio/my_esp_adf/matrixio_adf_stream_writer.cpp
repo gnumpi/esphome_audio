@@ -7,6 +7,7 @@ namespace esphome {
 namespace matrixio {
 
 #define CHUNK_SIZE 512
+static const char *const TAG = "matrixio_adf_stream_writer";
 
 static esp_err_t _matrixio_open(audio_element_handle_t self){
   //this_writer->flush_fpga_fifo_();
