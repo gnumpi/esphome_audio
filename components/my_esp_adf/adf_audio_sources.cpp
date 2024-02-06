@@ -64,6 +64,7 @@ void  PCMSource::init_adf_elements_(){
       .out_rb_size = 8 * 1024,
   };
   adf_raw_stream_writer_ = raw_stream_init(&raw_cfg);
+  this->sdk_audio_elements_.push_back(this->adf_raw_stream_writer_);
 }
 
 int PCMSource::stream_write(char* buffer, int len){

@@ -36,6 +36,23 @@ async def register_adf_component(var, config):
     await setup_adf_component_core_(var, config)
 
 
+
+
+def construct_pipeline_element_config_schema( config_schema_out, config_schema_in ):
+    return  cv.typed_schema(
+    {
+        "sink":   config_schema_out,
+        "source": config_schema_in,
+    },
+    lower=True,
+    space="-",
+    default_type="sink",
+    )
+
+
+
+
+
 COMPONENT_TYPES = ["sink", "source", "filter"]
 SELF_DESCRIPTORS = ["this","source","sink","self"]
 ADF_COMPONENT_SCHEMA = cv.Schema({
@@ -84,7 +101,25 @@ async def to_code(config):
         ref="v2.5",
         path="components",
         submodules=["components/esp-adf-libs","components/esp-sr"],
-        components=["*"]
+        components=[ 
+            "audio_pipeline",
+            "audio_sal",
+            "esp-adf-libs", 
+            "esp-sr", 
+            "dueros_service",
+            "clouds",
+
+            "audio_stream",
+            "audio_board",
+            "esp_peripherals",
+            "audio_hal",
+            "display_service",
+            "esp_dispatcher",
+            "esp_actions",
+            "wifi_service",
+            "audio_recorder",
+            "tone_partition"
+        ]
     )
 
     

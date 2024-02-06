@@ -8,7 +8,7 @@ from esphome.const import CONF_ID, CONF_MODE
 from ...matrixio import my_esp_adf as matrix_io_adf
 
 CODEOWNERS = ["@gnumpi"]
-DEPENDENCIES = ["my_esp_adf", "media_player", "matrixio"]
+DEPENDENCIES = ["my_esp_adf", "media_player"]
 
 from .. import (
     esp_adf_ns,

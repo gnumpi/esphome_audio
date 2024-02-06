@@ -14,11 +14,19 @@ void PCMSink::init_adf_elements_(){
       .type = AUDIO_STREAM_READER,
       .out_rb_size = 8 * 1024,
   };
-  adf_raw_stream_reader_ = raw_stream_init(&raw_cfg);
+  this->adf_raw_stream_reader_ = raw_stream_init(&raw_cfg);
+  audio_element_set_input_timeout(this->adf_raw_stream_reader_, 10 / portTICK_RATE_MS);
+  this->sdk_audio_elements_.push_back(this->adf_raw_stream_reader_);
 }
 
 int PCMSink::stream_read(char* buffer, int len){
-  return raw_stream_read(adf_raw_stream_reader_, buffer, len);
+  int ret = audio_element_input(adf_raw_stream_reader_, buffer, len);
+  if ( ret < 0 && (ret != AEL_IO_TIMEOUT) ){
+    audio_element_report_status(adf_raw_stream_reader_, AEL_STATUS_STATE_STOPPED);
+  } else if(ret < 0 ){
+    return 0;
+  }
+  return ret;
 }
 
 

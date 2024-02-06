@@ -36,6 +36,7 @@ public:
   size_t read(int16_t *buf, size_t len) override;
 
 protected:
+  void on_pipeline_state_change(PipelineState state) override;
   PCMSink pcm_stream_;
 };
 
