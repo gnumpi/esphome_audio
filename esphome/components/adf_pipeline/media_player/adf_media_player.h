@@ -7,7 +7,7 @@
 #include "esphome/core/gpio.h"
 #include "esphome/core/helpers.h"
 
-//#include "../adf_audio_element.h"
+// #include "../adf_audio_element.h"
 #include "../adf_pipeline.h"
 #include "../adf_audio_sources.h"
 
@@ -22,17 +22,15 @@
 namespace esphome {
 namespace esp_adf {
 
-
 class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineComponent {
  public:
   // Pipeline implementations
-  void append_own_elements(){ add_element_to_pipeline( (ADFPipelineElement*) &(this->http_and_decoder_) ); }
+  void append_own_elements() { add_element_to_pipeline((ADFPipelineElement *) &(this->http_and_decoder_)); }
 
   // ESPHome-Component implementations
   float get_setup_priority() const override { return esphome::setup_priority::LATE; }
   void setup() override;
   void dump_config() override;
-
 
   // MediaPlayer implementations
   bool is_muted() const override { return this->muted_; }
@@ -40,10 +38,10 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineCompo
 
   //
   void set_stream_uri(const char *uri);
-  void start(){}
-  void stop(){}
+  void start() {}
+  void stop() {}
 
-protected:
+ protected:
   // MediaPlayer implementation
   void control(const media_player::MediaPlayerCall &call) override;
 
@@ -60,9 +58,7 @@ protected:
   HTTPStreamReaderAndDecoder http_and_decoder_;
 };
 
-
-
-}
-}
+}  // namespace esp_adf
+}  // namespace esphome
 
 #endif

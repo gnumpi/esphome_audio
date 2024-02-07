@@ -7,15 +7,15 @@ namespace esphome {
 using namespace esp_adf;
 namespace i2s_audio {
 
-void ADFElementI2SIn::init_adf_elements_(){
-    if( this->sdk_audio_elements_.size() > 0 )
+void ADFElementI2SIn::init_adf_elements_() {
+  if (this->sdk_audio_elements_.size() > 0)
     return;
 
-    i2s_driver_config_t i2s_config = {
+  i2s_driver_config_t i2s_config = {
       .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_RX),
       .sample_rate = 16000,
       .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-      .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // I2S_CHANNEL_FMT_RIGHT_LEFT,
+      .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,  // I2S_CHANNEL_FMT_RIGHT_LEFT,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
       .dma_buf_count = 8,
@@ -50,12 +50,11 @@ void ADFElementI2SIn::init_adf_elements_(){
   pin_config.data_in_num = this->din_pin_;
   i2s_set_pin(this->parent_->get_port(), &pin_config);
 
-  sdk_audio_elements_.push_back( this->adf_i2s_stream_reader_ );
+  sdk_audio_elements_.push_back(this->adf_i2s_stream_reader_);
   sdk_element_tags_.push_back("i2s_in");
 };
 
-
-}
-}
+}  // namespace i2s_audio
+}  // namespace esphome
 
 #endif

@@ -16,17 +16,10 @@
 namespace esphome {
 namespace esp_adf {
 
-enum PipelineState : uint8_t {
-  UNAVAILABLE = 0,
-  STARTING,
-  RUNNING,
-  STOPPING,
-  STOPPED,
-  PAUSED
-};
+enum PipelineState : uint8_t { UNAVAILABLE = 0, STARTING, RUNNING, STOPPING, STOPPED, PAUSED };
 
 class AudioPipeline {
-public:
+ public:
   void init();
   void reset();
 
@@ -35,17 +28,17 @@ public:
   void pause();
   void resume();
 
-  PipelineState getState(){ return state_; }
+  PipelineState getState() { return state_; }
 
-protected:
-  virtual bool init_()  {return true;}
-  virtual bool reset_() {return true;}
-  virtual bool start_() {return true;}
-  virtual bool stop_()  {return true;}
-  virtual bool pause_() {return true;}
-  virtual bool resume_(){return true;}
+ protected:
+  virtual bool init_() { return true; }
+  virtual bool reset_() { return true; }
+  virtual bool start_() { return true; }
+  virtual bool stop_() { return true; }
+  virtual bool pause_() { return true; }
+  virtual bool resume_() { return true; }
 
-  virtual void set_state_(PipelineState state){ state_ = state;}
+  virtual void set_state_(PipelineState state) { state_ = state; }
 
   PipelineState state_{PipelineState::UNAVAILABLE};
 };
@@ -53,70 +46,66 @@ protected:
 class ADFPipelineComponent;
 
 class ADFPipeline : public AudioPipeline {
-public:
-  ADFPipeline(ADFPipelineComponent* parent) {parent_ = parent;}
-  virtual ~ADFPipeline(){}
+ public:
+  ADFPipeline(ADFPipelineComponent *parent) { parent_ = parent; }
+  virtual ~ADFPipeline() {}
 
-  void loop(){this->watch_();}
+  void loop() { this->watch_(); }
 
-  void append_element( ADFPipelineElement* element );
-  int get_number_of_elements(){return pipeline_elements_.size();}
+  void append_element(ADFPipelineElement *element);
+  int get_number_of_elements() { return pipeline_elements_.size(); }
   std::vector<std::string> get_element_names();
 
-  bool request_settings(AudioPipelineSettingsRequest& request);
-  void on_settings_request_failed(AudioPipelineSettingsRequest request){}
+  bool request_settings(AudioPipelineSettingsRequest &request);
+  void on_settings_request_failed(AudioPipelineSettingsRequest request) {}
 
-protected:
-    bool init_()   override;
-    bool reset_()  override;
-    bool start_()  override;
-    bool stop_()   override;
-    bool pause_()  override;
-    bool resume_() override;
+ protected:
+  bool init_() override;
+  bool reset_() override;
+  bool start_() override;
+  bool stop_() override;
+  bool pause_() override;
+  bool resume_() override;
 
-    void set_state_(PipelineState state) override;
+  void set_state_(PipelineState state) override;
 
-    void watch_();
-    void forward_event_to_pipeline_elements_(audio_event_iface_msg_t &msg);
+  void watch_();
+  void forward_event_to_pipeline_elements_(audio_event_iface_msg_t &msg);
 
-    bool build_adf_pipeline_();
-    bool terminate_pipeline_();
-    void deinit_all_();
+  bool build_adf_pipeline_();
+  bool terminate_pipeline_();
+  void deinit_all_();
 
-    audio_pipeline_handle_t adf_pipeline_{};
-    audio_event_iface_handle_t adf_pipeline_event_{};
-    audio_element_handle_t adf_last_element_in_pipeline_{};
-    std::vector<ADFPipelineElement*> pipeline_elements_;
-    ADFPipelineComponent* parent_{nullptr};
+  audio_pipeline_handle_t adf_pipeline_{};
+  audio_event_iface_handle_t adf_pipeline_event_{};
+  audio_element_handle_t adf_last_element_in_pipeline_{};
+  std::vector<ADFPipelineElement *> pipeline_elements_;
+  ADFPipelineComponent *parent_{nullptr};
 };
 
 /*
 An ESPHome Component for managing an ADFPipeline
 */
 class ADFPipelineComponent : public Component {
-public:
+ public:
   ADFPipelineComponent() : pipeline(this) {}
   ~ADFPipelineComponent() {}
 
-  virtual void append_own_elements(){}
-  void add_element_to_pipeline( ADFPipelineElement* element ){
-    pipeline.append_element(element);
-  }
+  virtual void append_own_elements() {}
+  void add_element_to_pipeline(ADFPipelineElement *element) { pipeline.append_element(element); }
 
   void setup() override {}
-  void dump_config() override {};
-  void loop() override {pipeline.loop();}
+  void dump_config() override{};
+  void loop() override { pipeline.loop(); }
 
-protected:
+ protected:
   friend ADFPipeline;
-  virtual void pipeline_event_handler(audio_event_iface_msg_t &msg){}
-  virtual void on_pipeline_state_change(PipelineState state){}
+  virtual void pipeline_event_handler(audio_event_iface_msg_t &msg) {}
+  virtual void on_pipeline_state_change(PipelineState state) {}
   ADFPipeline pipeline;
 };
 
-
-
-}
-}
+}  // namespace esp_adf
+}  // namespace esphome
 
 #endif
