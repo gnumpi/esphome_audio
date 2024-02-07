@@ -1,0 +1,8 @@
+__pycache__
+*.pyc
+.venv/
+**/.esphome/
+*.egg-info/
+cd 
+.tox/
+.pio/
