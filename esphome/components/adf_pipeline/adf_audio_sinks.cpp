@@ -1,7 +1,7 @@
 #include "adf_audio_sinks.h"
 #include "adf_pipeline.h"
 
-#ifdef USE_ESP_IDF 
+#ifdef USE_ESP_IDF
 
 #include <raw_stream.h>
 

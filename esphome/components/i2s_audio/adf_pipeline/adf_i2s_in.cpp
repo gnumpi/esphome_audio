@@ -46,12 +46,12 @@ void ADFElementI2SIn::init_adf_elements_(){
 
   this->adf_i2s_stream_reader_ = i2s_stream_init(&i2s_cfg);
 
-  i2s_pin_config_t pin_config = this->parent_->get_pin_config();    
+  i2s_pin_config_t pin_config = this->parent_->get_pin_config();
   pin_config.data_in_num = this->din_pin_;
   i2s_set_pin(this->parent_->get_port(), &pin_config);
-        
+
   sdk_audio_elements_.push_back( this->adf_i2s_stream_reader_ );
-  sdk_element_tags_.push_back("i2s_in");   
+  sdk_element_tags_.push_back("i2s_in");
 };
 
 

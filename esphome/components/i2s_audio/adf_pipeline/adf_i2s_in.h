@@ -16,7 +16,7 @@ class ADFElementI2SIn : public I2SAudioIn, public ADFPipelineSourceElement, publ
 public:
     //ESPHome Component implementations
     void setup() override {}
-    
+
     // ADFPipelieSourceElement implementations
     const std::string get_name() override {return "I2S_Input";}
 
@@ -33,7 +33,7 @@ protected:
     i2s_bits_per_sample_t bits_per_sample_;
     bool use_apll_;
 
-    void init_adf_elements_() override;     
+    void init_adf_elements_() override;
     audio_element_handle_t adf_i2s_stream_reader_;
 };
 

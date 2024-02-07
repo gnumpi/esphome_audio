@@ -55,15 +55,15 @@ void ADFElementI2SOut::init_adf_elements_(){
       .need_expand = false,
       .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,
   };
-    
+
     this->adf_i2s_stream_writer_ = i2s_stream_init(&i2s_cfg);
-    
-    i2s_pin_config_t pin_config = this->parent_->get_pin_config();    
+
+    i2s_pin_config_t pin_config = this->parent_->get_pin_config();
     pin_config.data_out_num = this->dout_pin_;
     i2s_set_pin(this->parent_->get_port(), &pin_config);
-        
+
     sdk_audio_elements_.push_back( this->adf_i2s_stream_writer_ );
-    sdk_element_tags_.push_back("i2s_out");   
+    sdk_element_tags_.push_back("i2s_out");
 }
 
 void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request){
@@ -83,9 +83,9 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
           return;
         }
         this->sample_rate_ = request.sampling_rate;
-        rate_bits_channels_updated = true; 
+        rate_bits_channels_updated = true;
     }
-    
+
     if( request.bit_depth > 0 && (uint8_t) request.bit_depth != this->bits_per_sample_ ){
         bool supported = false;
         for( auto supported_bits : this->supported_bits_per_sample_ ){
@@ -101,9 +101,9 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
           return;
         }
         this->bits_per_sample_ = request.bit_depth;
-        rate_bits_channels_updated = true; 
+        rate_bits_channels_updated = true;
     }
-    
+
     if( rate_bits_channels_updated ){
       if (i2s_stream_set_clk(this->adf_i2s_stream_writer_, this->sample_rate_, this->bits_per_sample_, this->external_dac_channels_ ) != ESP_OK )
       {
@@ -112,7 +112,7 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
         request.failed_by = this;
         return;
       }
-    
+
     }
 
     if( request.target_volume > -1 ){
@@ -124,7 +124,7 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
           return;
       }
     }
-    
+
 }
 
 

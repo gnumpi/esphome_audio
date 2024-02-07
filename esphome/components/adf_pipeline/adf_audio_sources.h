@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef USE_ESP_IDF 
+#ifdef USE_ESP_IDF
 
 #include "adf_audio_element.h"
 #include <raw_stream.h>
@@ -17,12 +17,12 @@ public:
 class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
 public:
   void set_stream_uri(const char *uri);
-  const std::string get_name() override {return "HTTPStreamReader";} 
+  const std::string get_name() override {return "HTTPStreamReader";}
 protected:
-  
+
   void init_adf_elements_() override;
   void sdk_event_handler_(audio_event_iface_msg_t &msg);
-  
+
   audio_element_handle_t http_stream_reader_{};
   audio_element_handle_t decoder_{};
 };
@@ -30,7 +30,7 @@ protected:
 
 class I2SReader : public ADFPipelineSourceElement {
 public:
-  const std::string get_name() override {return "I2SReader";} 
+  const std::string get_name() override {return "I2SReader";}
 protected:
   void init_adf_elements_() override {}
   audio_element_handle_t adf_i2s_stream_reader_;
@@ -41,9 +41,9 @@ class PCMSource : public ADFPipelineSourceElement {
 public:
   const std::string get_name() override {return "PCMSource";}
   int stream_write(char* buffer, int len);
-  bool has_buffered_data() const; 
+  bool has_buffered_data() const;
 protected:
-  void init_adf_elements_() override; 
+  void init_adf_elements_() override;
   audio_element_handle_t adf_raw_stream_writer_;
 };
 

@@ -6,7 +6,7 @@
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
 
-#ifdef USE_ESP_IDF 
+#ifdef USE_ESP_IDF
 
 #include <audio_element.h>
 #include <audio_pipeline.h>
@@ -34,7 +34,7 @@ public:
   void stop();
   void pause();
   void resume();
-  
+
   PipelineState getState(){ return state_; }
 
 protected:
@@ -44,9 +44,9 @@ protected:
   virtual bool stop_()  {return true;}
   virtual bool pause_() {return true;}
   virtual bool resume_(){return true;}
-  
+
   virtual void set_state_(PipelineState state){ state_ = state;}
-  
+
   PipelineState state_{PipelineState::UNAVAILABLE};
 };
 
@@ -56,13 +56,13 @@ class ADFPipeline : public AudioPipeline {
 public:
   ADFPipeline(ADFPipelineComponent* parent) {parent_ = parent;}
   virtual ~ADFPipeline(){}
-  
+
   void loop(){this->watch_();}
 
   void append_element( ADFPipelineElement* element );
   int get_number_of_elements(){return pipeline_elements_.size();}
   std::vector<std::string> get_element_names();
-  
+
   bool request_settings(AudioPipelineSettingsRequest& request);
   void on_settings_request_failed(AudioPipelineSettingsRequest request){}
 
@@ -73,16 +73,16 @@ protected:
     bool stop_()   override;
     bool pause_()  override;
     bool resume_() override;
-    
+
     void set_state_(PipelineState state) override;
-    
+
     void watch_();
     void forward_event_to_pipeline_elements_(audio_event_iface_msg_t &msg);
 
     bool build_adf_pipeline_();
     bool terminate_pipeline_();
     void deinit_all_();
-    
+
     audio_pipeline_handle_t adf_pipeline_{};
     audio_event_iface_handle_t adf_pipeline_event_{};
     audio_element_handle_t adf_last_element_in_pipeline_{};
@@ -97,7 +97,7 @@ class ADFPipelineComponent : public Component {
 public:
   ADFPipelineComponent() : pipeline(this) {}
   ~ADFPipelineComponent() {}
-  
+
   virtual void append_own_elements(){}
   void add_element_to_pipeline( ADFPipelineElement* element ){
     pipeline.append_element(element);
@@ -111,7 +111,7 @@ protected:
   friend ADFPipeline;
   virtual void pipeline_event_handler(audio_event_iface_msg_t &msg){}
   virtual void on_pipeline_state_change(PipelineState state){}
-  ADFPipeline pipeline; 
+  ADFPipeline pipeline;
 };
 
 

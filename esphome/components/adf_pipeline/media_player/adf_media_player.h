@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef USE_ESP_IDF 
+#ifdef USE_ESP_IDF
 
 #include "esphome/components/media_player/media_player.h"
 #include "esphome/core/component.h"
@@ -27,22 +27,22 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineCompo
  public:
   // Pipeline implementations
   void append_own_elements(){ add_element_to_pipeline( (ADFPipelineElement*) &(this->http_and_decoder_) ); }
-  
+
   // ESPHome-Component implementations
   float get_setup_priority() const override { return esphome::setup_priority::LATE; }
   void setup() override;
-  void dump_config() override;  
- 
-  
+  void dump_config() override;
+
+
   // MediaPlayer implementations
   bool is_muted() const override { return this->muted_; }
   media_player::MediaPlayerTraits get_traits() override;
-  
-  // 
+
+  //
   void set_stream_uri(const char *uri);
   void start(){}
   void stop(){}
-  
+
 protected:
   // MediaPlayer implementation
   void control(const media_player::MediaPlayerCall &call) override;
@@ -56,7 +56,7 @@ protected:
 
   bool muted_{false};
   optional<std::string> current_url_{};
-  
+
   HTTPStreamReaderAndDecoder http_and_decoder_;
 };
 

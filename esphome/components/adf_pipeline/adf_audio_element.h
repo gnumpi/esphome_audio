@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef USE_ESP_IDF 
+#ifdef USE_ESP_IDF
 #include "esphome/core/component.h"
 #include "esphome/core/log.h"
 
@@ -44,8 +44,8 @@ class AudioPipelineElement {
 public:
   virtual ~AudioPipelineElement(){}
   virtual AudioPipelineElementType get_element_type() const = 0;
-  virtual const std::string get_name() = 0;  
-  
+  virtual const std::string get_name() = 0;
+
   virtual void on_pipeline_status_change(){}
   virtual void on_settings_request(AudioPipelineSettingsRequest &request){}
 };
@@ -53,7 +53,7 @@ public:
 
 /*
 Represents and manages one or more ADF-SDK audio elements which form a logical unit.
-e.g. HttpStreamer and Decoder, re-sampler and stream_writer  
+e.g. HttpStreamer and Decoder, re-sampler and stream_writer
 */
 class ADFPipelineElement : public AudioPipelineElement {
 public:
@@ -61,11 +61,11 @@ public:
   std::string get_adf_element_tag(int element_indx );
   void init_adf_elements() {init_adf_elements_(); }
   void deinit_adf_elements(){}
-  
+
   void set_pipeline(ADFPipeline* pipeline){pipeline_ = pipeline;}
 protected:
   friend  class ADFPipeline;
-  
+
   virtual void init_adf_elements_() = 0;
   virtual void deinit_adf_elements_();
   virtual void sdk_event_handler_(audio_event_iface_msg_t &msg){}

@@ -1,0 +1,4 @@
+pylint==2.17.6
+flake8==6.1.0   # also change in .pre-commit-config.yaml when updating
+black==23.11.0  # also change in .pre-commit-config.yaml when updating
+pre-commit

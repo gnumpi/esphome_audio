@@ -27,7 +27,7 @@ void AudioPipeline::start(){
     if( state_ == PipelineState::STOPPED && start_() ){
         set_state_(PipelineState::RUNNING);
     }
-         
+
 }
 
 void AudioPipeline::stop(){
@@ -83,7 +83,7 @@ bool ADFPipeline::request_settings(AudioPipelineSettingsRequest& request){
         if(*it != request.requested_by){
             (*it)->on_settings_request(request);
         }
-        
+
     }
     return !request.failed;
 }
@@ -140,7 +140,7 @@ bool ADFPipeline::build_adf_pipeline_(){
       .rb_size = 8 * 1024,
     };
     adf_pipeline_ = audio_pipeline_init(&pipeline_cfg);
-    
+
     std::vector<std::string> tags_vector;
     for( auto &comp_base : pipeline_elements_ )
     {
@@ -149,7 +149,7 @@ bool ADFPipeline::build_adf_pipeline_(){
        int i = 0;
        for( auto el : comp->get_adf_elements() )
        {
-          tags_vector.push_back( comp->get_adf_element_tag(i) );   
+          tags_vector.push_back( comp->get_adf_element_tag(i) );
           if(audio_pipeline_register(adf_pipeline_, el , tags_vector.back().c_str() ) != ESP_OK){
             deinit_all_();
             return false;
@@ -157,20 +157,20 @@ bool ADFPipeline::build_adf_pipeline_(){
           i++;
        }
     }
-    
-    const char** link_tag_ptrs = new const char*[tags_vector.size()]; 
+
+    const char** link_tag_ptrs = new const char*[tags_vector.size()];
     for( int i = 0; i < tags_vector.size(); i++){
         link_tag_ptrs[i] = tags_vector[i].c_str();
         esph_log_d(TAG, "pipeline tag %d, %s", i, link_tag_ptrs[i] );
     }
-    
+
     if(audio_pipeline_link(adf_pipeline_, link_tag_ptrs, tags_vector.size()) != ESP_OK){
         delete link_tag_ptrs;
         deinit_all_();
-        return false;    
+        return false;
     }
     delete link_tag_ptrs;
-    
+
     adf_last_element_in_pipeline_ = pipeline_elements_.back()->get_adf_elements().back();
 
     esph_log_d(TAG, "Setting up event listener." );
@@ -214,7 +214,7 @@ void ADFPipeline::watch_(){
     audio_event_iface_msg_t msg;
     esp_err_t ret = audio_event_iface_listen(this->adf_pipeline_event_, &msg, 0);
     if ( ret == ESP_OK ){
-       forward_event_to_pipeline_elements_(msg); 
+       forward_event_to_pipeline_elements_(msg);
        if( parent_ != nullptr ){
          parent_->pipeline_event_handler(msg);
        }
@@ -224,7 +224,7 @@ void ADFPipeline::watch_(){
         ){
             audio_element_status_t status;
             std::memcpy(&status, &msg.data, sizeof(audio_element_status_t));
-            esph_log_i(TAG, "[ * ] CMD: %d  status: %d", msg.cmd, status );     
+            esph_log_i(TAG, "[ * ] CMD: %d  status: %d", msg.cmd, status );
             switch(status){
                 case AEL_STATUS_STATE_STOPPED:
                 case AEL_STATUS_STATE_FINISHED:
@@ -240,17 +240,17 @@ void ADFPipeline::watch_(){
                 default:
                     break;
             }
-        }   
-       
+        }
+
        if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT){
-            esph_log_i(TAG, "[ * ] CMD: %d Pipeline: %d", msg.cmd, this->state_ );     
+            esph_log_i(TAG, "[ * ] CMD: %d Pipeline: %d", msg.cmd, this->state_ );
        }
-       if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT 
+       if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT
             && msg.cmd == AEL_MSG_CMD_REPORT_STATUS
        ){
             audio_element_handle_t el = (audio_element_handle_t) msg.source;
             size_t status = reinterpret_cast<size_t> (msg.data);
-            esph_log_i(TAG, "[ %s ] status: %d", audio_element_get_tag(el), status );     
+            esph_log_i(TAG, "[ %s ] status: %d", audio_element_get_tag(el), status );
        }
     }
 }

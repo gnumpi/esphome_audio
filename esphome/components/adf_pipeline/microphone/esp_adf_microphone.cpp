@@ -16,7 +16,7 @@ void ADFMicrophone::setup(){
 }
 
 void ADFMicrophone::dump_config(){
-   
+
 }
 
 void ADFMicrophone::loop(){

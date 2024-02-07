@@ -76,14 +76,14 @@ size_t ADFSpeaker::play(const uint8_t *data, size_t length) {
   size_t index = 0;
   while (remaining > 0) {
     size_t to_send_length = std::min(remaining, BUFFER_SIZE);
-    pcm_stream_.stream_write( (char *) data + index, to_send_length ); 
+    pcm_stream_.stream_write( (char *) data + index, to_send_length );
     remaining -= to_send_length;
     index += to_send_length;
   }
   return index;
 }
 
-bool ADFSpeaker::has_buffered_data() const {  
+bool ADFSpeaker::has_buffered_data() const {
   return pcm_stream_.has_buffered_data();
 }
 

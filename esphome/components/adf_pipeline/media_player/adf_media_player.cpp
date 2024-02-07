@@ -3,7 +3,7 @@
 #include "mp3_decoder.h"
 #include <filter_resample.h>
 
-#ifdef USE_ESP_IDF 
+#ifdef USE_ESP_IDF
 
 namespace esphome {
 namespace esp_adf {
@@ -24,7 +24,7 @@ void ADFMediaPlayer::dump_config() {
 
 void ADFMediaPlayer::set_stream_uri(const char *uri){
   http_and_decoder_.set_stream_uri(uri);
-}  
+}
 
 
 void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
@@ -43,12 +43,12 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
       pipeline.start();
     }
   }
-  
+
   if (call.get_volume().has_value()) {
     set_volume_(call.get_volume().value());
     unmute_();
   }
-  
+
   if (call.get_command().has_value()) {
     switch (call.get_command().value()) {
       case media_player::MEDIA_PLAYER_COMMAND_PLAY:
@@ -121,7 +121,7 @@ void ADFMediaPlayer::mute_(){
   request.mute = 1;
   if( pipeline.request_settings(request) )
   {
-    muted_ = true;  
+    muted_ = true;
     publish_state();
   }
 }
@@ -131,7 +131,7 @@ void ADFMediaPlayer::unmute_(){
   request.mute = 0;
   if( pipeline.request_settings(request) )
   {
-    muted_ = false;  
+    muted_ = false;
     publish_state();
   }
 }
@@ -141,13 +141,13 @@ void ADFMediaPlayer::set_volume_(float volume, bool publish){
   request.target_volume = volume;
   if( pipeline.request_settings(request) )
   {
-    this->volume = volume;  
+    this->volume = volume;
     if (publish) publish_state();
   }
 }
 
 void ADFMediaPlayer::on_pipeline_state_change(PipelineState state){
-  esph_log_i(TAG, "got new pipeline state: %d", (int) state );     
+  esph_log_i(TAG, "got new pipeline state: %d", (int) state );
   switch(state){
     case PipelineState::UNAVAILABLE:
     case PipelineState::STOPPED:
