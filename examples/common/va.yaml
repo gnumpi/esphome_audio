@@ -1,0 +1,29 @@
+substitutions:
+  # Phases of the Voice Assistant
+  # IDLE: The voice assistant is ready to be triggered by a wake-word
+  voice_assist_idle_phase_id: '1'
+  # LISTENING: The voice assistant is ready to listen to a voice command (after being triggered by the wake word)
+  voice_assist_listening_phase_id: '2'
+  # THINKING: The voice assistant is currently processing the command
+  voice_assist_thinking_phase_id: '3'
+  # REPLYING: The voice assistant is replying to the command
+  voice_assist_replying_phase_id: '4'
+  # NOT_READY: The voice assistant is not ready
+  voice_assist_not_ready_phase_id: '10'
+  # ERROR: The voice assistant encountered an error
+  voice_assist_error_phase_id: '11'
+  # MUTED: The voice assistant is muted and will not reply to a wake-word
+  voice_assist_muted_phase_id: '12'
+
+
+globals:
+  # Global initialisation variable. Initialized to true and set to false once everything is connected. Only used to have a smooth "plugging" experience
+  - id: init_in_progress
+    type: bool
+    restore_value: no
+    initial_value: 'true'
+  # Global variable tracking the phase of the voice assistant (defined above). Initialized to not_ready
+  - id: voice_assistant_phase
+    type: int
+    restore_value: no
+    initial_value: ${voice_assist_not_ready_phase_id}
