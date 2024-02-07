@@ -3,6 +3,7 @@ __pycache__
 .venv/
 **/.esphome/
 *.egg-info/
-cd
+
+.esphome
 .tox/
 .pio/
