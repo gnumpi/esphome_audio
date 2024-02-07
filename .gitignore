@@ -8,9 +8,13 @@ __pycache__
 .esp-adf
 .tox/
 .pio/
+.temp/
+.vscode/
 
 build/
-components
+/components
 managed_components/
 sdkconfig.esp32-idf
 sdkconfig.esp32-s3-idf
+
+*/secrets.yaml

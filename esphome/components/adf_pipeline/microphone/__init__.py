@@ -11,7 +11,7 @@ from .. import (
 )
 
 CODEOWNERS = ["@gnumpi"]
-DEPENDENCIES = ["my_esp_adf", "microphone"]
+DEPENDENCIES = ["adf_pipeline", "microphone"]
 
 
 ADFMicrophone = esp_adf_ns.class_(

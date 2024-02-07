@@ -13,7 +13,7 @@ from .. import (
 
 
 CODEOWNERS = ["@gnumpi"]
-DEPENDENCIES = ["my_esp_adf", "speaker"]
+DEPENDENCIES = ["adf_pipeline", "speaker"]
 
 
 ADFSpeaker = esp_adf_ns.class_(

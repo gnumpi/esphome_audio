@@ -2,7 +2,7 @@ import esphome.codegen as cg
 from esphome import pins
 import esphome.config_validation as cv
 
-from ... import my_esp_adf as esp_adf
+from ... import adf_pipeline as esp_adf
 from esphome.const import CONF_ID
 
 from .. import (
@@ -15,8 +15,8 @@ from .. import (
     i2s_audio_ns,
 )
 
-AUTO_LOAD = ["my_esp_adf"]
-DEPENDENCIES = ["my_esp_adf", "i2s_audio"]
+AUTO_LOAD = ["adf_pipeline"]
+DEPENDENCIES = ["adf_pipeline", "i2s_audio"]
 
 ADFElementI2SOut = i2s_audio_ns.class_(
     "ADFElementI2SOut",
