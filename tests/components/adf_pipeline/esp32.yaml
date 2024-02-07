@@ -1,0 +1,77 @@
+external_components:
+  - source:
+      type: local
+      path: ../../../esphome/components
+    components: [ adf_pipeline, i2s_audio ]
+
+esphome:
+  name: test_adf_pipeline
+  min_version: 2023.12.7
+
+esp32:
+  board: esp32dev
+  #variant: ESP32
+  framework:
+    type: esp-idf
+    version: recommended
+
+wifi:
+  ssid: SSID
+  password: PASSWORD
+  fast_connect: true
+
+
+logger:
+  hardware_uart : UART0
+  level: VERBOSE
+
+ota:
+
+api:
+
+i2s_audio:
+  - id: i2s_in
+    i2s_lrclk_pin: GPIO25
+    i2s_bclk_pin: GPIO26
+  - id: i2s_out
+    i2s_lrclk_pin: GPIO12
+    i2s_bclk_pin: GPIO27
+
+
+adf_pipeline:
+  - platform: i2s_audio
+    type: sink
+    id: adf_i2s_out
+    i2s_audio_id: i2s_out
+    i2s_dout_pin: GPIO33
+
+  - platform: i2s_audio
+    type: source
+    id: adf_i2s_in
+    i2s_audio_id: i2s_in
+    i2s_din_pin: GPIO32
+
+
+microphone:
+  - platform: adf_pipeline
+    id: adf_microphone
+    pipeline:
+      - adf_i2s_in
+      - self
+
+#speaker:
+#  - platform: adf_pipeline
+#    id: adf_speaker
+#    pipeline:
+#      - self
+#      - adf_i2s_out
+
+
+media_player:
+  - platform: adf_pipeline
+    id: adf_media_player
+    name: s3-dev_media_player
+    internal: false
+    pipeline:
+      - self
+      - adf_i2s_out

@@ -1,0 +1,9 @@
+{
+    "name": "adf_pipeline",
+    "version": "0.1.0",
+    "esphome": {
+        "min" : "2023.11.6",
+        "max" : "2023.12.9"
+    },
+    "url-git" : "https://github.com/gnumpi/esphome_audio"
+}
