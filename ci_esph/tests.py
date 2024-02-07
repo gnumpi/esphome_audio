@@ -11,11 +11,14 @@ class CompileTest:
         self.comp = component
 
     def run_tests(self) -> int:
+        ret = 0
         for cfgFile in os.listdir(self.comp.testsRoot):
             if not cfgFile.endswith(".yaml"):
                 continue
+            print( "Testing config: ", cfgFile )
             cfgFile = os.path.join(self.comp.testsRoot, cfgFile)
             try:
-                return run_esphome(["esphome", "-q", "compile", cfgFile])
+                ret += run_esphome(["esphome", "-q", "compile", cfgFile])
             except EsphomeError:
-                return 1
+                ret = 1
+        return ret

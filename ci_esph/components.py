@@ -102,10 +102,11 @@ class ExternalComponent:
 
 
 def get_components_from_repository(path: str) -> list[ExternalComponent]:
+    components : list[ExternalComponent] = []
     for cPath in COMPONENT_ROOTS:
         absPath = os.path.join(path, cPath)
         if os.path.exists(absPath):
-            return [
+            components += [
                 ExternalComponent.from_manifest(
                     repository_root=path,
                     manifest=os.path.join(cPath, comp, MANIFEST_FILE_NAME),
@@ -114,7 +115,7 @@ def get_components_from_repository(path: str) -> list[ExternalComponent]:
                 if os.path.exists(os.path.join(absPath, comp, MANIFEST_FILE_NAME))
             ]
 
-    return []
+    return components
 
 
 def list_component_git_files(component: ExternalComponent) -> list[str]:
