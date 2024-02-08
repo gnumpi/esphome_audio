@@ -62,6 +62,7 @@ void PCMSource::init_adf_elements_() {
   };
   adf_raw_stream_writer_ = raw_stream_init(&raw_cfg);
   this->sdk_audio_elements_.push_back(this->adf_raw_stream_writer_);
+  this->sdk_element_tags_.push_back("pcm_writer");
 }
 
 int PCMSource::stream_write(char *buffer, int len) { return raw_stream_write(adf_raw_stream_writer_, buffer, len); }
