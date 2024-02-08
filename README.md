@@ -35,6 +35,14 @@ Pipeline controllers are responsible for constructing an audio pipeline and prov
 
 ### Configuration
 ```yaml
+external_components:
+  - source:
+      type: git
+      url: https://github.com/gnumpi/esphome_audio
+      ref: main
+    components: [ adf_pipeline, i2s_audio ]
+
+
 # define the i2s controller and their pins as before
 i2s_audio:
   - id: i2s_in
