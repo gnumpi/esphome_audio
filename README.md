@@ -1,6 +1,10 @@
 # ESPHome - Audio Components
 
 ## ADF-Pipeline
+**Target Version: ESPHome-2023.12.9**
+
+[![ESPHome-target](https://github.com/gnumpi/esphome_audio/actions/workflows/tox-target.yml/badge.svg)](https://github.com/gnumpi/esphome_audio/actions/workflows/tox-target.yml)
+[![ESPHome-latest](https://github.com/gnumpi/esphome_audio/actions/workflows/tox-latest.yml/badge.svg)](https://github.com/gnumpi/esphome_audio/actions/workflows/tox-latest.yml)
 
 The purpose of this ESPHome component is to offer a wrapper framework that enables access to the elements from the [Espressif Audio Development Framework (ADF)](https://github.com/espressif/esp-adf) within the ESPHome environment.
 
@@ -54,7 +58,7 @@ i2s_audio:
 
 # expose the i2s components as pipeline elements
 adf_pipeline:
-    # create a I2SWriter pipeline element
+    # create an I2SWriter pipeline element
     # using the i2s_out configuration
   - platform: i2s_audio
     type: sink
@@ -62,14 +66,16 @@ adf_pipeline:
     i2s_audio_id: i2s_out
     i2s_dout_pin: GPIO10
 
-    # create a I2SReader pipeline element
+    # create an I2SReader pipeline element
     # using the i2s_in configuration
   - platform: i2s_audio
     type: source
     id: adf_i2s_in
     i2s_audio_id: i2s_in
     i2s_din_pin: GPIO4
-
+    channel: left
+    sample_rate: 16000
+    bits_per_sample: 16bit
 
 # create a new microphone component which
 # is implemented as an adf_pipeline

@@ -59,9 +59,7 @@ BITS_PER_SAMPLE = {
     32: i2s_bits_per_sample_t.I2S_BITS_PER_SAMPLE_32BIT,
 }
 
-
 _validate_bits = cv.float_with_unit("bits", "bit")
-
 
 CONFIG_SCHEMA_OUT = esp_adf.ADF_COMPONENT_SCHEMA.extend(
     {

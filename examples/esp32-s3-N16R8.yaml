@@ -68,7 +68,6 @@ i2s_audio:
     i2s_lrclk_pin: GPIO46
     i2s_bclk_pin: GPIO9
 
-
 adf_pipeline:
   - platform: i2s_audio
     type: sink
@@ -81,6 +80,9 @@ adf_pipeline:
     id: adf_i2s_in
     i2s_audio_id: i2s_in
     i2s_din_pin: GPIO4
+    channel: left
+    sample_rate: 16000
+    bits_per_sample: 16bit
 
 
 microphone:
