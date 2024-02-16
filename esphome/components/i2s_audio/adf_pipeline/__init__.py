@@ -73,7 +73,7 @@ CONFIG_SCHEMA_IN = esp_adf.ADF_COMPONENT_SCHEMA.extend(
     {
         cv.GenerateID(): cv.declare_id(ADFElementI2SIn),
         cv.GenerateID(CONF_I2S_AUDIO_ID): cv.use_id(I2SAudioComponent),
-        cv.Required(CONF_I2S_DIN_PIN): pins.internal_gpio_output_pin_number,
+        cv.Required(CONF_I2S_DIN_PIN): pins.internal_gpio_input_pin_number,
         cv.Optional(CONF_CHANNEL, default="right"): cv.enum(CHANNELS),
         cv.Optional(CONF_SAMPLE_RATE, default=16000): cv.int_range(min=1),
         cv.Optional(CONF_BITS_PER_SAMPLE, default="16bit"): cv.All(
