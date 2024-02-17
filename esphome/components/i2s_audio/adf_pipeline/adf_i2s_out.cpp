@@ -68,6 +68,7 @@ void ADFElementI2SOut::init_adf_elements_() {
 void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request) {
   bool rate_bits_channels_updated = false;
   if (request.sampling_rate > 0 && (uint32_t) request.sampling_rate != this->sample_rate_) {
+    /*
     bool supported = false;
     for (auto supported_rate : this->supported_samples_rates_) {
       if (supported_rate == (uint32_t) request.sampling_rate) {
@@ -79,6 +80,7 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
       request.failed_by = this;
       return;
     }
+    */
     this->sample_rate_ = request.sampling_rate;
     rate_bits_channels_updated = true;
   }
@@ -101,7 +103,7 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
 
   if (rate_bits_channels_updated) {
     if (i2s_stream_set_clk(this->adf_i2s_stream_writer_, this->sample_rate_, this->bits_per_sample_,
-                           this->external_dac_channels_) != ESP_OK) {
+                           request.number_of_channels) != ESP_OK) {
       esph_log_e(TAG, "error while setting sample rate and bit depth,");
       request.failed = true;
       request.failed_by = this;
