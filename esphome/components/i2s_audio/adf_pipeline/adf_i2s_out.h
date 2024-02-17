@@ -30,6 +30,7 @@ class ADFElementI2SOut : public I2SAudioOut, public ADFPipelineSinkElement, publ
 
   uint32_t sample_rate_;
   uint8_t bits_per_sample_;
+  uint8_t channels_;
 
   std::vector<uint32_t> supported_samples_rates_;
   std::vector<uint8_t> supported_bits_per_sample_;
