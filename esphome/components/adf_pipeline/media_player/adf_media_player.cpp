@@ -29,7 +29,6 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
 
     if (state == media_player::MEDIA_PLAYER_STATE_PLAYING || state == media_player::MEDIA_PLAYER_STATE_PAUSED) {
       pipeline.stop();
-      pipeline.reset();
       set_stream_uri(current_url_.value().c_str());
       pipeline.start();
     } else {

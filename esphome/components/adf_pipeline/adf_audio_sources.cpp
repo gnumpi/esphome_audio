@@ -9,13 +9,15 @@
 namespace esphome {
 namespace esp_adf {
 
+static const char *const TAG = "esp_audio_sources";
+
 void HTTPStreamReaderAndDecoder::init_adf_elements_() {
   if (sdk_audio_elements_.size() > 0)
     return;
 
   http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
   http_cfg.task_core = 0;
-  http_cfg.out_rb_size = 4 * 512;
+  http_cfg.out_rb_size = 8 * 512;
   http_stream_reader_ = http_stream_init(&http_cfg);
 
   audio_element_set_uri(this->http_stream_reader_, "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3");
@@ -24,7 +26,7 @@ void HTTPStreamReaderAndDecoder::init_adf_elements_() {
   sdk_element_tags_.push_back("http");
 
   mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
-  mp3_cfg.out_rb_size = 12 * 512;
+  mp3_cfg.out_rb_size = 8 * 512;
   decoder_ = mp3_decoder_init(&mp3_cfg);
 
   sdk_audio_elements_.push_back(this->decoder_);
@@ -33,6 +35,48 @@ void HTTPStreamReaderAndDecoder::init_adf_elements_() {
 
 void HTTPStreamReaderAndDecoder::set_stream_uri(const char *uri) {
   audio_element_set_uri(this->http_stream_reader_, uri);
+  this->waiting_for_cfg_ = true;
+  this->start_config_pipeline_();
+}
+
+void HTTPStreamReaderAndDecoder::start_config_pipeline_(){
+  if( audio_element_run(this->http_stream_reader_) != ESP_OK )
+  {
+    esph_log_e(TAG, "Starting http streamer failed");
+  }
+  if( audio_element_run(this->decoder_) != ESP_OK ){
+    esph_log_e(TAG, "Starting decoder streamer failed");
+  }
+
+  if( audio_element_resume(this->http_stream_reader_, 0, 2000 / portTICK_RATE_MS) != ESP_OK)
+  {
+    esph_log_e(TAG, "Resuming http streamer failed");
+  }
+  if( audio_element_resume(this->decoder_, 0, 2000 / portTICK_RATE_MS) != ESP_OK ){
+    esph_log_e(TAG, "Resuming decoder failed");
+  }
+  esph_log_i(TAG, "Streamer status: %d", audio_element_get_state(this->http_stream_reader_) );
+  esph_log_i(TAG, "decoder status: %d", audio_element_get_state(this->decoder_) );
+}
+
+void HTTPStreamReaderAndDecoder::terminate_config_pipeline_(){
+  audio_element_stop(this->http_stream_reader_);
+  audio_element_stop(this->decoder_);
+  audio_element_reset_input_ringbuf(this->decoder_);
+  audio_element_reset_output_ringbuf(this->decoder_);
+  if( audio_element_wait_for_stop_ms(this->http_stream_reader_, portMAX_DELAY) == ESP_ERR_TIMEOUT )
+  {
+    esph_log_e(TAG, "Timeout while stopping stream reader!");
+  }
+  if(audio_element_wait_for_stop_ms(this->decoder_, portMAX_DELAY) == ESP_ERR_TIMEOUT){
+    esph_log_e(TAG, "Timeout while stopping decoder!");
+  }
+  audio_element_reset_state(this->http_stream_reader_);
+  audio_element_reset_state(this->decoder_);
+}
+
+bool HTTPStreamReaderAndDecoder::isReady(){
+  return !this->waiting_for_cfg_;
 }
 
 void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg) {
@@ -52,6 +96,12 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
     if (!pipeline_->request_settings(request)) {
       pipeline_->on_settings_request_failed(request);
     }
+    if( this->waiting_for_cfg_)
+    {
+      this->terminate_config_pipeline_();
+      this->waiting_for_cfg_ = false;
+    }
+
   }
 }
 

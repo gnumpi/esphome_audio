@@ -8,41 +8,47 @@ namespace esp_adf {
 static const char *const TAG = "esp_adf_pipeline";
 
 void AudioPipeline::init() {
+  esph_log_i(TAG, "Init request, current state %d", this->state_);
   if (state_ == PipelineState::UNAVAILABLE && init_()) {
     set_state_(PipelineState::STOPPED);
+  }
+  else if (state_ == PipelineState::UNAVAILABLE){
+    esph_log_e(TAG, "Couldn't init pipeline");
   }
 }
 
 void AudioPipeline::reset() {
-  if (reset_()) {
-    set_state_(PipelineState::STOPPED);
-  }
+  reset_();
 }
 
 void AudioPipeline::start() {
+  esph_log_i(TAG, "Starting request, current state %d", this->state_);
   if (state_ == PipelineState::UNAVAILABLE) {
     init();
   }
-  if (state_ == PipelineState::STOPPED && start_()) {
-    set_state_(PipelineState::RUNNING);
+  if (state_ == PipelineState::STOPPED || state_ == PipelineState::PAUSED || state_ == PipelineState::STOPPING) {
+    set_state_(PipelineState::PREPARING);
   }
 }
 
 void AudioPipeline::stop() {
-  if (state_ == PipelineState::RUNNING && stop_()) {
-    set_state_(PipelineState::STOPPED);
+  if (state_ == PipelineState::RUNNING || state_ == PipelineState::PAUSED){
+      set_state_(PipelineState::STOPPING);
+      stop_();
   }
 }
 
 void AudioPipeline::pause() {
-  if (state_ == PipelineState::RUNNING && pause_()) {
-    set_state_(PipelineState::PAUSED);
+  if (state_ == PipelineState::RUNNING) {
+    set_state_(PipelineState::PAUSING);
+    pause_();
   }
 }
 
 void AudioPipeline::resume() {
-  if (state_ == PipelineState::PAUSED && resume_()) {
-    set_state_(PipelineState::RUNNING);
+  if (state_ == PipelineState::PAUSED) {
+    set_state_(PipelineState::RESUMING);
+    resume_();
   }
 }
 
@@ -89,19 +95,25 @@ void ADFPipeline::set_state_(PipelineState state) {
   if (parent_ != nullptr) {
     parent_->on_pipeline_state_change(state);
   }
+  esph_log_i(TAG, "set_new_state: %d", state);
 }
 
 bool ADFPipeline::init_() {
-  if (!this->adf_pipeline_) {
-    return build_adf_pipeline_();
-  }
-  return false;
+  return build_adf_pipeline_();
+}
+
+bool ADFPipeline::reset_ringbuffer(){
+  audio_pipeline_handle_t pipeline = this->adf_pipeline_;
+  return (audio_pipeline_reset_ringbuffer(pipeline) == ESP_OK);
 }
 
 bool ADFPipeline::reset_() {
+  this->set_state_(PipelineState::STOPPED);
   audio_pipeline_handle_t pipeline = this->adf_pipeline_;
-  return (audio_pipeline_reset_ringbuffer(pipeline) == ESP_OK && audio_pipeline_reset_elements(pipeline) == ESP_OK &&
-          audio_pipeline_change_state(pipeline, AEL_STATE_INIT) == ESP_OK);
+  return (
+    audio_pipeline_reset_ringbuffer(pipeline) == ESP_OK && audio_pipeline_reset_elements(pipeline) == ESP_OK &&
+    audio_pipeline_change_state(pipeline, AEL_STATE_INIT) == ESP_OK
+  );
 }
 
 bool ADFPipeline::start_() { return audio_pipeline_run(adf_pipeline_) == ESP_OK; }
@@ -114,7 +126,8 @@ bool ADFPipeline::resume_() { return audio_pipeline_resume(adf_pipeline_) == ESP
 
 bool ADFPipeline::build_adf_pipeline_() {
   if (adf_pipeline_ != nullptr) {
-    return false;
+    esph_log_d(TAG, "Pipline was already built.");
+    return true;
   }
   audio_pipeline_cfg_t pipeline_cfg = {
       .rb_size = 8 * 1024,
@@ -129,6 +142,7 @@ bool ADFPipeline::build_adf_pipeline_() {
     for (auto el : comp->get_adf_elements()) {
       tags_vector.push_back(comp->get_adf_element_tag(i));
       if (audio_pipeline_register(adf_pipeline_, el, tags_vector.back().c_str()) != ESP_OK) {
+        esph_log_e(TAG, "Couldn't register [%s] with pipeline", tags_vector.back().c_str() );
         deinit_all_();
         return false;
       }
@@ -145,6 +159,7 @@ bool ADFPipeline::build_adf_pipeline_() {
   if (audio_pipeline_link(adf_pipeline_, link_tag_ptrs, tags_vector.size()) != ESP_OK) {
     delete link_tag_ptrs;
     deinit_all_();
+    esph_log_e(TAG, "Couldn't link pipeline elements");
     return false;
   }
   delete link_tag_ptrs;
@@ -155,6 +170,7 @@ bool ADFPipeline::build_adf_pipeline_() {
   audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
   adf_pipeline_event_ = audio_event_iface_init(&evt_cfg);
   if (audio_pipeline_set_listener(adf_pipeline_, adf_pipeline_event_) != ESP_OK) {
+    esph_log_e(TAG, "Couldn't setup pipeline event listener");
     return false;
   }
   return true;
@@ -188,31 +204,43 @@ void ADFPipeline::watch_() {
   esp_err_t ret = audio_event_iface_listen(this->adf_pipeline_event_, &msg, 0);
   if (ret == ESP_OK) {
     forward_event_to_pipeline_elements_(msg);
-    if (parent_ != nullptr) {
-      parent_->pipeline_event_handler(msg);
-    }
-    if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.cmd == AEL_MSG_CMD_REPORT_STATUS &&
-        msg.source == (void *) this->adf_last_element_in_pipeline_) {
-      audio_element_status_t status;
-      std::memcpy(&status, &msg.data, sizeof(audio_element_status_t));
-      esph_log_i(TAG, "[ * ] CMD: %d  status: %d", msg.cmd, status);
-      switch (status) {
-        case AEL_STATUS_STATE_STOPPED:
-        case AEL_STATUS_STATE_FINISHED:
-          set_state_(PipelineState::STOPPED);
-          this->reset();
-          break;
-        case AEL_STATUS_STATE_RUNNING:
-          set_state_(PipelineState::RUNNING);
-          break;
-        case AEL_STATUS_STATE_PAUSED:
-          set_state_(PipelineState::PAUSED);
-          break;
-        default:
-          break;
+    if( this->state_ == PipelineState::PREPARING)
+    {
+      bool ready = true;
+      for( auto &element : this->pipeline_elements_){
+        ready = ready && element->isReady();
+      }
+      if (ready){
+        this->set_state_(PipelineState::STARTING);
+        this->start_();
       }
     }
-
+    else {
+      if (parent_ != nullptr) {
+        parent_->pipeline_event_handler(msg);
+      }
+      if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.cmd == AEL_MSG_CMD_REPORT_STATUS &&
+          msg.source == (void *) this->adf_last_element_in_pipeline_) {
+        audio_element_status_t status;
+        std::memcpy(&status, &msg.data, sizeof(audio_element_status_t));
+        esph_log_i(TAG, "[ * ] CMD: %d  status: %d", msg.cmd, status);
+        switch (status) {
+          case AEL_STATUS_STATE_STOPPED:
+          case AEL_STATUS_STATE_FINISHED:
+            set_state_(PipelineState::STOPPED);
+            this->reset();
+            break;
+          case AEL_STATUS_STATE_RUNNING:
+            set_state_(PipelineState::RUNNING);
+            break;
+          case AEL_STATUS_STATE_PAUSED:
+            set_state_(PipelineState::PAUSED);
+            break;
+          default:
+            break;
+        }
+      }
+    }
     if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT) {
       esph_log_i(TAG, "[ * ] CMD: %d Pipeline: %d", msg.cmd, this->state_);
     }

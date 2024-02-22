@@ -11,6 +11,12 @@
 namespace esphome {
 namespace esp_adf {
 
+typedef struct {
+  int rate;
+  int bits;
+  int channels;
+} pcm_format;
+
 class AudioPipeline;
 class ADFPipeline;
 class AudioPipelineElement;
@@ -55,6 +61,7 @@ class ADFPipelineElement : public AudioPipelineElement {
   void deinit_adf_elements() {}
 
   void set_pipeline(ADFPipeline *pipeline) { pipeline_ = pipeline; }
+  virtual bool isReady() {return true;}
 
  protected:
   friend class ADFPipeline;

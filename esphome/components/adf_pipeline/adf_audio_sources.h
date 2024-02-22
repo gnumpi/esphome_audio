@@ -16,13 +16,21 @@ class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
  public:
   void set_stream_uri(const char *uri);
   const std::string get_name() override { return "HTTPStreamReader"; }
+  bool isReady() override;
 
  protected:
   void init_adf_elements_() override;
+  void start_config_pipeline_();
+  void terminate_config_pipeline_();
   void sdk_event_handler_(audio_event_iface_msg_t &msg);
+  void cfg_event_handler_(audio_event_iface_msg_t &msg);
 
+
+  bool waiting_for_cfg_{false};
   audio_element_handle_t http_stream_reader_{};
   audio_element_handle_t decoder_{};
+  audio_pipeline_handle_t read_cfg_pipeline_{};
+  audio_event_iface_handle_t cfg_pipeline_event_{};
 };
 
 class I2SReader : public ADFPipelineSourceElement {
