@@ -43,7 +43,7 @@ void ADFElementI2SOut::init_adf_elements_() {
       .type = AUDIO_STREAM_WRITER,
       .i2s_config = i2s_config,
       .i2s_port = this->parent_->get_port(),
-      .use_alc = false,
+      .use_alc = true,
       .volume = 0,
       .out_rb_size = (8 * 512),
       .task_stack = I2S_STREAM_TASK_STACK,
