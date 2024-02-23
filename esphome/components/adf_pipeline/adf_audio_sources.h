@@ -29,8 +29,6 @@ class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
   bool waiting_for_cfg_{false};
   audio_element_handle_t http_stream_reader_{};
   audio_element_handle_t decoder_{};
-  audio_pipeline_handle_t read_cfg_pipeline_{};
-  audio_event_iface_handle_t cfg_pipeline_event_{};
 };
 
 class I2SReader : public ADFPipelineSourceElement {

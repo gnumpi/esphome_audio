@@ -11,18 +11,9 @@ namespace i2s_audio {
 
 class I2SAudioComponent;
 
-class I2SAudio : public Parented<I2SAudioComponent> {
-public:
-  const i2s_driver_config_t& get_driver_config() const {
-    return this->i2s_driver_cfg_;
-  }
-protected:
-  i2s_driver_config_t i2s_driver_cfg_;
-};
+class I2SAudioIn : public Parented<I2SAudioComponent> {};
 
-class I2SAudioIn : public I2SAudio {};
-
-class I2SAudioOut : public I2SAudio {};
+class I2SAudioOut : public Parented<I2SAudioComponent> {};
 
 class I2SAudioComponent : public Component {
  public:
