@@ -2,7 +2,7 @@
 #ifdef USE_ESP_IDF
 
 #include <i2s_stream.h>
-
+#include "../../adf_pipeline/adf_pipeline.h"
 namespace esphome {
 using namespace esp_adf;
 namespace i2s_audio {
@@ -16,6 +16,7 @@ void ADFElementI2SOut::setup() {
   this->sample_rate_ = 16000;
   this->bits_per_sample_ = 16;
   this->set_external_dac_channels(2);
+  this->channels_ = 2;
 }
 
 void ADFElementI2SOut::init_adf_elements_() {
@@ -26,11 +27,11 @@ void ADFElementI2SOut::init_adf_elements_() {
       .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_TX),
       .sample_rate = 16000,
       .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-      .channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
+      .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
       .dma_buf_count = 8,
-      .dma_buf_len = 1024,
+      .dma_buf_len = 512,
       .use_apll = false,
       .tx_desc_auto_clear = true,
       .fixed_mclk = 0,
@@ -44,7 +45,7 @@ void ADFElementI2SOut::init_adf_elements_() {
       .i2s_port = this->parent_->get_port(),
       .use_alc = true,
       .volume = 0,
-      .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,
+      .out_rb_size = (8 * 512),
       .task_stack = I2S_STREAM_TASK_STACK,
       .task_core = I2S_STREAM_TASK_CORE,
       .task_prio = I2S_STREAM_TASK_PRIO,
@@ -60,7 +61,11 @@ void ADFElementI2SOut::init_adf_elements_() {
   i2s_pin_config_t pin_config = this->parent_->get_pin_config();
   pin_config.data_out_num = this->dout_pin_;
   i2s_set_pin(this->parent_->get_port(), &pin_config);
-
+  i2s_zero_dma_buffer(this->parent_->get_port());
+  if (i2s_stream_set_clk(this->adf_i2s_stream_writer_, 16000, 16,
+                           1) != ESP_OK) {
+      esph_log_e(TAG, "error while setting sample rate and bit depth,");
+  }
   sdk_audio_elements_.push_back(this->adf_i2s_stream_writer_);
   sdk_element_tags_.push_back("i2s_out");
 }
@@ -68,6 +73,7 @@ void ADFElementI2SOut::init_adf_elements_() {
 void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request) {
   bool rate_bits_channels_updated = false;
   if (request.sampling_rate > 0 && (uint32_t) request.sampling_rate != this->sample_rate_) {
+    /*
     bool supported = false;
     for (auto supported_rate : this->supported_samples_rates_) {
       if (supported_rate == (uint32_t) request.sampling_rate) {
@@ -79,7 +85,14 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
       request.failed_by = this;
       return;
     }
+    */
     this->sample_rate_ = request.sampling_rate;
+    rate_bits_channels_updated = true;
+  }
+
+  if(request.number_of_channels > 0 && (uint8_t) request.number_of_channels != this->channels_)
+  {
+    this->channels_ = request.number_of_channels;
     rate_bits_channels_updated = true;
   }
 
@@ -100,8 +113,11 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
   }
 
   if (rate_bits_channels_updated) {
+
+    audio_element_set_music_info(this->adf_i2s_stream_writer_,this->sample_rate_, this->channels_, this->bits_per_sample_ );
+
     if (i2s_stream_set_clk(this->adf_i2s_stream_writer_, this->sample_rate_, this->bits_per_sample_,
-                           this->external_dac_channels_) != ESP_OK) {
+                           this->channels_) != ESP_OK) {
       esph_log_e(TAG, "error while setting sample rate and bit depth,");
       request.failed = true;
       request.failed_by = this;

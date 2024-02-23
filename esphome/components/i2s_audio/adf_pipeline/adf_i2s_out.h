@@ -27,9 +27,11 @@ class ADFElementI2SOut : public I2SAudioOut, public ADFPipelineSinkElement, publ
   void on_settings_request(AudioPipelineSettingsRequest &request) override;
   uint8_t dout_pin_{0};
   uint8_t external_dac_channels_;
+  uint8_t mono_channel_select_;
 
   uint32_t sample_rate_;
   uint8_t bits_per_sample_;
+  uint8_t channels_;
 
   std::vector<uint32_t> supported_samples_rates_;
   std::vector<uint8_t> supported_bits_per_sample_;

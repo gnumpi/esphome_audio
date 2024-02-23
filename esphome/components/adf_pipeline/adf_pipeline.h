@@ -16,7 +16,7 @@
 namespace esphome {
 namespace esp_adf {
 
-enum PipelineState : uint8_t { UNAVAILABLE = 0, STARTING, RUNNING, STOPPING, STOPPED, PAUSED };
+enum PipelineState : uint8_t { UNAVAILABLE = 0, PREPARING, STARTING, RUNNING, STOPPING, STOPPED, PAUSING, PAUSED, RESUMING };
 
 class AudioPipeline {
  public:
@@ -58,6 +58,8 @@ class ADFPipeline : public AudioPipeline {
 
   bool request_settings(AudioPipelineSettingsRequest &request);
   void on_settings_request_failed(AudioPipelineSettingsRequest request) {}
+
+  bool reset_ringbuffer();
 
  protected:
   bool init_() override;
