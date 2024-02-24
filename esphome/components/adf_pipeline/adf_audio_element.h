@@ -17,6 +17,9 @@ typedef struct {
   int channels;
 } pcm_format;
 
+
+enum class PipelineElementState : uint8_t { UNAVAILABLE = 0, PREPARING, WAIT_FOR_PREPARATION_DONE, READY };
+
 class AudioPipeline;
 class ADFPipeline;
 class AudioPipelineElement;

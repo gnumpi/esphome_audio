@@ -26,7 +26,7 @@ class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
   void cfg_event_handler_(audio_event_iface_msg_t &msg);
 
 
-  bool waiting_for_cfg_{false};
+  PipelineElementState element_state_{PipelineElementState::UNAVAILABLE};
   audio_element_handle_t http_stream_reader_{};
   audio_element_handle_t decoder_{};
 };

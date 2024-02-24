@@ -35,7 +35,7 @@ void HTTPStreamReaderAndDecoder::init_adf_elements_() {
 
 void HTTPStreamReaderAndDecoder::set_stream_uri(const char *uri) {
   audio_element_set_uri(this->http_stream_reader_, uri);
-  this->waiting_for_cfg_ = true;
+  this->element_state_ = PipelineElementState::PREPARING;
   this->start_config_pipeline_();
 }
 
@@ -62,21 +62,28 @@ void HTTPStreamReaderAndDecoder::start_config_pipeline_(){
 void HTTPStreamReaderAndDecoder::terminate_config_pipeline_(){
   audio_element_stop(this->http_stream_reader_);
   audio_element_stop(this->decoder_);
-  audio_element_reset_input_ringbuf(this->decoder_);
-  audio_element_reset_output_ringbuf(this->decoder_);
-  if( audio_element_wait_for_stop_ms(this->http_stream_reader_, portMAX_DELAY) == ESP_ERR_TIMEOUT )
-  {
-    esph_log_e(TAG, "Timeout while stopping stream reader!");
-  }
-  if(audio_element_wait_for_stop_ms(this->decoder_, portMAX_DELAY) == ESP_ERR_TIMEOUT){
-    esph_log_e(TAG, "Timeout while stopping decoder!");
-  }
-  audio_element_reset_state(this->http_stream_reader_);
-  audio_element_reset_state(this->decoder_);
+  this->element_state_ = PipelineElementState::WAIT_FOR_PREPARATION_DONE;
 }
 
 bool HTTPStreamReaderAndDecoder::isReady(){
-  return !this->waiting_for_cfg_;
+  if( this->element_state_ == PipelineElementState::READY )
+  {
+    return true;
+  }
+  if( this->element_state_ == PipelineElementState::WAIT_FOR_PREPARATION_DONE )
+  {
+    bool stopped = audio_element_wait_for_stop_ms(this->http_stream_reader_, 0) == ESP_OK;
+    stopped = stopped &&  audio_element_wait_for_stop_ms(this->decoder_, 0) == ESP_OK;
+    if( stopped ){
+      audio_element_reset_state(this->http_stream_reader_);
+      audio_element_reset_state(this->decoder_);
+      audio_element_reset_input_ringbuf(this->decoder_);
+      audio_element_reset_output_ringbuf(this->decoder_);
+      this->element_state_ = PipelineElementState::READY;
+      return true;
+    }
+  }
+  return false;
 }
 
 void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg) {
@@ -96,10 +103,9 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
     if (!pipeline_->request_settings(request)) {
       pipeline_->on_settings_request_failed(request);
     }
-    if( this->waiting_for_cfg_)
+    if( this->element_state_ == PipelineElementState::PREPARING )
     {
       this->terminate_config_pipeline_();
-      this->waiting_for_cfg_ = false;
     }
 
   }

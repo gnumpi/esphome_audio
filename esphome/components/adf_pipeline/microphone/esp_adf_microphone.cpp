@@ -15,8 +15,6 @@ void ADFMicrophone::setup() {}
 
 void ADFMicrophone::dump_config() {}
 
-void ADFMicrophone::loop() { pipeline.loop(); }
-
 void ADFMicrophone::start() {
   pipeline.start();
   this->state_ = microphone::STATE_STARTING;
