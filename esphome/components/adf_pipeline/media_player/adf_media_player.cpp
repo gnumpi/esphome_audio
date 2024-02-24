@@ -48,7 +48,7 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
       case media_player::MEDIA_PLAYER_COMMAND_PLAY:
         state = media_player::MEDIA_PLAYER_STATE_PLAYING;
         if (pipeline.getState() == PipelineState::STOPPED || pipeline.getState() == PipelineState::UNAVAILABLE) {
-          pipeline.start();
+          this->start();
         } else if (pipeline.getState() == PipelineState::PAUSED) {
           pipeline.resume();
         }
