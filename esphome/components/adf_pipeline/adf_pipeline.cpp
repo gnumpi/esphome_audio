@@ -200,22 +200,23 @@ void ADFPipeline::forward_event_to_pipeline_elements_(audio_event_iface_msg_t &m
 }
 
 void ADFPipeline::watch_() {
+  if( this->state_ == PipelineState::PREPARING)
+  {
+    bool ready = true;
+    for( auto &element : this->pipeline_elements_){
+      ready = ready && element->isReady();
+    }
+    if (ready){
+      this->set_state_(PipelineState::STARTING);
+      this->start_();
+    }
+  }
   audio_event_iface_msg_t msg;
   esp_err_t ret = audio_event_iface_listen(this->adf_pipeline_event_, &msg, 0);
   if (ret == ESP_OK) {
     forward_event_to_pipeline_elements_(msg);
-    if( this->state_ == PipelineState::PREPARING)
+    if( this->state_ != PipelineState::PREPARING)
     {
-      bool ready = true;
-      for( auto &element : this->pipeline_elements_){
-        ready = ready && element->isReady();
-      }
-      if (ready){
-        this->set_state_(PipelineState::STARTING);
-        this->start_();
-      }
-    }
-    else {
       if (parent_ != nullptr) {
         parent_->pipeline_event_handler(msg);
       }

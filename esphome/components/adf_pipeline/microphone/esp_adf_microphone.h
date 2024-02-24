@@ -27,7 +27,6 @@ class ADFMicrophone : public microphone::Microphone, public ADFPipelineComponent
   // ESPHome-Component implementations
   float get_setup_priority() const override { return esphome::setup_priority::LATE; }
   void setup() override;
-  void loop() override;
   void dump_config() override;
 
   // Microphone implementation
