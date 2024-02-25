@@ -31,11 +31,13 @@ void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
   switch (state) {
     case PipelineState::STARTING:
       this->state_ = microphone::STATE_STARTING;
+      break;
     case PipelineState::RUNNING:
       this->state_ = microphone::STATE_RUNNING;
       break;
     case PipelineState::STOPPING:
       this->state_ = microphone::STATE_STOPPING;
+      break;
     case PipelineState::UNAVAILABLE:
     case PipelineState::STOPPED:
       this->state_ = microphone::STATE_STOPPED;
