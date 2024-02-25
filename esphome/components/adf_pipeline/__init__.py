@@ -1,3 +1,5 @@
+import os
+
 from esphome.const import (
     CONF_ID,
 )
@@ -87,6 +89,17 @@ async def to_code(config):
 
     esp32.add_idf_sdkconfig_option("CONFIG_ESP_TLS_INSECURE", True)
     esp32.add_idf_sdkconfig_option("CONFIG_ESP_TLS_SKIP_SERVER_CERT_VERIFY", True)
+
+    esp32.add_extra_script(
+        "pre",
+        "apply_adf_patches.py",
+        os.path.join(os.path.dirname(__file__), "apply_adf_patches.py.script"),
+    )
+
+    esp32.add_extra_build_file(
+        "esp_adf_patches/idf_v4.4_freertos.patch",
+        "https://github.com/espressif/esp-adf/raw/v2.5/idf_patches/idf_v4.4_freertos.patch",
+    )
 
     add_idf_component(
         name="mdns",
