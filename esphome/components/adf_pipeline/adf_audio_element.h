@@ -1,7 +1,6 @@
 #pragma once
 
 #ifdef USE_ESP_IDF
-#include "esphome/core/component.h"
 #include "esphome/core/log.h"
 
 #include <audio_element.h>
@@ -20,16 +19,15 @@ typedef struct {
 
 enum class PipelineElementState : uint8_t { UNAVAILABLE = 0, PREPARING, WAIT_FOR_PREPARATION_DONE, READY };
 
-class AudioPipeline;
 class ADFPipeline;
-class AudioPipelineElement;
+class ADFPipelineElement;
 
 enum AudioPipelineElementType : uint8_t { AUDIO_PIPELINE_SOURCE = 0, AUDIO_PIPELINE_SINK, AUDIO_PIPELINE_TRANSFORM };
 
 class AudioPipelineSettingsRequest {
  public:
   AudioPipelineSettingsRequest() = default;
-  AudioPipelineSettingsRequest(AudioPipelineElement *sender) : requested_by(sender) {}
+  AudioPipelineSettingsRequest(ADFPipelineElement *sender) : requested_by(sender) {}
   int sampling_rate{-1};
   int bit_depth{-1};
   int number_of_channels{-1};
@@ -38,26 +36,25 @@ class AudioPipelineSettingsRequest {
 
   bool failed{false};
   int error_code{0};
-  AudioPipelineElement *requested_by{nullptr};
-  AudioPipelineElement *failed_by{nullptr};
-};
-
-class AudioPipelineElement {
- public:
-  virtual ~AudioPipelineElement() {}
-  virtual AudioPipelineElementType get_element_type() const = 0;
-  virtual const std::string get_name() = 0;
-
-  virtual void on_pipeline_status_change() {}
-  virtual void on_settings_request(AudioPipelineSettingsRequest &request) {}
+  ADFPipelineElement *requested_by{nullptr};
+  ADFPipelineElement *failed_by{nullptr};
 };
 
 /*
 Represents and manages one or more ADF-SDK audio elements which form a logical unit.
 e.g. HttpStreamer and Decoder, re-sampler and stream_writer
 */
-class ADFPipelineElement : public AudioPipelineElement {
+class ADFPipelineElement {
  public:
+  virtual ~ADFPipelineElement() {}
+
+  virtual AudioPipelineElementType get_element_type() const = 0;
+  virtual const std::string get_name() = 0;
+
+  virtual void on_pipeline_status_change() {}
+  virtual void on_settings_request(AudioPipelineSettingsRequest &request) {}
+
+
   std::vector<audio_element_handle_t> get_adf_elements() { return sdk_audio_elements_; }
   std::string get_adf_element_tag(int element_indx);
   void init_adf_elements() { init_adf_elements_(); }

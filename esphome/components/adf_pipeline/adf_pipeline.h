@@ -16,61 +16,71 @@
 namespace esphome {
 namespace esp_adf {
 
-enum PipelineState : uint8_t { UNAVAILABLE = 0, PREPARING, STARTING, RUNNING, STOPPING, STOPPED, PAUSING, PAUSED, RESUMING };
 
-class AudioPipeline {
- public:
-  void init();
-  void reset();
+/* Audio Pipeline States:
 
-  void start();
-  void stop();
-  void pause();
-  void resume();
+UNAVAILABLE -> STOPPED -> (PREPARING) -> STARTING -> RUNNING
+    -> PAUSING -> PAUSED -> RESUMING -> RUNNING
+    -> STOPPING -> STOPPED -> DESTROYING -> UNAVAILABLE
 
-  PipelineState getState() { return state_; }
+State Explanations:
+- UNAVAILABLE: No memory allocated, no tasks created, no hardware blocked.
+- STOPPED: Memory allocated, hardware reserved, but no task is running.
+- PREPARING: Optional state where dynamic information is received by starting individual components,
+             pipeline elements are reconfigured accordingly, and finally the ring buffers are reset if necessary.
+- STARTING: Tasks of all pipeline elements are requested to start.
+- RUNNING: Last element in the pipeline reported to be running.
+- PAUSING: Transition state for pausing operations.
+- PAUSED: Pipeline is paused.
+- RESUMING: Transition state for resuming operations.
+- STOPPING: Transition state for stopping operations.
+- DESTROYING: Freeing all memory and hardware reservations.
 
- protected:
-  virtual bool init_() { return true; }
-  virtual bool reset_() { return true; }
-  virtual bool start_() { return true; }
-  virtual bool stop_() { return true; }
-  virtual bool pause_() { return true; }
-  virtual bool resume_() { return true; }
-
-  virtual void set_state_(PipelineState state) { state_ = state; }
-
-  PipelineState state_{PipelineState::UNAVAILABLE};
-};
+*/
+enum PipelineState : uint8_t { UNAVAILABLE = 0, PREPARING, STARTING, RUNNING, STOPPING, STOPPED, PAUSING, PAUSED, RESUMING, DESTROYING };
 
 class ADFPipelineComponent;
-
-class ADFPipeline : public AudioPipeline {
+/* Encapsulates the core functionalities of the ADF pipeline.
+This includes constructing the pipeline and managing its lifecycle.
+*/
+class ADFPipeline {
  public:
   ADFPipeline(ADFPipelineComponent *parent) { parent_ = parent; }
   virtual ~ADFPipeline() {}
 
+  void init();
+  void start();
+  void stop();
+  void pause();
+  void resume();
+  void destroy();
+
+  void reset();
+  PipelineState getState() { return state_; }
   void loop() { this->watch_(); }
 
   void append_element(ADFPipelineElement *element);
   int get_number_of_elements() { return pipeline_elements_.size(); }
   std::vector<std::string> get_element_names();
 
+  // Send a settings request to all pipeline elements
   bool request_settings(AudioPipelineSettingsRequest &request);
   void on_settings_request_failed(AudioPipelineSettingsRequest request) {}
 
   bool reset_ringbuffer();
 
  protected:
-  bool init_() override;
-  bool reset_() override;
-  bool start_() override;
-  bool stop_() override;
-  bool pause_() override;
-  bool resume_() override;
+  bool init_();
+  bool reset_();
+  bool start_();
+  bool stop_();
+  bool pause_();
+  bool resume_();
+  bool deinit_();
 
-  void set_state_(PipelineState state) override;
+  void set_state_(PipelineState state);
 
+  void loop_();
   void watch_();
   void forward_event_to_pipeline_elements_(audio_event_iface_msg_t &msg);
 
@@ -83,6 +93,7 @@ class ADFPipeline : public AudioPipeline {
   audio_element_handle_t adf_last_element_in_pipeline_{};
   std::vector<ADFPipelineElement *> pipeline_elements_;
   ADFPipelineComponent *parent_{nullptr};
+  PipelineState state_{PipelineState::UNAVAILABLE};
 };
 
 /*
