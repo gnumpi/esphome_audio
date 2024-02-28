@@ -1,7 +1,5 @@
 #include "adf_media_player.h"
 #include "esphome/core/log.h"
-#include "mp3_decoder.h"
-#include <filter_resample.h>
 
 #ifdef USE_ESP_IDF
 
@@ -12,7 +10,6 @@ static const char *const TAG = "adf_audio";
 
 void ADFMediaPlayer::setup() {
   state = media_player::MEDIA_PLAYER_STATE_IDLE;
-  pipeline.init();
 }
 
 void ADFMediaPlayer::dump_config() {
@@ -48,7 +45,8 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
       case media_player::MEDIA_PLAYER_COMMAND_PLAY:
         state = media_player::MEDIA_PLAYER_STATE_PLAYING;
         if (pipeline.getState() == PipelineState::STOPPED || pipeline.getState() == PipelineState::UNAVAILABLE) {
-          this->start();
+          pipeline.init();
+          pipeline.start();
         } else if (pipeline.getState() == PipelineState::PAUSED) {
           pipeline.resume();
         }
@@ -60,7 +58,7 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
         }
         break;
       case media_player::MEDIA_PLAYER_COMMAND_STOP:
-        this->stop();
+        pipeline.stop();
         break;
       case media_player::MEDIA_PLAYER_COMMAND_MUTE:
         this->mute_();
@@ -101,6 +99,7 @@ media_player::MediaPlayerTraits ADFMediaPlayer::get_traits() {
   traits.set_supports_pause(true);
   return traits;
 };
+
 
 void ADFMediaPlayer::mute_() {
   AudioPipelineSettingsRequest request;

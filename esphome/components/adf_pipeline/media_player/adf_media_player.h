@@ -3,21 +3,9 @@
 #ifdef USE_ESP_IDF
 
 #include "esphome/components/media_player/media_player.h"
-#include "esphome/core/component.h"
-#include "esphome/core/gpio.h"
-#include "esphome/core/helpers.h"
-
-// #include "../adf_audio_element.h"
-#include "../adf_pipeline.h"
 #include "../adf_audio_sources.h"
+#include "../adf_pipeline.h"
 
-#include "audio_pipeline.h"
-#include "audio_element.h"
-#include "audio_event_iface.h"
-#include "audio_common.h"
-#include "http_stream.h"
-
-#include <raw_stream.h>
 
 namespace esphome {
 namespace esp_adf {

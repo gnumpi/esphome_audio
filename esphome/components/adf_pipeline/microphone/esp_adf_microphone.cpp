@@ -49,6 +49,7 @@ void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
     case PipelineState::PAUSING:
     case PipelineState::RESUMING:
     case PipelineState::PREPARING:
+    case PipelineState::DESTROYING:
       break;
   }
 }
