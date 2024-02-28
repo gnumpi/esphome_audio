@@ -9,6 +9,8 @@ namespace i2s_audio {
 
 static const char *const TAG = "adf_i2s_out";
 
+
+
 void ADFElementI2SOut::setup() {
   this->supported_bits_per_sample_.push_back(16);
   this->supported_samples_rates_.push_back(16000);
@@ -68,6 +70,15 @@ void ADFElementI2SOut::init_adf_elements_() {
   }
   sdk_audio_elements_.push_back(this->adf_i2s_stream_writer_);
   sdk_element_tags_.push_back("i2s_out");
+
+  this->bits_per_sample_ = 16;
+  this->sample_rate_ = 16000;
+  this->channels_ = 1;
+}
+
+void ADFElementI2SOut::deinit_adf_elements_(){
+  this->sdk_audio_elements_.clear();
+  this->sdk_element_tags_.clear();
 }
 
 void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request) {

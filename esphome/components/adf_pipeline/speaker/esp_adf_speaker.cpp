@@ -31,6 +31,7 @@ void ADFSpeaker::stop() {
     return;
   this->state_ = speaker::STATE_STOPPING;
   pipeline.stop();
+  pipeline.destroy();
 }
 
 void ADFSpeaker::on_pipeline_state_change(PipelineState state) {

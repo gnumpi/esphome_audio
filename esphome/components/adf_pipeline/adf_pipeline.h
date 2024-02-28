@@ -55,7 +55,6 @@ class ADFPipeline {
   void resume();
   void destroy();
 
-  void reset();
   PipelineState getState() { return state_; }
   void loop() { this->watch_(); }
 
@@ -85,7 +84,7 @@ class ADFPipeline {
   void forward_event_to_pipeline_elements_(audio_event_iface_msg_t &msg);
 
   bool build_adf_pipeline_();
-  bool terminate_pipeline_();
+  //bool terminate_pipeline_();
   void deinit_all_();
 
   audio_pipeline_handle_t adf_pipeline_{};

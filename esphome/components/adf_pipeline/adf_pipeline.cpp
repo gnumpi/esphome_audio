@@ -56,7 +56,7 @@ void ADFPipeline::start() {
 }
 
 void ADFPipeline::stop() {
-  if (state_ == PipelineState::RUNNING || state_ == PipelineState::PAUSED) {
+  if (state_ == PipelineState::RUNNING || state_ == PipelineState::PAUSED || state_ == PipelineState::STARTING) {
     set_state_(PipelineState::STOPPING);
     stop_();
   }
@@ -82,9 +82,11 @@ void ADFPipeline::destroy() {
   }
 }
 
-void ADFPipeline::reset() { reset_(); }
-
 void ADFPipeline::watch_() {
+  if (this->state_ == PipelineState::UNAVAILABLE || this->state_ == PipelineState::STOPPED )
+  {
+    return;
+  }
   if (this->state_ == PipelineState::PREPARING) {
     bool ready = true;
     for (auto &element : this->pipeline_elements_) {
@@ -111,8 +113,9 @@ void ADFPipeline::watch_() {
         switch (status) {
           case AEL_STATUS_STATE_STOPPED:
           case AEL_STATUS_STATE_FINISHED:
-            this->reset_();
+            //this->reset_();
             set_state_(PipelineState::STOPPED);
+            this->destroy();
             break;
           case AEL_STATUS_STATE_RUNNING:
             set_state_(PipelineState::RUNNING);
@@ -185,16 +188,9 @@ void ADFPipeline::set_state_(PipelineState state) {
 
 bool ADFPipeline::init_() { return build_adf_pipeline_(); }
 
-bool ADFPipeline::reset_() {
-  this->set_state_(PipelineState::STOPPED);
-  audio_pipeline_handle_t pipeline = this->adf_pipeline_;
-  return (audio_pipeline_reset_ringbuffer(pipeline) == ESP_OK && audio_pipeline_reset_elements(pipeline) == ESP_OK &&
-          audio_pipeline_change_state(pipeline, AEL_STATE_INIT) == ESP_OK);
-}
-
 bool ADFPipeline::start_() { return audio_pipeline_run(adf_pipeline_) == ESP_OK; }
 
-bool ADFPipeline::stop_() { return terminate_pipeline_() && reset_(); }
+bool ADFPipeline::stop_() { return audio_pipeline_stop(adf_pipeline_) == ESP_OK; }
 
 bool ADFPipeline::pause_() { return audio_pipeline_pause(adf_pipeline_) == ESP_OK; }
 
@@ -220,7 +216,9 @@ bool ADFPipeline::build_adf_pipeline_() {
     ADFPipelineElement *comp = dynamic_cast<ADFPipelineElement *>(comp_base);
     comp->init_adf_elements();
     int i = 0;
+    esph_log_d(TAG, "Adding new component");
     for (auto el : comp->get_adf_elements()) {
+      esph_log_d(TAG, "Adding element of component");
       tags_vector.push_back(comp->get_adf_element_tag(i));
       if (audio_pipeline_register(adf_pipeline_, el, tags_vector.back().c_str()) != ESP_OK) {
         esph_log_e(TAG, "Couldn't register [%s] with pipeline", tags_vector.back().c_str());
@@ -262,21 +260,49 @@ bool ADFPipeline::reset_ringbuffer() {
   return (audio_pipeline_reset_ringbuffer(pipeline) == ESP_OK);
 }
 
+/*
 bool ADFPipeline::terminate_pipeline_() {
   return (audio_pipeline_stop(adf_pipeline_) == ESP_OK && audio_pipeline_wait_for_stop(adf_pipeline_) == ESP_OK &&
           audio_pipeline_terminate(adf_pipeline_) == ESP_OK);
 }
+*/
+
+bool ADFPipeline::reset_() {
+  audio_pipeline_handle_t pipeline = this->adf_pipeline_;
+  bool ret =  (audio_pipeline_reset_ringbuffer(pipeline) == ESP_OK && audio_pipeline_reset_elements(pipeline) == ESP_OK &&
+          audio_pipeline_change_state(pipeline, AEL_STATE_INIT) == ESP_OK);
+  this->set_state_(PipelineState::STOPPED);
+  return ret;
+}
 
 void ADFPipeline::deinit_all_() {
-  terminate_pipeline_();
-  audio_pipeline_remove_listener(adf_pipeline_);
-  audio_pipeline_deinit(adf_pipeline_);
-  adf_pipeline_ = nullptr;
+  esph_log_d(TAG, "Called deinit_all" );
+  audio_pipeline_wait_for_stop(this->adf_pipeline_);
+  for (auto &comp : pipeline_elements_) {
+    for (auto el : comp->get_adf_elements()) {
+      audio_pipeline_unregister( this->adf_pipeline_, el);
+    }
+  }
+  audio_pipeline_deinit(this->adf_pipeline_);
+  audio_event_iface_destroy(this->adf_pipeline_event_);
   for (auto &comp : this->pipeline_elements_) {
     comp->deinit_adf_elements();
   }
-  audio_event_iface_destroy(adf_pipeline_event_);
-  adf_pipeline_event_ = nullptr;
+  this->adf_pipeline_ = nullptr;
+  this->adf_pipeline_event_ = nullptr;
+  this->set_state_(PipelineState::UNAVAILABLE);
+
+  return;
+  audio_pipeline_terminate(this->adf_pipeline_);
+  for (auto &comp : pipeline_elements_) {
+    //ADFPipelineElement *comp = dynamic_cast<ADFPipelineElement *>(comp_base);
+    for (auto el : comp->get_adf_elements()) {
+      audio_pipeline_unregister( this->adf_pipeline_, el);
+    }
+  }
+
+  audio_pipeline_remove_listener(this->adf_pipeline_);
+
 }
 
 void ADFPipeline::forward_event_to_pipeline_elements_(audio_event_iface_msg_t &msg) {
