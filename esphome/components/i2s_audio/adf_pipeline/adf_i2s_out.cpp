@@ -79,6 +79,11 @@ void ADFElementI2SOut::init_adf_elements_() {
 void ADFElementI2SOut::deinit_adf_elements_(){
   this->sdk_audio_elements_.clear();
   this->sdk_element_tags_.clear();
+  this->parent_->unlock();
+}
+
+bool ADFElementI2SOut::isReady(){
+  return this->parent_->try_lock();
 }
 
 void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request) {

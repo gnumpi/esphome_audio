@@ -54,6 +54,17 @@ void ADFElementI2SIn::init_adf_elements_() {
   sdk_element_tags_.push_back("i2s_in");
 };
 
+bool ADFElementI2SIn::isReady(){
+  return this->parent_->try_lock();
+}
+
+void ADFElementI2SIn::deinit_adf_elements_(){
+  this->sdk_audio_elements_.clear();
+  this->sdk_element_tags_.clear();
+  this->parent_->unlock();
+}
+
+
 }  // namespace i2s_audio
 }  // namespace esphome
 

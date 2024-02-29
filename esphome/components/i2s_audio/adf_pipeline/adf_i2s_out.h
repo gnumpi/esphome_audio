@@ -19,6 +19,7 @@ class ADFElementI2SOut : public I2SAudioOut, public ADFPipelineSinkElement, publ
 
   // ADFPipelieSourceElement implementations
   const std::string get_name() override { return "I2S_Input"; }
+  bool isReady() override;
 
   void set_dout_pin(uint8_t pin) { this->dout_pin_ = pin; }
   void set_external_dac_channels(uint8_t channels) { this->external_dac_channels_ = channels; }
