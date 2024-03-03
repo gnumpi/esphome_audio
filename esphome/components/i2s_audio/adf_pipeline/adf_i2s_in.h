@@ -19,6 +19,7 @@ class ADFElementI2SIn : public I2SAudioIn, public ADFPipelineSourceElement, publ
 
   // ADFPipelieSourceElement implementations
   const std::string get_name() override { return "I2S_Input"; }
+  bool isReady() override;
 
   void set_din_pin(int8_t pin) { this->din_pin_ = pin; }
   void set_channel(i2s_channel_fmt_t channel) { this->channel_ = channel; }
@@ -34,6 +35,7 @@ class ADFElementI2SIn : public I2SAudioIn, public ADFPipelineSourceElement, publ
   bool use_apll_;
 
   void init_adf_elements_() override;
+  void deinit_adf_elements_() override;
   audio_element_handle_t adf_i2s_stream_reader_;
 };
 

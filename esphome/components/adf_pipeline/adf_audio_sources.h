@@ -20,6 +20,8 @@ class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
 
  protected:
   void init_adf_elements_() override;
+  void deinit_adf_elements_() override;
+
   void start_config_pipeline_();
   void terminate_config_pipeline_();
   void sdk_event_handler_(audio_event_iface_msg_t &msg);

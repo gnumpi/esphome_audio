@@ -31,12 +31,19 @@ void HTTPStreamReaderAndDecoder::init_adf_elements_() {
 
   sdk_audio_elements_.push_back(this->decoder_);
   sdk_element_tags_.push_back("decoder");
+  this->element_state_ = PipelineElementState::UNAVAILABLE;
 }
+
+void HTTPStreamReaderAndDecoder::deinit_adf_elements_() {
+  this->sdk_audio_elements_.clear();
+  this->sdk_element_tags_.clear();
+  this->element_state_ = PipelineElementState::UNAVAILABLE;
+}
+
 
 void HTTPStreamReaderAndDecoder::set_stream_uri(const char *uri) {
   audio_element_set_uri(this->http_stream_reader_, uri);
-  this->element_state_ = PipelineElementState::PREPARING;
-  this->start_config_pipeline_();
+  this->element_state_ = PipelineElementState::PREPARE;
 }
 
 void HTTPStreamReaderAndDecoder::start_config_pipeline_(){
@@ -70,6 +77,11 @@ bool HTTPStreamReaderAndDecoder::isReady(){
   {
     return true;
   }
+  if( this->element_state_ == PipelineElementState::PREPARE)
+  {
+    this->element_state_ = PipelineElementState::PREPARING;
+    start_config_pipeline_();
+  }
   if( this->element_state_ == PipelineElementState::WAIT_FOR_PREPARATION_DONE )
   {
     bool stopped = audio_element_wait_for_stop_ms(this->http_stream_reader_, 0) == ESP_OK;
@@ -101,6 +113,7 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
     request.bit_depth = music_info.bits;
     request.number_of_channels = music_info.channels;
     if (!pipeline_->request_settings(request)) {
+      esph_log_e(TAG, "Requested audio settings, didn't get accepted");
       pipeline_->on_settings_request_failed(request);
     }
     if( this->element_state_ == PipelineElementState::PREPARING )

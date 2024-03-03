@@ -21,8 +21,8 @@ void ADFMicrophone::start() {
 }
 
 void ADFMicrophone::stop() {
-  pipeline.stop();
   this->state_ = microphone::STATE_STOPPING;
+  pipeline.stop();
 }
 
 size_t ADFMicrophone::read(int16_t *buf, size_t len) { return pcm_stream_.stream_read((char *) buf, len); }
@@ -39,13 +39,13 @@ void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
       this->state_ = microphone::STATE_STOPPING;
       break;
     case PipelineState::UNAVAILABLE:
-    case PipelineState::STOPPED:
       this->state_ = microphone::STATE_STOPPED;
       break;
     case PipelineState::PAUSED:
       ESP_LOGI(TAG, "pipeline paused");
       this->state_ = microphone::STATE_STOPPED;
       break;
+    case PipelineState::STOPPED:
     case PipelineState::PAUSING:
     case PipelineState::RESUMING:
     case PipelineState::PREPARING:

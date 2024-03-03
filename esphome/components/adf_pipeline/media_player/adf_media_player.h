@@ -41,6 +41,7 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineCompo
   void set_volume_(float volume, bool publish = true);
 
   bool muted_{false};
+  bool play_intent_{false};
   optional<std::string> current_url_{};
 
   HTTPStreamReaderAndDecoder http_and_decoder_;

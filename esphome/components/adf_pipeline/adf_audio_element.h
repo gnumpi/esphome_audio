@@ -17,7 +17,7 @@ typedef struct {
 } pcm_format;
 
 
-enum class PipelineElementState : uint8_t { UNAVAILABLE = 0, PREPARING, WAIT_FOR_PREPARATION_DONE, READY };
+enum class PipelineElementState : uint8_t { UNAVAILABLE = 0, PREPARE, PREPARING, WAIT_FOR_PREPARATION_DONE, READY };
 
 class ADFPipeline;
 class ADFPipelineElement;
@@ -58,7 +58,7 @@ class ADFPipelineElement {
   std::vector<audio_element_handle_t> get_adf_elements() { return sdk_audio_elements_; }
   std::string get_adf_element_tag(int element_indx);
   void init_adf_elements() { init_adf_elements_(); }
-  void deinit_adf_elements() {}
+  void deinit_adf_elements() {deinit_adf_elements_();}
 
   void set_pipeline(ADFPipeline *pipeline) { pipeline_ = pipeline; }
   virtual bool isReady() {return true;}
