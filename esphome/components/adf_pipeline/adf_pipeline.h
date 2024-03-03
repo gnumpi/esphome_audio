@@ -19,12 +19,12 @@ namespace esp_adf {
 
 /* Audio Pipeline States:
 
-UNAVAILABLE -> STOPPED -> (PREPARING) -> STARTING -> RUNNING
+UNINITIALIZED -> STOPPED -> (PREPARING) -> STARTING -> RUNNING
     -> PAUSING -> PAUSED -> RESUMING -> RUNNING
-    -> STOPPING -> STOPPED -> DESTROYING -> UNAVAILABLE
+    -> STOPPING -> STOPPED -> DESTROYING -> UNINITIALIZED
 
 State Explanations:
-- UNAVAILABLE: No memory allocated, no tasks created, no hardware blocked.
+- UNINITIALIZED: No memory allocated, no tasks created, no hardware blocked.
 - STOPPED: Memory allocated, hardware reserved, but no task is running.
 - PREPARING: Optional state where dynamic information is received by starting individual components,
              pipeline elements are reconfigured accordingly, and finally the ring buffers are reset if necessary.
@@ -37,7 +37,7 @@ State Explanations:
 - DESTROYING: Freeing all memory and hardware reservations.
 
 */
-enum PipelineState : uint8_t { UNAVAILABLE = 0, PREPARING, STARTING, RUNNING, STOPPING, STOPPED, PAUSING, PAUSED, RESUMING, DESTROYING };
+enum PipelineState : uint8_t { UNINITIALIZED = 0, PREPARING, STARTING, RUNNING, STOPPING, STOPPED, PAUSING, PAUSED, RESUMING, DESTROYING };
 
 class ADFPipelineComponent;
 /* Encapsulates the core functionalities of the ADF pipeline.
@@ -93,7 +93,9 @@ class ADFPipeline {
   audio_element_handle_t adf_last_element_in_pipeline_{};
   std::vector<ADFPipelineElement *> pipeline_elements_;
   ADFPipelineComponent *parent_{nullptr};
-  PipelineState state_{PipelineState::UNAVAILABLE};
+
+  PipelineState state_{PipelineState::UNINITIALIZED};
+  bool restart_on_stop_{false};
 };
 
 /*
@@ -115,6 +117,8 @@ class ADFPipelineComponent : public Component {
   friend ADFPipeline;
   virtual void pipeline_event_handler(audio_event_iface_msg_t &msg) {}
   virtual void on_pipeline_state_change(PipelineState state) {}
+
+  bool destroy_pipeline_on_stop_{true};
 
   ADFPipeline pipeline;
 };

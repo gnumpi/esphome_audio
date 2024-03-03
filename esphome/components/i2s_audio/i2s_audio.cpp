@@ -24,6 +24,36 @@ void I2SAudioComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up I2S Audio...");
 }
 
+bool I2SAudioComponent::set_mode_(int mode){
+  bool success = false;
+  this->lock();
+  if( this->current_mode_ == 0 ) {
+    this->current_mode_ = mode;
+    success = true;
+  }
+  else if( this->current_mode_ == mode ){
+    success = true;
+  }
+  this->unlock();
+  return success;
+  }
+
+bool I2SAudioComponent::release_mode_(int mode){
+  bool success = false;
+  this->lock();
+  if( this->current_mode_ == mode ) {
+    this->current_mode_ = 0;
+    success = true;
+  } else if( this->current_mode_ == 0 )
+  {
+    success = true;
+  }
+  this->unlock();
+  return success;
+}
+
+
+
 }  // namespace i2s_audio
 }  // namespace esphome
 

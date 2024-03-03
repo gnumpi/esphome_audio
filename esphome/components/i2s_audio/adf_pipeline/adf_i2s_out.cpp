@@ -74,14 +74,15 @@ void ADFElementI2SOut::init_adf_elements_() {
   this->channels_ = 1;
 }
 
-void ADFElementI2SOut::deinit_adf_elements_(){
+void ADFElementI2SOut::clear_adf_elements_(){
   this->sdk_audio_elements_.clear();
   this->sdk_element_tags_.clear();
-  this->parent_->unlock();
+  //this->parent_->unlock();
+  this->parent_->release_write_mode();
 }
 
 bool ADFElementI2SOut::isReady(){
-  return this->parent_->try_lock();
+  return this->parent_->set_write_mode();
 }
 
 void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request) {

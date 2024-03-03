@@ -35,7 +35,7 @@ class ADFElementI2SIn : public I2SAudioIn, public ADFPipelineSourceElement, publ
   bool use_apll_;
 
   void init_adf_elements_() override;
-  void deinit_adf_elements_() override;
+  void clear_adf_elements_() override;
   audio_element_handle_t adf_i2s_stream_reader_;
 };
 

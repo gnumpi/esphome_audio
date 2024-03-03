@@ -36,14 +36,25 @@ void ADFSpeaker::stop() {
 void ADFSpeaker::on_pipeline_state_change(PipelineState state) {
    switch (state) {
       case PipelineState::STARTING:
+        break;
       case PipelineState::STOPPING:
+        this->state_ = speaker::STATE_STOPPING;
         break;
       case PipelineState::RUNNING:
         this->state_ = speaker::STATE_RUNNING;
         break;
-      case PipelineState::UNAVAILABLE:
-      case PipelineState::STOPPED:
+      case PipelineState::UNINITIALIZED:
         this->state_ = speaker::STATE_STOPPED;
+        break;
+      case PipelineState::STOPPED:
+        if( this->destroy_pipeline_on_stop_
+            && this->state_ == speaker::STATE_STOPPING )
+        {
+          this->pipeline.destroy();
+        }
+        else {
+          this->state_ = speaker::STATE_STOPPED;
+        }
         break;
       case PipelineState::PAUSED:
         ESP_LOGI(TAG, "pipeline paused");
@@ -53,7 +64,6 @@ void ADFSpeaker::on_pipeline_state_change(PipelineState state) {
       case PipelineState::PREPARING:
       case PipelineState::DESTROYING:
         break;
-
    }
 }
 

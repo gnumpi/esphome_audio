@@ -20,15 +20,17 @@ class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
 
  protected:
   void init_adf_elements_() override;
-  void deinit_adf_elements_() override;
+  void clear_adf_elements_() override;
+  void reset_() override;
 
-  void start_config_pipeline_();
-  void terminate_config_pipeline_();
+  void start_prepare_pipeline_();
+  void terminate_prepare_pipeline_();
+  bool set_ready_when_prepare_pipeline_stopped_();
   void sdk_event_handler_(audio_event_iface_msg_t &msg);
   void cfg_event_handler_(audio_event_iface_msg_t &msg);
 
 
-  PipelineElementState element_state_{PipelineElementState::UNAVAILABLE};
+  PipelineElementState element_state_{PipelineElementState::UNINITIALIZED};
   audio_element_handle_t http_stream_reader_{};
   audio_element_handle_t decoder_{};
 };

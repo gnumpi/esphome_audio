@@ -6,7 +6,7 @@
 namespace esphome {
 namespace esp_adf {
 
-static const char *const TAG = "adf_audio";
+static const char *const TAG = "adf_media_player";
 
 void ADFMediaPlayer::setup() {
   state = media_player::MEDIA_PLAYER_STATE_IDLE;
@@ -24,9 +24,11 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
   if (call.get_media_url().has_value()) {
     current_url_ = call.get_media_url();
 
+    esph_log_d(TAG, "Got control call in state %d", state );
     if (state == media_player::MEDIA_PLAYER_STATE_PLAYING || state == media_player::MEDIA_PLAYER_STATE_PAUSED) {
-      pipeline.stop();
       this->play_intent_ = true;
+      pipeline.stop();
+      return;
     } else {
       pipeline.init();
       set_stream_uri(current_url_.value().c_str());
@@ -43,7 +45,7 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
     switch (call.get_command().value()) {
       case media_player::MEDIA_PLAYER_COMMAND_PLAY:
         state = media_player::MEDIA_PLAYER_STATE_PLAYING;
-        if (pipeline.getState() == PipelineState::STOPPED || pipeline.getState() == PipelineState::UNAVAILABLE) {
+        if (pipeline.getState() == PipelineState::STOPPED || pipeline.getState() == PipelineState::UNINITIALIZED) {
           pipeline.init();
           pipeline.start();
         } else if (pipeline.getState() == PipelineState::PAUSED) {
@@ -93,12 +95,12 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
   publish_state();
 }
 
+// pausing is only supported if destroy_pipeline_on_stop is disabled
 media_player::MediaPlayerTraits ADFMediaPlayer::get_traits() {
   auto traits = media_player::MediaPlayerTraits();
-  traits.set_supports_pause(true);
+  traits.set_supports_pause( !this->destroy_pipeline_on_stop_ );
   return traits;
 };
-
 
 void ADFMediaPlayer::mute_() {
   AudioPipelineSettingsRequest request;
@@ -131,7 +133,9 @@ void ADFMediaPlayer::set_volume_(float volume, bool publish) {
 void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
   esph_log_i(TAG, "got new pipeline state: %d", (int) state);
   switch (state) {
-    case PipelineState::UNAVAILABLE:
+    case PipelineState::UNINITIALIZED:
+      this->state = media_player::MEDIA_PLAYER_STATE_IDLE;
+      publish_state();
       if( this->play_intent_ )
       {
         pipeline.init();
@@ -141,8 +145,21 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
       }
       break;
     case PipelineState::STOPPED:
-      this->state = media_player::MEDIA_PLAYER_STATE_IDLE;
-      publish_state();
+      if( this->destroy_pipeline_on_stop_
+            && (this->state == media_player::MEDIA_PLAYER_STATE_PLAYING
+            ||  this->state == media_player::MEDIA_PLAYER_STATE_PAUSED ))
+      {
+        pipeline.destroy();
+      } else if( this->play_intent_ ){
+        set_stream_uri(this->current_url_.value().c_str());
+        pipeline.start();
+        this->play_intent_ = false;
+      }
+      else
+      {
+        this->state = media_player::MEDIA_PLAYER_STATE_IDLE;
+        publish_state();
+      }
       break;
     case PipelineState::PAUSED:
       this->state = media_player::MEDIA_PLAYER_STATE_PAUSED;

@@ -27,7 +27,7 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineCompo
   //
   void set_stream_uri(const char *uri);
   void start() {pipeline.start();}
-  void stop() {pipeline.stop();}
+  void stop()  {pipeline.stop();}
 
  protected:
   // MediaPlayer implementation

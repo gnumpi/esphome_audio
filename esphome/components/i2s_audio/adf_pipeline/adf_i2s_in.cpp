@@ -55,13 +55,14 @@ void ADFElementI2SIn::init_adf_elements_() {
 };
 
 bool ADFElementI2SIn::isReady(){
-  return this->parent_->try_lock();
+  return this->parent_->set_read_mode();
 }
 
-void ADFElementI2SIn::deinit_adf_elements_(){
+void ADFElementI2SIn::clear_adf_elements_(){
   this->sdk_audio_elements_.clear();
   this->sdk_element_tags_.clear();
-  this->parent_->unlock();
+  //this->parent_->unlock();
+  this->parent_->release_read_mode();
 }
 
 

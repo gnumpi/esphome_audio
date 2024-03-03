@@ -38,7 +38,7 @@ class ADFElementI2SOut : public I2SAudioOut, public ADFPipelineSinkElement, publ
   std::vector<uint8_t> supported_bits_per_sample_;
 
   void init_adf_elements_() override;
-  void deinit_adf_elements_() override;
+  void clear_adf_elements_() override;
   audio_element_handle_t adf_i2s_stream_writer_;
 };
 

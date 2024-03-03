@@ -38,7 +38,7 @@ void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
     case PipelineState::STOPPING:
       this->state_ = microphone::STATE_STOPPING;
       break;
-    case PipelineState::UNAVAILABLE:
+    case PipelineState::UNINITIALIZED:
       this->state_ = microphone::STATE_STOPPED;
       break;
     case PipelineState::PAUSED:
@@ -46,6 +46,15 @@ void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
       this->state_ = microphone::STATE_STOPPED;
       break;
     case PipelineState::STOPPED:
+      if( this->destroy_pipeline_on_stop_
+        && this->state_ == microphone::STATE_STOPPING )
+      {
+        this->pipeline.destroy();
+      }
+      else {
+        this->state_ = microphone::STATE_STOPPED;
+      }
+      break;
     case PipelineState::PAUSING:
     case PipelineState::RESUMING:
     case PipelineState::PREPARING:
