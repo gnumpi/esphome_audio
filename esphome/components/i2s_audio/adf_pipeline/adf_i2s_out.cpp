@@ -19,9 +19,9 @@ void ADFElementI2SOut::setup() {
   this->channels_ = 2;
 }
 
-void ADFElementI2SOut::init_adf_elements_() {
+bool ADFElementI2SOut::init_adf_elements_() {
   if (this->sdk_audio_elements_.size() > 0)
-    return;
+    return true;
 
   i2s_driver_config_t i2s_config = {
       .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_TX),
@@ -72,6 +72,8 @@ void ADFElementI2SOut::init_adf_elements_() {
   this->bits_per_sample_ = 16;
   this->sample_rate_ = 16000;
   this->channels_ = 1;
+
+  return true;
 }
 
 void ADFElementI2SOut::clear_adf_elements_(){
@@ -81,7 +83,7 @@ void ADFElementI2SOut::clear_adf_elements_(){
   this->parent_->release_write_mode();
 }
 
-bool ADFElementI2SOut::isReady(){
+bool ADFElementI2SOut::is_ready(){
   return this->parent_->set_write_mode();
 }
 

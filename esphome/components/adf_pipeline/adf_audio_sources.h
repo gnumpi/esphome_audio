@@ -14,12 +14,13 @@ class ADFPipelineSourceElement : public ADFPipelineElement {
 
 class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
  public:
-  void set_stream_uri(const char *uri);
+  void set_stream_uri(const std::string&  new_url);
   const std::string get_name() override { return "HTTPStreamReader"; }
-  bool isReady() override;
+  bool is_ready() override;
+  void prepare_elements() override;
 
  protected:
-  void init_adf_elements_() override;
+  bool init_adf_elements_() override;
   void clear_adf_elements_() override;
   void reset_() override;
 
@@ -31,18 +32,11 @@ class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
 
 
   PipelineElementState element_state_{PipelineElementState::UNINITIALIZED};
+  std::string current_url_{"https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3"};
   audio_element_handle_t http_stream_reader_{};
   audio_element_handle_t decoder_{};
 };
 
-class I2SReader : public ADFPipelineSourceElement {
- public:
-  const std::string get_name() override { return "I2SReader"; }
-
- protected:
-  void init_adf_elements_() override {}
-  audio_element_handle_t adf_i2s_stream_reader_;
-};
 
 class PCMSource : public ADFPipelineSourceElement {
  public:
@@ -51,7 +45,7 @@ class PCMSource : public ADFPipelineSourceElement {
   bool has_buffered_data() const;
 
  protected:
-  void init_adf_elements_() override;
+  bool init_adf_elements_() override;
   audio_element_handle_t adf_raw_stream_writer_;
 };
 

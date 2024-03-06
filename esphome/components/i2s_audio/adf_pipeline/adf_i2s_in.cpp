@@ -7,9 +7,9 @@ namespace esphome {
 using namespace esp_adf;
 namespace i2s_audio {
 
-void ADFElementI2SIn::init_adf_elements_() {
+bool ADFElementI2SIn::init_adf_elements_() {
   if (this->sdk_audio_elements_.size() > 0)
-    return;
+    return true;
 
   i2s_driver_config_t i2s_config = {
       .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_RX),
@@ -52,16 +52,17 @@ void ADFElementI2SIn::init_adf_elements_() {
 
   sdk_audio_elements_.push_back(this->adf_i2s_stream_reader_);
   sdk_element_tags_.push_back("i2s_in");
+
+  return true;
 };
 
-bool ADFElementI2SIn::isReady(){
+bool ADFElementI2SIn::is_ready(){
   return this->parent_->set_read_mode();
 }
 
 void ADFElementI2SIn::clear_adf_elements_(){
   this->sdk_audio_elements_.clear();
   this->sdk_element_tags_.clear();
-  //this->parent_->unlock();
   this->parent_->release_read_mode();
 }
 

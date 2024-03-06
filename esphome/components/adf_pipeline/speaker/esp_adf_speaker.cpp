@@ -44,17 +44,8 @@ void ADFSpeaker::on_pipeline_state_change(PipelineState state) {
         this->state_ = speaker::STATE_RUNNING;
         break;
       case PipelineState::UNINITIALIZED:
-        this->state_ = speaker::STATE_STOPPED;
-        break;
       case PipelineState::STOPPED:
-        if( this->destroy_pipeline_on_stop_
-            && this->state_ == speaker::STATE_STOPPING )
-        {
-          this->pipeline.destroy();
-        }
-        else {
-          this->state_ = speaker::STATE_STOPPED;
-        }
+        this->state_ = speaker::STATE_STOPPED;
         break;
       case PipelineState::PAUSED:
         ESP_LOGI(TAG, "pipeline paused");

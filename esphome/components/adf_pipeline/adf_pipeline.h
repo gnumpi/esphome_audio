@@ -48,7 +48,6 @@ class ADFPipeline {
   ADFPipeline(ADFPipelineComponent *parent) { parent_ = parent; }
   virtual ~ADFPipeline() {}
 
-  void init();
   void start();
   void stop();
   void pause();
@@ -66,8 +65,6 @@ class ADFPipeline {
   bool request_settings(AudioPipelineSettingsRequest &request);
   void on_settings_request_failed(AudioPipelineSettingsRequest request) {}
 
-  bool reset_ringbuffer();
-
  protected:
   bool init_();
   bool reset_();
@@ -81,6 +78,7 @@ class ADFPipeline {
 
   void loop_();
   void watch_();
+  void prepare_elements_();
   void check_if_components_are_ready_();
   void check_for_pipeline_events_();
   void forward_event_to_pipeline_elements_(audio_event_iface_msg_t &msg);
@@ -95,7 +93,8 @@ class ADFPipeline {
   ADFPipelineComponent *parent_{nullptr};
 
   PipelineState state_{PipelineState::UNINITIALIZED};
-  bool restart_on_stop_{false};
+  bool destroy_on_stop_{true};
+  uint32_t preparation_started_at_{0};
 };
 
 /*
@@ -117,8 +116,6 @@ class ADFPipelineComponent : public Component {
   friend ADFPipeline;
   virtual void pipeline_event_handler(audio_event_iface_msg_t &msg) {}
   virtual void on_pipeline_state_change(PipelineState state) {}
-
-  bool destroy_pipeline_on_stop_{true};
 
   ADFPipeline pipeline;
 };

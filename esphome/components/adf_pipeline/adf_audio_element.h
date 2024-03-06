@@ -57,19 +57,23 @@ class ADFPipelineElement {
 
   std::vector<audio_element_handle_t> get_adf_elements() { return sdk_audio_elements_; }
   std::string get_adf_element_tag(int element_indx);
-  void init_adf_elements() { init_adf_elements_(); }
-  void deinit_adf_elements() {clear_adf_elements_();}
+  bool init_adf_elements() { return init_adf_elements_(); }
+  void destroy_adf_elements() {clear_adf_elements_();}
+  virtual void prepare_elements() {}
 
   void set_pipeline(ADFPipeline *pipeline) { pipeline_ = pipeline; }
-  virtual bool isReady() {return true;}
+  virtual bool is_ready() {return true;}
+  virtual bool requires_destruction_on_stop(){ return false; }
 
  protected:
   friend class ADFPipeline;
 
-  virtual void init_adf_elements_() = 0;
+  virtual bool init_adf_elements_() = 0;
   virtual void clear_adf_elements_();
   virtual void reset_() {}
   virtual void sdk_event_handler_(audio_event_iface_msg_t &msg) {}
+
+  bool all_elements_are_stopped_();
 
   std::vector<audio_element_handle_t> sdk_audio_elements_;
   std::vector<std::string> sdk_element_tags_;

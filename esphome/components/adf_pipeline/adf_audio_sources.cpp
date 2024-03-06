@@ -16,16 +16,16 @@ HTTPStreamReaderAndDecoder
 */
 
 
-void HTTPStreamReaderAndDecoder::init_adf_elements_() {
+bool HTTPStreamReaderAndDecoder::init_adf_elements_() {
   if (sdk_audio_elements_.size() > 0)
-    return;
+    return true;
 
   http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
   http_cfg.task_core = 0;
   http_cfg.out_rb_size = 8 * 512;
   http_stream_reader_ = http_stream_init(&http_cfg);
 
-  audio_element_set_uri(this->http_stream_reader_, "https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3");
+  audio_element_set_uri(this->http_stream_reader_, this->current_url_.c_str());
 
   sdk_audio_elements_.push_back(this->http_stream_reader_);
   sdk_element_tags_.push_back("http");
@@ -37,6 +37,7 @@ void HTTPStreamReaderAndDecoder::init_adf_elements_() {
   sdk_audio_elements_.push_back(this->decoder_);
   sdk_element_tags_.push_back("decoder");
   this->element_state_ = PipelineElementState::INITIALIZED;
+  return true;
 }
 
 void HTTPStreamReaderAndDecoder::clear_adf_elements_() {
@@ -50,18 +51,22 @@ void HTTPStreamReaderAndDecoder::reset_() {
   this->element_state_ = PipelineElementState::INITIALIZED;
 }
 
-void HTTPStreamReaderAndDecoder::set_stream_uri(const char *uri) {
-  audio_element_set_uri(this->http_stream_reader_, uri);
+void HTTPStreamReaderAndDecoder::set_stream_uri(const std::string& new_url) {
+  this->current_url_ = new_url;
+}
+
+void HTTPStreamReaderAndDecoder::prepare_elements(){
   this->element_state_ = PipelineElementState::PREPARE;
 }
 
 // called while pipeline is in PREPARING state
-bool HTTPStreamReaderAndDecoder::isReady(){
+bool HTTPStreamReaderAndDecoder::is_ready(){
   switch(this->element_state_){
     case PipelineElementState::READY:
       return true;
     case PipelineElementState::PREPARE:
       this->element_state_ = PipelineElementState::PREPARING;
+      audio_element_set_uri(this->http_stream_reader_, this->current_url_.c_str());
       this->start_prepare_pipeline_();
       return false;
     case PipelineElementState::WAIT_FOR_PREPARATION_DONE:
@@ -115,7 +120,7 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
   audio_element_handle_t mp3_decoder = this->decoder_;
   if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) mp3_decoder &&
       msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
-    audio_element_info_t music_info = {0};
+    audio_element_info_t music_info{};
     audio_element_getinfo(mp3_decoder, &music_info);
 
     esph_log_i(get_name().c_str(), "[ * ] Receive music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
@@ -142,7 +147,7 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
 PCM SOURCE
 */
 
-void PCMSource::init_adf_elements_() {
+bool PCMSource::init_adf_elements_() {
   raw_stream_cfg_t raw_cfg = {
       .type = AUDIO_STREAM_WRITER,
       .out_rb_size = 8 * 1024,
@@ -150,6 +155,7 @@ void PCMSource::init_adf_elements_() {
   adf_raw_stream_writer_ = raw_stream_init(&raw_cfg);
   this->sdk_audio_elements_.push_back(this->adf_raw_stream_writer_);
   this->sdk_element_tags_.push_back("pcm_writer");
+  return true;
 }
 
 int PCMSource::stream_write(char *buffer, int len) { return raw_stream_write(adf_raw_stream_writer_, buffer, len); }

@@ -15,6 +15,15 @@ void ADFPipelineElement::clear_adf_elements_() {
   this->sdk_element_tags_.clear();
 }
 
+bool ADFPipelineElement::all_elements_are_stopped_(){
+  bool stopped = true;
+  for( auto el : this->sdk_audio_elements_ ){
+     stopped = stopped && (audio_element_wait_for_stop_ms(el, 0) == ESP_OK);
+  }
+  return stopped;
+}
+
+
 }  // namespace esp_adf
 }  // namespace esphome
 

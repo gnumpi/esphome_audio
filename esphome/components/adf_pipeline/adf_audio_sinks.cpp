@@ -8,7 +8,7 @@
 namespace esphome {
 namespace esp_adf {
 
-void PCMSink::init_adf_elements_() {
+bool PCMSink::init_adf_elements_() {
   raw_stream_cfg_t raw_cfg = {
       .type = AUDIO_STREAM_READER,
       .out_rb_size = 8 * 1024,
@@ -18,6 +18,7 @@ void PCMSink::init_adf_elements_() {
 
   this->sdk_audio_elements_.push_back(this->adf_raw_stream_reader_);
   this->sdk_element_tags_.push_back("pcm_reader");
+  return true;
 }
 
 int PCMSink::stream_read(char *buffer, int len) {
