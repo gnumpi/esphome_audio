@@ -133,7 +133,8 @@ void ADFPipeline::check_all_stopped_(){
       esph_log_d(TAG, "Check element for stop [%s] status, %d", audio_element_get_tag(el), audio_element_get_state(el));
       if (
            audio_element_get_state(el) != AEL_STATE_STOPPED &&
-           audio_element_get_state(el) != AEL_STATE_FINISHED
+           audio_element_get_state(el) != AEL_STATE_FINISHED &&
+           audio_element_get_state(el) != AEL_STATE_INIT
          ){
         return;
       }
