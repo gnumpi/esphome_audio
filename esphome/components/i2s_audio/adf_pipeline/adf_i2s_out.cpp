@@ -1,13 +1,16 @@
 #include "adf_i2s_out.h"
 #ifdef USE_ESP_IDF
 
+#include "sdk_ext.h"
 #include <i2s_stream.h>
 #include "../../adf_pipeline/adf_pipeline.h"
+
 namespace esphome {
 using namespace esp_adf;
 namespace i2s_audio {
 
 static const char *const TAG = "adf_i2s_out";
+
 
 void ADFElementI2SOut::setup() {
   this->supported_bits_per_sample_.push_back(16);
@@ -30,14 +33,22 @@ bool ADFElementI2SOut::init_adf_elements_() {
       .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
-      .dma_buf_count = 8,
-      .dma_buf_len = 512,
+      .dma_buf_count = 2,
+      .dma_buf_len = 960,
       .use_apll = false,
       .tx_desc_auto_clear = true,
       .fixed_mclk = 0,
       .mclk_multiple = I2S_MCLK_MULTIPLE_256,
       .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
-  };
+#if SOC_I2S_SUPPORTS_TDM
+      .chan_mask = I2S_TDM_ACTIVE_CH0,
+      .total_chan = 0,
+      .left_align = true,
+      .big_edin = true,
+      .bit_order_msb = true,
+      .skip_msk = true,
+#endif
+};
 
   i2s_stream_cfg_t i2s_cfg = {
       .type = AUDIO_STREAM_WRITER,
@@ -45,7 +56,7 @@ bool ADFElementI2SOut::init_adf_elements_() {
       .i2s_port = this->parent_->get_port(),
       .use_alc = true,
       .volume = 0,
-      .out_rb_size = (8 * 512),
+      .out_rb_size = (4 * 960),
       .task_stack = I2S_STREAM_TASK_STACK,
       .task_core = I2S_STREAM_TASK_CORE,
       .task_prio = I2S_STREAM_TASK_PRIO,
@@ -57,6 +68,7 @@ bool ADFElementI2SOut::init_adf_elements_() {
   };
 
   this->adf_i2s_stream_writer_ = i2s_stream_init(&i2s_cfg);
+  this->adf_i2s_stream_writer_->buf_size = 2 * 960;
 
   i2s_pin_config_t pin_config = this->parent_->get_pin_config();
   pin_config.data_out_num = this->dout_pin_;

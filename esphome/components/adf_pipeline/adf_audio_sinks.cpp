@@ -8,7 +8,15 @@
 namespace esphome {
 namespace esp_adf {
 
+static const char *const TAG = "esp_audio_sinks";
+
 bool PCMSink::init_adf_elements_() {
+  if ( this->sdk_audio_elements_.size() ){
+    esph_log_e(TAG, "Called init, but elements already created.");
+    return true;
+  }
+  assert( this->adf_raw_stream_reader_ == nullptr );
+
   raw_stream_cfg_t raw_cfg = {
       .type = AUDIO_STREAM_READER,
       .out_rb_size = 8 * 1024,
@@ -21,6 +29,13 @@ bool PCMSink::init_adf_elements_() {
   return true;
 }
 
+void PCMSink::clear_adf_elements_(){
+  //make sure that audio_element_deinit was called before for freeing allocated memory
+  this->adf_raw_stream_reader_ = nullptr;
+  this->sdk_audio_elements_.clear();
+  this->sdk_element_tags_.clear();
+}
+
 int PCMSink::stream_read(char *buffer, int len) {
   int ret = audio_element_input(adf_raw_stream_reader_, buffer, len);
   if (ret < 0 && (ret != AEL_IO_TIMEOUT)) {
@@ -30,6 +45,8 @@ int PCMSink::stream_read(char *buffer, int len) {
   }
   return ret;
 }
+
+
 
 }  // namespace esp_adf
 }  // namespace esphome

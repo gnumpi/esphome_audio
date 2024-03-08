@@ -110,6 +110,39 @@ void ADFPipeline::prepare_elements_(){
   this->set_state_(PipelineState::PREPARING);
 }
 
+void ADFPipeline::check_all_started_(){
+  if( this->state_ != PipelineState::STARTING)
+  {
+    return;
+  }
+  for (auto &comp : pipeline_elements_) {
+    for (auto el : comp->get_adf_elements()) {
+      esph_log_d(TAG, "Check element [%s] status, %d", audio_element_get_tag(el), audio_element_get_state(el));
+      if (audio_element_get_state(el) != AEL_STATE_RUNNING){
+        return;
+      }
+    }
+  }
+  set_state_(PipelineState::RUNNING);
+}
+
+
+void ADFPipeline::check_all_stopped_(){
+  for (auto &comp : pipeline_elements_) {
+    for (auto el : comp->get_adf_elements()) {
+      esph_log_d(TAG, "Check element for stop [%s] status, %d", audio_element_get_tag(el), audio_element_get_state(el));
+      if (
+           audio_element_get_state(el) != AEL_STATE_STOPPED &&
+           audio_element_get_state(el) != AEL_STATE_FINISHED
+         ){
+        return;
+      }
+    }
+  }
+  reset_();
+}
+
+
 void ADFPipeline::check_if_components_are_ready_(){
   bool ready = true;
   for (auto &element : this->pipeline_elements_) {
@@ -149,19 +182,19 @@ void ADFPipeline::check_for_pipeline_events_(){
       esph_log_i(TAG, "[ %s ] status: %d", audio_element_get_tag(el), status);
     }
     assert( this->state_ != PipelineState::PREPARING );
-    //trigger state changes on events received from the last element in pipeline
-      if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.cmd == AEL_MSG_CMD_REPORT_STATUS &&
-          msg.source == (void *) this->adf_last_element_in_pipeline_) {
+
+    //trigger state changes on events received from pipeline
+      if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.cmd == AEL_MSG_CMD_REPORT_STATUS){
         audio_element_status_t status;
         std::memcpy(&status, &msg.data, sizeof(audio_element_status_t));
         esph_log_i(TAG, "[ * ] CMD: %d  status: %d", msg.cmd, status);
         switch (status) {
           case AEL_STATUS_STATE_STOPPED:
           case AEL_STATUS_STATE_FINISHED:
-            this->reset_();
+            check_all_stopped_();
             break;
           case AEL_STATUS_STATE_RUNNING:
-            set_state_(PipelineState::RUNNING);
+            check_all_started_();
             break;
           case AEL_STATUS_STATE_PAUSED:
             set_state_(PipelineState::PAUSED);

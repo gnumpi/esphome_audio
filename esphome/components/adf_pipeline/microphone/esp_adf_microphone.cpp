@@ -5,13 +5,16 @@
 #include "esphome/core/application.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
+#include "esp_log.h"
 
 namespace esphome {
 namespace esp_adf {
 
 static const char *const TAG = "esp_adf.microphone";
 
-void ADFMicrophone::setup() {}
+void ADFMicrophone::setup() {
+  esp_log_level_set("wifi", ESP_LOG_WARN);
+}
 
 void ADFMicrophone::dump_config() {}
 

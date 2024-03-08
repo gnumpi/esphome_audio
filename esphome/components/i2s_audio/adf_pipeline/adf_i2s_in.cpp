@@ -2,6 +2,7 @@
 #ifdef USE_ESP_IDF
 
 #include <i2s_stream.h>
+#include "sdk_ext.h"
 
 namespace esphome {
 using namespace esp_adf;
@@ -18,13 +19,22 @@ bool ADFElementI2SIn::init_adf_elements_() {
       .channel_format = this->channel_,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
-      .dma_buf_count = 8,
-      .dma_buf_len = 128,
+      .dma_buf_count = 2,
+      .dma_buf_len = 960,
       .use_apll = false,
       .tx_desc_auto_clear = true,
       .fixed_mclk = 0,
       .mclk_multiple = I2S_MCLK_MULTIPLE_256,
       .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
+  #if SOC_I2S_SUPPORTS_TDM
+      .chan_mask = I2S_TDM_ACTIVE_CH0,
+      .total_chan = 0,
+      .left_align = true,
+      .big_edin = true,
+      .bit_order_msb = true,
+      .skip_msk = true,
+#endif
+
   };
 
   i2s_stream_cfg_t i2s_cfg = {
@@ -33,7 +43,7 @@ bool ADFElementI2SIn::init_adf_elements_() {
       .i2s_port = this->parent_->get_port(),
       .use_alc = false,
       .volume = 0,
-      .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,
+      .out_rb_size = (4 * 960),
       .task_stack = I2S_STREAM_TASK_STACK,
       .task_core = I2S_STREAM_TASK_CORE,
       .task_prio = I2S_STREAM_TASK_PRIO,
@@ -45,6 +55,7 @@ bool ADFElementI2SIn::init_adf_elements_() {
   };
 
   this->adf_i2s_stream_reader_ = i2s_stream_init(&i2s_cfg);
+  this->adf_i2s_stream_reader_->buf_size = 2 * 960;
 
   i2s_pin_config_t pin_config = this->parent_->get_pin_config();
   pin_config.data_in_num = this->din_pin_;

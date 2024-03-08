@@ -78,6 +78,8 @@ class ADFPipeline {
 
   void loop_();
   void watch_();
+  void check_all_started_();
+  void check_all_stopped_();
   void prepare_elements_();
   void check_if_components_are_ready_();
   void check_for_pipeline_events_();

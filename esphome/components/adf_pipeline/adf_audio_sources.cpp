@@ -22,7 +22,7 @@ bool HTTPStreamReaderAndDecoder::init_adf_elements_() {
 
   http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
   http_cfg.task_core = 0;
-  http_cfg.out_rb_size = 8 * 512;
+  http_cfg.out_rb_size = 4 * 960;
   http_stream_reader_ = http_stream_init(&http_cfg);
 
   audio_element_set_uri(this->http_stream_reader_, this->current_url_.c_str());
@@ -31,7 +31,7 @@ bool HTTPStreamReaderAndDecoder::init_adf_elements_() {
   sdk_element_tags_.push_back("http");
 
   mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
-  mp3_cfg.out_rb_size = 8 * 512;
+  mp3_cfg.out_rb_size = 4 * 960;
   decoder_ = mp3_decoder_init(&mp3_cfg);
 
   sdk_audio_elements_.push_back(this->decoder_);

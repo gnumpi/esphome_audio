@@ -19,6 +19,7 @@ class PCMSink : public ADFPipelineSinkElement {
 
  protected:
   bool init_adf_elements_() override;
+  void clear_adf_elements_() override;
   audio_element_handle_t adf_raw_stream_reader_;
 };
 

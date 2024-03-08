@@ -73,8 +73,6 @@ class ADFPipelineElement {
   virtual void reset_() {}
   virtual void sdk_event_handler_(audio_event_iface_msg_t &msg) {}
 
-  bool all_elements_are_stopped_();
-
   std::vector<audio_element_handle_t> sdk_audio_elements_;
   std::vector<std::string> sdk_element_tags_;
   ADFPipeline *pipeline_{nullptr};
