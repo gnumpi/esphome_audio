@@ -2,7 +2,7 @@
 #ifdef USE_ESP_IDF
 
 #include "sdk_ext.h"
-#include <i2s_stream.h>
+#include "i2s_stream_mod.h"
 #include "../../adf_pipeline/adf_pipeline.h"
 
 namespace esphome {
@@ -100,6 +100,9 @@ bool ADFElementI2SOut::is_ready(){
 }
 
 void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request) {
+  if ( !this->adf_i2s_stream_writer_ ){
+    return;
+  }
   bool rate_bits_channels_updated = false;
   if (request.sampling_rate > 0 && (uint32_t) request.sampling_rate != this->sample_rate_) {
     /*

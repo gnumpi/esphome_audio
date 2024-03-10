@@ -1,7 +1,7 @@
 #include "adf_i2s_in.h"
 #ifdef USE_ESP_IDF
 
-#include <i2s_stream.h>
+#include "i2s_stream_mod.h"
 #include "sdk_ext.h"
 
 namespace esphome {

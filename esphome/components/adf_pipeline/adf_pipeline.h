@@ -95,7 +95,7 @@ class ADFPipeline {
   ADFPipelineComponent *parent_{nullptr};
 
   PipelineState state_{PipelineState::UNINITIALIZED};
-  bool destroy_on_stop_{true};
+  bool destroy_on_stop_{false};
   uint32_t preparation_started_at_{0};
 };
 

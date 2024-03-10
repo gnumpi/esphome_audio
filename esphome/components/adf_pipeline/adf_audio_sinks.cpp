@@ -19,7 +19,7 @@ bool PCMSink::init_adf_elements_() {
 
   raw_stream_cfg_t raw_cfg = {
       .type = AUDIO_STREAM_READER,
-      .out_rb_size = 8 * 1024,
+      .out_rb_size = 0,
   };
   this->adf_raw_stream_reader_ = raw_stream_init(&raw_cfg);
   audio_element_set_input_timeout(this->adf_raw_stream_reader_, 10 / portTICK_RATE_MS);

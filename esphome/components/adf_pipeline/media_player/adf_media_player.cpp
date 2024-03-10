@@ -148,6 +148,8 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
       this->state = media_player::MEDIA_PLAYER_STATE_PAUSED;
       publish_state();
       break;
+    case PipelineState::PREPARING:
+    case PipelineState::STARTING:
     case PipelineState::RUNNING:
       this->set_volume_( this->volume, false);
       this->state = media_player::MEDIA_PLAYER_STATE_PLAYING;

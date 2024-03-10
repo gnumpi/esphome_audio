@@ -9,7 +9,7 @@ namespace esp_adf {
 
 static const char *const TAG = "esp_adf_pipeline";
 
-static const uint32_t PIPELINE_PREPARATION_TIMEOUT_MS = 3000;
+static const uint32_t PIPELINE_PREPARATION_TIMEOUT_MS = 10000;
 
 static const LogString *pipeline_state_to_string(PipelineState state) {
   switch (state) {
@@ -177,18 +177,14 @@ void ADFPipeline::check_for_pipeline_events_(){
         parent_->pipeline_event_handler(msg);
       }
 
-    if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.cmd == AEL_MSG_CMD_REPORT_STATUS) {
-      audio_element_handle_t el = (audio_element_handle_t) msg.source;
-      size_t status = reinterpret_cast<size_t>(msg.data);
-      esph_log_i(TAG, "[ %s ] status: %d", audio_element_get_tag(el), status);
-    }
     assert( this->state_ != PipelineState::PREPARING );
 
     //trigger state changes on events received from pipeline
       if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.cmd == AEL_MSG_CMD_REPORT_STATUS){
         audio_element_status_t status;
         std::memcpy(&status, &msg.data, sizeof(audio_element_status_t));
-        esph_log_i(TAG, "[ * ] CMD: %d  status: %d", msg.cmd, status);
+        audio_element_handle_t el = (audio_element_handle_t) msg.source;
+        esph_log_i(TAG, "[ %s ] status: %d", audio_element_get_tag(el), status);
         switch (status) {
           case AEL_STATUS_STATE_STOPPED:
           case AEL_STATUS_STATE_FINISHED:
