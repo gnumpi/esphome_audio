@@ -132,14 +132,22 @@ void ADFPipeline::check_all_stopped_(){
     for (auto el : comp->get_adf_elements()) {
       esph_log_d(TAG, "Check element for stop [%s] status, %d", audio_element_get_tag(el), audio_element_get_state(el));
       if (
-           audio_element_get_state(el) != AEL_STATE_STOPPED &&
-           audio_element_get_state(el) != AEL_STATE_FINISHED &&
-           audio_element_get_state(el) != AEL_STATE_INIT
+           audio_element_get_state(el) == AEL_STATE_INITIALIZING ||
+           audio_element_get_state(el) == AEL_STATE_RUNNING ||
+           audio_element_get_state(el) == AEL_STATE_PAUSED
          ){
         return;
       }
     }
   }
+  /*
+  In one of this states:
+  AEL_STATE_NONE          = 0,
+  AEL_STATE_INIT          = 1,
+  AEL_STATE_STOPPED       = 5,
+  AEL_STATE_FINISHED      = 6,
+  AEL_STATE_ERROR         = 7
+  */
   reset_();
 }
 

@@ -220,6 +220,17 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
         }
 #endif
     }
+
+    /*
+    REAL_BYTES_X_SAMPLE=4;
+
+    i2s_read(I2S_NUM_0, (void*)dataOrig, buffSizeOrig, &bytesRead, portMAX_DELAY);
+    uint16_t samplesRead = bytesRead / REAL_BYTES_X_SAMPLE;
+    for (int i = 0; i < samplesRead; i++) {
+        byteIndex = i * REAL_BYTES_X_SAMPLE;
+        int32_t value = ((int32_t*)(dataOrig + byteIndex))[0]>>8;
+    }
+    */
     return bytes_read;
 }
 
@@ -389,7 +400,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
 #if SOC_I2S_SUPPORTS_ADC_DAC
     if ((config->i2s_config.mode & I2S_MODE_DAC_BUILT_IN) != 0) {
         i2s_set_dac_mode(I2S_DAC_CHANNEL_BOTH_EN);
-    } else
+    }
 #endif
     //i2s_mclk_gpio_select(i2s->config.i2s_port, GPIO_NUM_0);
 
