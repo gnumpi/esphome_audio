@@ -21,6 +21,8 @@ DEPENDENCIES = ["adf_pipeline", "i2s_audio"]
 
 CONF_SAMPLE_RATE = "sample_rate"
 CONF_BITS_PER_SAMPLE = "bits_per_sample"
+CONF_PDM = "pdm"
+CONF_USE_APLL = "use_apll"
 
 
 ADFElementI2SOut = i2s_audio_ns.class_(
@@ -56,6 +58,7 @@ CHANNELS = {
 i2s_bits_per_sample_t = cg.global_ns.enum("i2s_bits_per_sample_t")
 BITS_PER_SAMPLE = {
     16: i2s_bits_per_sample_t.I2S_BITS_PER_SAMPLE_16BIT,
+    24: i2s_bits_per_sample_t.I2S_BITS_PER_SAMPLE_24BIT,
     32: i2s_bits_per_sample_t.I2S_BITS_PER_SAMPLE_32BIT,
 }
 
@@ -76,6 +79,7 @@ CONFIG_SCHEMA_IN = esp_adf.ADF_COMPONENT_SCHEMA.extend(
         cv.Required(CONF_I2S_DIN_PIN): pins.internal_gpio_input_pin_number,
         cv.Optional(CONF_CHANNEL, default="right"): cv.enum(CHANNELS),
         cv.Optional(CONF_SAMPLE_RATE, default=16000): cv.int_range(min=1),
+        cv.Optional(CONF_PDM, default=False): cv.boolean,
         cv.Optional(CONF_BITS_PER_SAMPLE, default="16bit"): cv.All(
             _validate_bits, cv.enum(BITS_PER_SAMPLE)
         ),
@@ -99,5 +103,6 @@ async def to_code(config):
         cg.add(var.set_channel(config[CONF_CHANNEL]))
         cg.add(var.set_sample_rate(config[CONF_SAMPLE_RATE]))
         cg.add(var.set_bits_per_sample(config[CONF_BITS_PER_SAMPLE]))
+        cg.add(var.set_pdm(config[CONF_PDM]))
 
     await esp_adf.register_adf_component(var, config)

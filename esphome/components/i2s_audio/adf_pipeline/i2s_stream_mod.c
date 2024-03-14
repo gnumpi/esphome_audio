@@ -213,6 +213,7 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
     i2s_read(i2s->config.i2s_port, buffer, len, &bytes_read, ticks_to_wait);
     audio_element_info_t info;
     audio_element_getinfo(self, &info);
+
     if (bytes_read > 0) {
 #ifdef CONFIG_IDF_TARGET_ESP32
         if (info.channels == 1) {
@@ -222,13 +223,13 @@ static int _i2s_read(audio_element_handle_t self, char *buffer, int len, TickTyp
     }
 
     /*
-    REAL_BYTES_X_SAMPLE=4;
+    int REAL_BYTES_X_SAMPLE = 4;
 
-    i2s_read(I2S_NUM_0, (void*)dataOrig, buffSizeOrig, &bytesRead, portMAX_DELAY);
-    uint16_t samplesRead = bytesRead / REAL_BYTES_X_SAMPLE;
+    //i2s_read(I2S_NUM_0, (void*)dataOrig, buffSizeOrig, &bytesRead, portMAX_DELAY);
+    uint16_t samplesRead = bytes_read / REAL_BYTES_X_SAMPLE;
     for (int i = 0; i < samplesRead; i++) {
-        byteIndex = i * REAL_BYTES_X_SAMPLE;
-        int32_t value = ((int32_t*)(dataOrig + byteIndex))[0]>>8;
+        int byteIndex = i * REAL_BYTES_X_SAMPLE;
+        int32_t value = ((int32_t*)(buffer + byteIndex))[0]>>8;
     }
     */
     return bytes_read;

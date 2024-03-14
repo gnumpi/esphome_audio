@@ -6,6 +6,8 @@
 #include <mp3_decoder.h>
 #include <raw_stream.h>
 
+#include "sdk_ext.h"
+
 namespace esphome {
 namespace esp_adf {
 
@@ -22,16 +24,16 @@ bool HTTPStreamReaderAndDecoder::init_adf_elements_() {
 
   http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
   http_cfg.task_core = 0;
-  http_cfg.out_rb_size = 4 * 960;
+  http_cfg.out_rb_size = 4 * 256;
   http_stream_reader_ = http_stream_init(&http_cfg);
-
+  http_stream_reader_->buf_size = 2 * 256;
   audio_element_set_uri(this->http_stream_reader_, this->current_url_.c_str());
 
   sdk_audio_elements_.push_back(this->http_stream_reader_);
   sdk_element_tags_.push_back("http");
 
   mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
-  mp3_cfg.out_rb_size = 4 * 960;
+  mp3_cfg.out_rb_size = 4 * 256;
   decoder_ = mp3_decoder_init(&mp3_cfg);
 
   sdk_audio_elements_.push_back(this->decoder_);

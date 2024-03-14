@@ -2,13 +2,19 @@
 #ifdef USE_ESP_IDF
 
 #include "i2s_stream_mod.h"
-#include "sdk_ext.h"
+#include "../../adf_pipeline/sdk_ext.h"
 
 namespace esphome {
 using namespace esp_adf;
 namespace i2s_audio {
 
+static const char *const TAG = "adf_i2s_in";
+
 bool ADFElementI2SIn::init_adf_elements_() {
+  if (!this->parent_->set_read_mode() )
+  {
+    return false;
+  }
   if (this->sdk_audio_elements_.size() > 0)
     return true;
 
@@ -18,9 +24,10 @@ bool ADFElementI2SIn::init_adf_elements_() {
       .bits_per_sample = this->bits_per_sample_,
       .channel_format = this->channel_,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-      .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
-      .dma_buf_count = 2,
-      .dma_buf_len = 960,
+      //.intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
+      .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+      .dma_buf_count = 4,
+      .dma_buf_len = 256,
       .use_apll = false,
       .tx_desc_auto_clear = true,
       .fixed_mclk = 0,
@@ -37,13 +44,17 @@ bool ADFElementI2SIn::init_adf_elements_() {
 
   };
 
-  i2s_stream_cfg_t i2s_cfg = {
+  if( this->pdm_){
+      i2s_config.mode = (i2s_mode_t) (i2s_config.mode | I2S_MODE_PDM);
+  }
+
+    i2s_stream_cfg_t i2s_cfg = {
       .type = AUDIO_STREAM_READER,
       .i2s_config = i2s_config,
       .i2s_port = this->parent_->get_port(),
       .use_alc = false,
       .volume = 0,
-      .out_rb_size = (4 * 960),
+      .out_rb_size = (8 * 256),
       .task_stack = I2S_STREAM_TASK_STACK,
       .task_core = I2S_STREAM_TASK_CORE,
       .task_prio = I2S_STREAM_TASK_PRIO,
@@ -54,12 +65,32 @@ bool ADFElementI2SIn::init_adf_elements_() {
       .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,
   };
 
+
   this->adf_i2s_stream_reader_ = i2s_stream_init(&i2s_cfg);
-  this->adf_i2s_stream_reader_->buf_size = 2 * 960;
+  this->adf_i2s_stream_reader_->buf_size = 2 * 256;
 
   i2s_pin_config_t pin_config = this->parent_->get_pin_config();
   pin_config.data_in_num = this->din_pin_;
   i2s_set_pin(this->parent_->get_port(), &pin_config);
+
+  audio_element_set_music_info(this->adf_i2s_stream_reader_, this->sample_rate_, 1, this->bits_per_sample_);
+
+  uint32_t bits_cfg = I2S_BITS_PER_SAMPLE_16BIT;
+  if ( this->bits_per_sample_ == I2S_BITS_PER_SAMPLE_24BIT)
+  {
+    bits_cfg = (I2S_BITS_PER_CHAN_32BIT << 16) | I2S_BITS_PER_SAMPLE_24BIT;
+  }
+  else if (( this->bits_per_sample_ == I2S_BITS_PER_SAMPLE_32BIT) )
+  {
+    bits_cfg = I2S_BITS_PER_SAMPLE_32BIT;
+  }
+
+  esph_log_i(TAG, "Current RX Clock %4.2f", i2s_get_clk(this->parent_->get_port() ) );
+
+  //i2s_set_sample_rates(this->parent_->get_port(), 16000 );
+  //i2s_set_clk(this->parent_->get_port(), this->sample_rate_, bits_cfg, I2S_CHANNEL_MONO );
+
+  esph_log_i(TAG, "Current RX Clock %4.2f", i2s_get_clk(this->parent_->get_port() ) );
 
   sdk_audio_elements_.push_back(this->adf_i2s_stream_reader_);
   sdk_element_tags_.push_back("i2s_in");

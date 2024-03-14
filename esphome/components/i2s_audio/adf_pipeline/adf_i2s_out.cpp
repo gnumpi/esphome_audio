@@ -1,7 +1,7 @@
 #include "adf_i2s_out.h"
 #ifdef USE_ESP_IDF
 
-#include "sdk_ext.h"
+#include "../../adf_pipeline/sdk_ext.h"
 #include "i2s_stream_mod.h"
 #include "../../adf_pipeline/adf_pipeline.h"
 
@@ -23,6 +23,10 @@ void ADFElementI2SOut::setup() {
 }
 
 bool ADFElementI2SOut::init_adf_elements_() {
+  if (!this->parent_->set_write_mode() )
+  {
+    return false;
+  }
   if (this->sdk_audio_elements_.size() > 0)
     return true;
 

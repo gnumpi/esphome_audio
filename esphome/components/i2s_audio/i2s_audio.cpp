@@ -27,6 +27,7 @@ void I2SAudioComponent::setup() {
 bool I2SAudioComponent::set_mode_(int mode){
   bool success = false;
   this->lock();
+  esph_log_d(TAG, "Set I2S Lock Mode: %d", mode);
   if( this->current_mode_ == 0 ) {
     this->current_mode_ = mode;
     success = true;
@@ -41,6 +42,7 @@ bool I2SAudioComponent::set_mode_(int mode){
 bool I2SAudioComponent::release_mode_(int mode){
   bool success = false;
   this->lock();
+  esph_log_d(TAG, "Release I2S Lock Mode: %d", mode);
   if( this->current_mode_ == mode ) {
     this->current_mode_ = 0;
     success = true;

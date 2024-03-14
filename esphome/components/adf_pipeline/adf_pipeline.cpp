@@ -56,6 +56,9 @@ void ADFPipeline::start() {
     case PipelineState::PAUSED:
       prepare_elements_();
       break;
+    case PipelineState::RUNNING:
+      set_state_(PipelineState::RUNNING);
+      break;
     default:
       break;
   };
@@ -375,7 +378,10 @@ bool ADFPipeline::reset_() {
 void ADFPipeline::deinit_all_() {
   esph_log_d(TAG, "Called deinit_all" );
   audio_pipeline_deinit(this->adf_pipeline_);
-  audio_event_iface_destroy(this->adf_pipeline_event_);
+  if ( this->adf_pipeline_event_){
+    audio_event_iface_destroy(this->adf_pipeline_event_);
+  }
+
   for (auto &comp : this->pipeline_elements_) {
     comp->destroy_adf_elements();
   }

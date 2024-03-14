@@ -19,6 +19,9 @@ void ADFMicrophone::setup() {
 void ADFMicrophone::dump_config() {}
 
 void ADFMicrophone::start() {
+  if ( this->state_ == microphone::STATE_RUNNING){
+    return;
+  }
   pipeline.start();
   this->state_ = microphone::STATE_STARTING;
 }
@@ -28,9 +31,27 @@ void ADFMicrophone::stop() {
   pipeline.stop();
 }
 
-size_t ADFMicrophone::read(int16_t *buf, size_t len) { return pcm_stream_.stream_read((char *) buf, len); }
+// len in bytes
+size_t ADFMicrophone::read(int16_t *buf, size_t len) {
+
+    size_t bytes_read = 0;
+    bytes_read =  pcm_stream_.stream_read((char *) buf, len);
+    return bytes_read;
+    std::vector<int16_t> samples;
+    size_t samples_read = bytes_read / sizeof(int32_t);
+    samples.resize(samples_read);
+    for (size_t i = 0; i < samples_read; i++) {
+      int32_t temp = reinterpret_cast<int32_t *>(buf)[i] >> 14;
+      samples[i] = clamp<int16_t>(temp, INT16_MIN, INT16_MAX);
+    }
+    memcpy(buf, samples.data(), samples_read * sizeof(int16_t));
+    return samples_read * sizeof(int16_t);
+
+}
 
 void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
+  esph_log_d(TAG, "Mic state: %d", this->state_);
+  esph_log_d(TAG, "Pipeline State %d: ", state );
   switch (state) {
     case PipelineState::STARTING:
       this->state_ = microphone::STATE_STARTING;
@@ -56,7 +77,8 @@ void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
     case PipelineState::PREPARING:
     case PipelineState::DESTROYING:
       break;
-  }
+    }
+  esph_log_d(TAG, "Mic state: %d", this->state_);
 }
 
 }  // namespace esp_adf
