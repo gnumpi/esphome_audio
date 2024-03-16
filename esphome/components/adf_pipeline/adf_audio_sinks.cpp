@@ -36,7 +36,7 @@ void PCMSink::clear_adf_elements_(){
   this->sdk_element_tags_.clear();
 }
 
-int PCMSink::stream_read(char *buffer, int len) {
+int PCMSink::stream_read_bytes(char *buffer, int len) {
   int ret = audio_element_input(adf_raw_stream_reader_, buffer, len);
   if (ret < 0 && (ret != AEL_IO_TIMEOUT)) {
     audio_element_report_status(adf_raw_stream_reader_, AEL_STATUS_STATE_STOPPED);
@@ -46,6 +46,19 @@ int PCMSink::stream_read(char *buffer, int len) {
   return ret;
 }
 
+void PCMSink::on_settings_request(AudioPipelineSettingsRequest &request) {
+ if (request.bit_depth > 0 && (uint8_t) request.bit_depth != this->bits_per_sample_ ){
+    if ( request.bit_depth == 16 || request.bit_depth == 24 || request.bit_depth == 32 )
+    {
+      esph_log_d(TAG, "Set bitdepth to %d", request.bit_depth );
+      this->bits_per_sample_ = request.bit_depth;
+    }
+    else {
+      request.failed = true;
+      request.failed_by = this;
+    }
+  }
+}
 
 
 }  // namespace esp_adf

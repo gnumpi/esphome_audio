@@ -2,6 +2,7 @@
 #ifdef USE_ESP_IDF
 
 #include "i2s_stream_mod.h"
+#include "../../adf_pipeline/adf_pipeline.h"
 #include "../../adf_pipeline/sdk_ext.h"
 
 namespace esphome {
@@ -18,6 +19,14 @@ bool ADFElementI2SIn::init_adf_elements_() {
   if (this->sdk_audio_elements_.size() > 0)
     return true;
 
+  i2s_bits_per_chan_t channel_bits  = I2S_BITS_PER_CHAN_DEFAULT;
+
+  if ( this->bits_per_sample_ == I2S_BITS_PER_SAMPLE_24BIT)
+  {
+    channel_bits = I2S_BITS_PER_CHAN_32BIT;
+
+  }
+
   i2s_driver_config_t i2s_config = {
       .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_RX),
       .sample_rate = this->sample_rate_,
@@ -32,7 +41,7 @@ bool ADFElementI2SIn::init_adf_elements_() {
       .tx_desc_auto_clear = true,
       .fixed_mclk = 0,
       .mclk_multiple = I2S_MCLK_MULTIPLE_256,
-      .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
+      .bits_per_chan = channel_bits,
   #if SOC_I2S_SUPPORTS_TDM
       .chan_mask = I2S_CHANNEL_MONO,
       .total_chan = 0,
@@ -84,15 +93,17 @@ bool ADFElementI2SIn::init_adf_elements_() {
     bits_cfg = I2S_BITS_PER_SAMPLE_32BIT;
   }
 
-  esph_log_i(TAG, "Current RX Clock %4.2f", i2s_get_clk(this->parent_->get_port() ) );
-
-  //i2s_set_sample_rates(this->parent_->get_port(), 16000 );
-  //i2s_set_clk(this->parent_->get_port(), this->sample_rate_, bits_cfg, I2S_CHANNEL_MONO );
-
-  esph_log_i(TAG, "Current RX Clock %4.2f", i2s_get_clk(this->parent_->get_port() ) );
-
   sdk_audio_elements_.push_back(this->adf_i2s_stream_reader_);
   sdk_element_tags_.push_back("i2s_in");
+
+  AudioPipelineSettingsRequest request{this};
+    request.sampling_rate = this->sample_rate_;
+    request.bit_depth = this->bits_per_sample_;
+    request.number_of_channels = 1;
+
+  if (!pipeline_->request_settings(request)){
+    esph_log_e(TAG, "Bit depth %d is not supported by .", this->bits_per_sample_ );
+  }
 
   return true;
 };

@@ -31,22 +31,29 @@ void ADFMicrophone::stop() {
   pipeline.stop();
 }
 
-// len in bytes
+// len and return size are both in bytes
 size_t ADFMicrophone::read(int16_t *buf, size_t len) {
+    len = (len << 1) >> 1;
+    if (this->pcm_stream_.get_bits_per_sample() == 32 || this->pcm_stream_.get_bits_per_sample() == 24)
+    {
+      len = ( len << 2 ) >> 2;
+      size_t bytes_read = this->pcm_stream_.stream_read_bytes((char *) buf, len << 1 );
+      size_t samples_read = bytes_read / sizeof(uint32_t);
 
-    size_t bytes_read = 0;
-    bytes_read =  pcm_stream_.stream_read((char *) buf, len);
-    return bytes_read;
-    std::vector<int16_t> samples;
-    size_t samples_read = bytes_read / sizeof(int32_t);
-    samples.resize(samples_read);
-    for (size_t i = 0; i < samples_read; i++) {
-      int32_t temp = reinterpret_cast<int32_t *>(buf)[i] >> 14;
-      samples[i] = clamp<int16_t>(temp, INT16_MIN, INT16_MAX);
+      std::vector<uint16_t> samples;
+      uint8_t shift = 16 - this->gain_log_2_ ;
+      uint32_t add = 1 << (shift-1);
+      samples.resize(samples_read);
+      for (size_t i = 0; i < samples_read; i++) {
+        uint32_t temp = ( reinterpret_cast<uint32_t *>(buf)[i] ) >> shift;
+        samples[i] = (uint16_t) clamp<uint32_t>(temp, 0, 0xFFFF );
+      }
+      memcpy(buf, samples.data(), samples_read * sizeof(uint16_t));
+      return samples_read * sizeof(uint16_t);
     }
-    memcpy(buf, samples.data(), samples_read * sizeof(int16_t));
-    return samples_read * sizeof(int16_t);
-
+    size_t bytes_read = 0;
+    bytes_read =  this->pcm_stream_.stream_read_bytes((char *) buf, len);
+    return bytes_read;
 }
 
 void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
