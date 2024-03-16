@@ -36,12 +36,14 @@ void ADFSpeaker::stop() {
 void ADFSpeaker::on_pipeline_state_change(PipelineState state) {
    switch (state) {
       case PipelineState::STARTING:
+        break;
       case PipelineState::STOPPING:
+        this->state_ = speaker::STATE_STOPPING;
         break;
       case PipelineState::RUNNING:
         this->state_ = speaker::STATE_RUNNING;
         break;
-      case PipelineState::UNAVAILABLE:
+      case PipelineState::UNINITIALIZED:
       case PipelineState::STOPPED:
         this->state_ = speaker::STATE_STOPPED;
         break;
@@ -53,7 +55,6 @@ void ADFSpeaker::on_pipeline_state_change(PipelineState state) {
       case PipelineState::PREPARING:
       case PipelineState::DESTROYING:
         break;
-
    }
 }
 

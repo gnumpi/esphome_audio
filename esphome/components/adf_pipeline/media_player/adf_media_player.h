@@ -3,14 +3,14 @@
 #ifdef USE_ESP_IDF
 
 #include "esphome/components/media_player/media_player.h"
-#include "../adf_audio_sources.h"
-#include "../adf_pipeline.h"
 
+#include "../adf_pipeline_controller.h"
+#include "../adf_audio_sources.h"
 
 namespace esphome {
 namespace esp_adf {
 
-class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineComponent {
+class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineController {
  public:
   // Pipeline implementations
   void append_own_elements() { add_element_to_pipeline((ADFPipelineElement *) &(this->http_and_decoder_)); }
@@ -25,9 +25,9 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineCompo
   media_player::MediaPlayerTraits get_traits() override;
 
   //
-  void set_stream_uri(const char *uri);
+  void set_stream_uri(const std::string& new_uri);
   void start() {pipeline.start();}
-  void stop() {pipeline.stop();}
+  void stop()  {pipeline.stop();}
 
  protected:
   // MediaPlayer implementation
@@ -41,7 +41,8 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineCompo
   void set_volume_(float volume, bool publish = true);
 
   bool muted_{false};
-  optional<std::string> current_url_{};
+  bool play_intent_{false};
+  optional<std::string> current_uri_{};
 
   HTTPStreamReaderAndDecoder http_and_decoder_;
 };

@@ -2,24 +2,15 @@
 
 #ifdef USE_ESP_IDF
 
-#include "../adf_pipeline.h"
-#include "../adf_audio_sinks.h"
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/queue.h>
-
 #include "esphome/components/microphone/microphone.h"
 
-#include "esphome/core/component.h"
-#include "esphome/core/helpers.h"
-
-#include <audio_element.h>
-#include <audio_pipeline.h>
+#include "../adf_pipeline_controller.h"
+#include "../adf_audio_sinks.h"
 
 namespace esphome {
 namespace esp_adf {
 
-class ADFMicrophone : public microphone::Microphone, public ADFPipelineComponent {
+class ADFMicrophone : public microphone::Microphone, public ADFPipelineController {
  public:
   // Pipeline implementations
   void append_own_elements() { add_element_to_pipeline((ADFPipelineElement *) &(this->pcm_stream_)); }
@@ -35,10 +26,12 @@ class ADFMicrophone : public microphone::Microphone, public ADFPipelineComponent
   size_t read(int16_t *buf, size_t len) override;
 
  protected:
+  uint8_t gain_log_2_{0};
   void on_pipeline_state_change(PipelineState state) override;
   PCMSink pcm_stream_;
 };
 
 }  // namespace esp_adf
 }  // namespace esphome
+
 #endif

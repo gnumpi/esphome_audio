@@ -10,11 +10,8 @@ std::string ADFPipelineElement::get_adf_element_tag(int element_indx) {
   return "Unknown";
 }
 
-void ADFPipelineElement::deinit_adf_elements_() {
-  while (!this->sdk_audio_elements_.empty()) {
-    audio_element_deinit(this->sdk_audio_elements_.back());
-    this->sdk_audio_elements_.pop_back();
-  }
+void ADFPipelineElement::clear_adf_elements_() {
+  this->sdk_audio_elements_.clear();
   this->sdk_element_tags_.clear();
 }
 

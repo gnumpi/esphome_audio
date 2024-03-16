@@ -2,22 +2,17 @@
 
 #ifdef USE_ESP_IDF
 
-#include "../adf_pipeline.h"
-#include "../adf_audio_sources.h"
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/queue.h>
-
 #include "esphome/components/speaker/speaker.h"
-#include "esphome/core/component.h"
-#include "esphome/core/helpers.h"
+
+#include "../adf_pipeline_controller.h"
+#include "../adf_audio_sources.h"
 
 namespace esphome {
 namespace esp_adf {
 
 static const size_t BUFFER_SIZE = 1024;
 
-class ADFSpeaker : public speaker::Speaker, public ADFPipelineComponent {
+class ADFSpeaker : public speaker::Speaker, public ADFPipelineController {
  public:
   // Pipeline implementations
   void append_own_elements(){ add_element_to_pipeline( (ADFPipelineElement*) &(this->pcm_stream_) ); }

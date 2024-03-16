@@ -19,12 +19,12 @@ namespace esp_adf {
 
 /* Audio Pipeline States:
 
-UNAVAILABLE -> STOPPED -> (PREPARING) -> STARTING -> RUNNING
+UNINITIALIZED -> STOPPED -> (PREPARING) -> STARTING -> RUNNING
     -> PAUSING -> PAUSED -> RESUMING -> RUNNING
-    -> STOPPING -> STOPPED -> DESTROYING -> UNAVAILABLE
+    -> STOPPING -> STOPPED -> DESTROYING -> UNINITIALIZED
 
 State Explanations:
-- UNAVAILABLE: No memory allocated, no tasks created, no hardware blocked.
+- UNINITIALIZED: No memory allocated, no tasks created, no hardware blocked.
 - STOPPED: Memory allocated, hardware reserved, but no task is running.
 - PREPARING: Optional state where dynamic information is received by starting individual components,
              pipeline elements are reconfigured accordingly, and finally the ring buffers are reset if necessary.
@@ -37,28 +37,29 @@ State Explanations:
 - DESTROYING: Freeing all memory and hardware reservations.
 
 */
-enum PipelineState : uint8_t { UNAVAILABLE = 0, PREPARING, STARTING, RUNNING, STOPPING, STOPPED, PAUSING, PAUSED, RESUMING, DESTROYING };
+enum PipelineState : uint8_t { UNINITIALIZED = 0, PREPARING, STARTING, RUNNING, STOPPING, STOPPED, PAUSING, PAUSED, RESUMING, DESTROYING };
 
-class ADFPipelineComponent;
+
+class ADFPipelineController;
+
 /* Encapsulates the core functionalities of the ADF pipeline.
 This includes constructing the pipeline and managing its lifecycle.
 */
 class ADFPipeline {
  public:
-  ADFPipeline(ADFPipelineComponent *parent) { parent_ = parent; }
+  ADFPipeline(ADFPipelineController *parent) { parent_ = parent; }
   virtual ~ADFPipeline() {}
 
-  void init();
   void start();
   void stop();
   void pause();
   void resume();
   void destroy();
 
-  void reset();
   PipelineState getState() { return state_; }
   void loop() { this->watch_(); }
 
+  void set_destroy_on_stop(bool value){ this->destroy_on_stop_ = value; }
   void append_element(ADFPipelineElement *element);
   int get_number_of_elements() { return pipeline_elements_.size(); }
   std::vector<std::string> get_element_names();
@@ -66,8 +67,6 @@ class ADFPipeline {
   // Send a settings request to all pipeline elements
   bool request_settings(AudioPipelineSettingsRequest &request);
   void on_settings_request_failed(AudioPipelineSettingsRequest request) {}
-
-  bool reset_ringbuffer();
 
  protected:
   bool init_();
@@ -82,40 +81,25 @@ class ADFPipeline {
 
   void loop_();
   void watch_();
+  void check_all_started_();
+  void check_all_stopped_();
+  void prepare_elements_();
+  void check_if_components_are_ready_();
+  void check_for_pipeline_events_();
   void forward_event_to_pipeline_elements_(audio_event_iface_msg_t &msg);
 
   bool build_adf_pipeline_();
-  bool terminate_pipeline_();
   void deinit_all_();
 
   audio_pipeline_handle_t adf_pipeline_{};
   audio_event_iface_handle_t adf_pipeline_event_{};
   audio_element_handle_t adf_last_element_in_pipeline_{};
   std::vector<ADFPipelineElement *> pipeline_elements_;
-  ADFPipelineComponent *parent_{nullptr};
-  PipelineState state_{PipelineState::UNAVAILABLE};
-};
+  ADFPipelineController *parent_{nullptr};
 
-/*
-An ESPHome Component for managing an ADFPipeline
-*/
-class ADFPipelineComponent : public Component {
- public:
-  ADFPipelineComponent() : pipeline(this) {}
-  ~ADFPipelineComponent() {}
-
-  virtual void append_own_elements() {}
-  void add_element_to_pipeline(ADFPipelineElement *element) { pipeline.append_element(element); }
-
-  void setup() override {}
-  void dump_config() override{};
-  void loop() override { pipeline.loop(); }
-
- protected:
-  friend ADFPipeline;
-  virtual void pipeline_event_handler(audio_event_iface_msg_t &msg) {}
-  virtual void on_pipeline_state_change(PipelineState state) {}
-  ADFPipeline pipeline;
+  PipelineState state_{PipelineState::UNINITIALIZED};
+  bool destroy_on_stop_{false};
+  uint32_t preparation_started_at_{0};
 };
 
 }  // namespace esp_adf
