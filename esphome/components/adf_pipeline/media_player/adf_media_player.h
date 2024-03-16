@@ -3,14 +3,14 @@
 #ifdef USE_ESP_IDF
 
 #include "esphome/components/media_player/media_player.h"
-#include "../adf_audio_sources.h"
-#include "../adf_pipeline.h"
 
+#include "../adf_pipeline_controller.h"
+#include "../adf_audio_sources.h"
 
 namespace esphome {
 namespace esp_adf {
 
-class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineComponent {
+class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineController {
  public:
   // Pipeline implementations
   void append_own_elements() { add_element_to_pipeline((ADFPipelineElement *) &(this->http_and_decoder_)); }

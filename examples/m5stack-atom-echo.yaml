@@ -73,6 +73,7 @@ adf_pipeline:
 microphone:
   - platform: adf_pipeline
     id: echo_microphone
+    keep_pipeline_alive: false
     pipeline:
       - adf_i2s_in
       - self
@@ -81,6 +82,7 @@ media_player:
   - platform: adf_pipeline
     id: adf_media_player
     name: m5stack-atom-echo
+    keep_pipeline_alive: false
     internal: false
     pipeline:
       - self

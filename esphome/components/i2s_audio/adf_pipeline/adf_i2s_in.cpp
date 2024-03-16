@@ -41,7 +41,6 @@ bool ADFElementI2SIn::init_adf_elements_() {
       .bit_order_msb = false,
       .skip_msk = false,
 #endif
-
   };
 
   if( this->pdm_){

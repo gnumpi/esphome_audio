@@ -39,13 +39,15 @@ State Explanations:
 */
 enum PipelineState : uint8_t { UNINITIALIZED = 0, PREPARING, STARTING, RUNNING, STOPPING, STOPPED, PAUSING, PAUSED, RESUMING, DESTROYING };
 
-class ADFPipelineComponent;
+
+class ADFPipelineController;
+
 /* Encapsulates the core functionalities of the ADF pipeline.
 This includes constructing the pipeline and managing its lifecycle.
 */
 class ADFPipeline {
  public:
-  ADFPipeline(ADFPipelineComponent *parent) { parent_ = parent; }
+  ADFPipeline(ADFPipelineController *parent) { parent_ = parent; }
   virtual ~ADFPipeline() {}
 
   void start();
@@ -57,6 +59,7 @@ class ADFPipeline {
   PipelineState getState() { return state_; }
   void loop() { this->watch_(); }
 
+  void set_destroy_on_stop(bool value){ this->destroy_on_stop_ = value; }
   void append_element(ADFPipelineElement *element);
   int get_number_of_elements() { return pipeline_elements_.size(); }
   std::vector<std::string> get_element_names();
@@ -92,34 +95,11 @@ class ADFPipeline {
   audio_event_iface_handle_t adf_pipeline_event_{};
   audio_element_handle_t adf_last_element_in_pipeline_{};
   std::vector<ADFPipelineElement *> pipeline_elements_;
-  ADFPipelineComponent *parent_{nullptr};
+  ADFPipelineController *parent_{nullptr};
 
   PipelineState state_{PipelineState::UNINITIALIZED};
-  bool destroy_on_stop_{true};
+  bool destroy_on_stop_{false};
   uint32_t preparation_started_at_{0};
-};
-
-/*
-An ESPHome Component for managing an ADFPipeline
-*/
-class ADFPipelineComponent : public Component {
- public:
-  ADFPipelineComponent() : pipeline(this) {}
-  ~ADFPipelineComponent() {}
-
-  virtual void append_own_elements() {}
-  void add_element_to_pipeline(ADFPipelineElement *element) { pipeline.append_element(element); }
-
-  void setup() override {}
-  void dump_config() override{};
-  void loop() override { pipeline.loop(); }
-
- protected:
-  friend ADFPipeline;
-  virtual void pipeline_event_handler(audio_event_iface_msg_t &msg) {}
-  virtual void on_pipeline_state_change(PipelineState state) {}
-
-  ADFPipeline pipeline;
 };
 
 }  // namespace esp_adf

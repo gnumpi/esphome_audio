@@ -1,9 +1,11 @@
-import esphome.codegen as cg
+"""ADF-Pipeline platform implementation of I2S controller (TX and RX)."""
+
 from esphome import pins
+import esphome.codegen as cg
 import esphome.config_validation as cv
+from esphome.const import CONF_ID, CONF_CHANNEL
 
 from ... import adf_pipeline as esp_adf
-from esphome.const import CONF_ID, CONF_CHANNEL
 
 from .. import (
     CONF_I2S_AUDIO_ID,
@@ -64,7 +66,8 @@ BITS_PER_SAMPLE = {
 
 _validate_bits = cv.float_with_unit("bits", "bit")
 
-CONFIG_SCHEMA_OUT = esp_adf.ADF_COMPONENT_SCHEMA.extend(
+
+CONFIG_SCHEMA_OUT = esp_adf.ADF_PIPELINE_ELEMENT_SCHEMA.extend(
     {
         cv.GenerateID(): cv.declare_id(ADFElementI2SOut),
         cv.GenerateID(CONF_I2S_AUDIO_ID): cv.use_id(I2SAudioComponent),
@@ -72,7 +75,7 @@ CONFIG_SCHEMA_OUT = esp_adf.ADF_COMPONENT_SCHEMA.extend(
     }
 )
 
-CONFIG_SCHEMA_IN = esp_adf.ADF_COMPONENT_SCHEMA.extend(
+CONFIG_SCHEMA_IN = esp_adf.ADF_PIPELINE_ELEMENT_SCHEMA.extend(
     {
         cv.GenerateID(): cv.declare_id(ADFElementI2SIn),
         cv.GenerateID(CONF_I2S_AUDIO_ID): cv.use_id(I2SAudioComponent),
@@ -104,5 +107,3 @@ async def to_code(config):
         cg.add(var.set_sample_rate(config[CONF_SAMPLE_RATE]))
         cg.add(var.set_bits_per_sample(config[CONF_BITS_PER_SAMPLE]))
         cg.add(var.set_pdm(config[CONF_PDM]))
-
-    await esp_adf.register_adf_component(var, config)

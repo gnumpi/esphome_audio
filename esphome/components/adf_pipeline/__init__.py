@@ -1,14 +1,12 @@
+"""General ADF-Pipeline Setup."""
+
 import os
 
-from esphome.const import (
-    CONF_ID,
-)
-
-import esphome.config_validation as cv
 import esphome.codegen as cg
-from esphome.core import CORE, coroutine_with_priority
 from esphome.components.esp32 import add_idf_component
 from esphome.components import esp32
+import esphome.config_validation as cv
+from esphome.core import coroutine_with_priority
 
 CODEOWNERS = ["@gnumpi"]
 DEPENDENCIES = []
@@ -17,27 +15,53 @@ IS_PLATFORM_COMPONENT = True
 
 CONF_ADF_COMPONENT_TYPE = "type"
 CONF_ADF_PIPELINE = "pipeline"
-CONF_ADF_COMP_ID = "adf_comp_id"
+CONF_ADF_KEEP_PIPELINE_ALIVE = "keep_pipeline_alive"
 
 esp_adf_ns = cg.esphome_ns.namespace("esp_adf")
-ADFPipelineComponent = esp_adf_ns.class_("ADFPipelineComponent")
+ADFPipelineController = esp_adf_ns.class_("ADFPipelineController")
 
 ADFPipelineElement = esp_adf_ns.class_("ADFPipelineElement")
 ADFPipelineSink = esp_adf_ns.class_("ADFPipelineSinkElement")
 ADFPipelineSource = esp_adf_ns.class_("ADFPipelineSourceElement")
 
 
-async def setup_adf_component_core_(var, config):
-    pass
+# Pipeline Controller
+
+COMPONENT_TYPES = ["sink", "source", "filter"]
+SELF_DESCRIPTORS = ["this", "source", "sink", "self"]
+ADF_PIPELINE_CONTROLLER_SCHEMA = cv.Schema(
+    {
+        cv.Optional(CONF_ADF_COMPONENT_TYPE): cv.one_of(*COMPONENT_TYPES),
+        cv.Optional(CONF_ADF_KEEP_PIPELINE_ALIVE, default=True): cv.boolean,
+        cv.Optional(CONF_ADF_PIPELINE): cv.ensure_list(
+            cv.Any(
+                cv.one_of(*SELF_DESCRIPTORS),
+                cv.use_id(ADFPipelineElement),
+            )
+        ),
+    }
+)
 
 
-async def register_adf_component(var, config):
-    if not CORE.has_id(config[CONF_ID]):
-        var = cg.Pvariable(config[CONF_ID], var)
-    await setup_adf_component_core_(var, config)
+async def setup_pipeline_controller(cntrl: ADFPipelineController, config: dict) -> None:
+    """Set controller parameter and register elements to pipeline."""
+
+    cg.add(cntrl.set_keep_alive(config[CONF_ADF_KEEP_PIPELINE_ALIVE]))
+
+    if CONF_ADF_PIPELINE in config:
+        for comp_id in config[CONF_ADF_PIPELINE]:
+            if comp_id not in SELF_DESCRIPTORS:
+                comp = await cg.get_variable(comp_id)
+                cg.add(cntrl.add_element_to_pipeline(comp))
+            else:
+                cg.add(cntrl.append_own_elements())
+
+
+# Pipeline Elements
 
 
 def construct_pipeline_element_config_schema(config_schema_out, config_schema_in):
+    """"""
     return cv.typed_schema(
         {
             "sink": config_schema_out,
@@ -49,33 +73,10 @@ def construct_pipeline_element_config_schema(config_schema_out, config_schema_in
     )
 
 
-COMPONENT_TYPES = ["sink", "source", "filter"]
-SELF_DESCRIPTORS = ["this", "source", "sink", "self"]
-ADF_COMPONENT_SCHEMA = cv.Schema(
-    {
-        cv.Optional(CONF_ADF_COMPONENT_TYPE): cv.one_of(*COMPONENT_TYPES),
-        cv.Optional(CONF_ADF_PIPELINE): cv.ensure_list(
-            cv.Any(
-                cv.one_of(*SELF_DESCRIPTORS),
-                cv.use_id(ADFPipelineElement),
-            )
-        ),
-    }
-)
+ADF_PIPELINE_ELEMENT_SCHEMA = cv.Schema({})
 
 
-async def add_pipeline_elements(var, config):
-    if CONF_ADF_COMP_ID in config:
-        comp = await cg.get_variable(config[CONF_ADF_COMP_ID])
-        cg.add(var.add_element_to_pipeline(comp))
-
-    if CONF_ADF_PIPELINE in config:
-        for comp_id in config[CONF_ADF_PIPELINE]:
-            if comp_id not in SELF_DESCRIPTORS:
-                comp = await cg.get_variable(comp_id)
-                cg.add(var.add_element_to_pipeline(comp))
-            else:
-                cg.add(var.append_own_elements())
+# ADF-Pipeline component global settings
 
 
 @coroutine_with_priority(55.0)

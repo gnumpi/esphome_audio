@@ -1,4 +1,6 @@
 #include "adf_pipeline.h"
+
+#include "adf_pipeline_controller.h"
 #include "adf_audio_element.h"
 
 #include "esphome/core/hal.h"
