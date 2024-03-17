@@ -90,3 +90,5 @@ media_player:
     pipeline:
       - self
       - adf_i2s_out
+
+voice_assistant:
