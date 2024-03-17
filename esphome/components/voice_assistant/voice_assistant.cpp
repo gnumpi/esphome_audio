@@ -412,7 +412,6 @@ void VoiceAssistant::set_state_(State state) {
   this->state_ = state;
   ESP_LOGD(TAG, "State changed from %s to %s", LOG_STR_ARG(voice_assistant_state_to_string(old_state)),
            LOG_STR_ARG(voice_assistant_state_to_string(state)));
-  ESP_LOGD(TAG, "Microphone state: %d", this->mic_->get_state() );
 }
 
 void VoiceAssistant::set_state_(State state, State desired_state) {
