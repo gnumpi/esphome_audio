@@ -22,7 +22,7 @@ enum class PipelineElementState : uint8_t { UNINITIALIZED = 0, INITIALIZED, PREP
 class ADFPipeline;
 class ADFPipelineElement;
 
-enum AudioPipelineElementType : uint8_t { AUDIO_PIPELINE_SOURCE = 0, AUDIO_PIPELINE_SINK, AUDIO_PIPELINE_TRANSFORM };
+enum AudioPipelineElementType : uint8_t { AUDIO_PIPELINE_SOURCE = 0, AUDIO_PIPELINE_SINK, AUDIO_PIPELINE_PROCESS };
 
 class AudioPipelineSettingsRequest {
  public:

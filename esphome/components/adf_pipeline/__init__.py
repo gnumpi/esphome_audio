@@ -21,8 +21,11 @@ esp_adf_ns = cg.esphome_ns.namespace("esp_adf")
 ADFPipelineController = esp_adf_ns.class_("ADFPipelineController")
 
 ADFPipelineElement = esp_adf_ns.class_("ADFPipelineElement")
-ADFPipelineSink = esp_adf_ns.class_("ADFPipelineSinkElement")
-ADFPipelineSource = esp_adf_ns.class_("ADFPipelineSourceElement")
+ADFPipelineSink = esp_adf_ns.class_("ADFPipelineSinkElement", ADFPipelineElement)
+ADFPipelineSource = esp_adf_ns.class_("ADFPipelineSourceElement", ADFPipelineElement)
+ADFPipelineProcess = esp_adf_ns.class_("ADFPipelineProcessElement", ADFPipelineElement)
+
+ADFResampler = esp_adf_ns.class_("ADFResampler", ADFPipelineProcess, ADFPipelineElement)
 
 
 # Pipeline Controller
@@ -59,21 +62,21 @@ async def setup_pipeline_controller(cntrl: ADFPipelineController, config: dict) 
 
 # Pipeline Elements
 
-
-def construct_pipeline_element_config_schema(config_schema_out, config_schema_in):
-    """"""
-    return cv.typed_schema(
-        {
-            "sink": config_schema_out,
-            "source": config_schema_in,
-        },
-        lower=True,
-        space="-",
-        default_type="sink",
-    )
-
+CONFIG_SCHEMA_RESAMPLER = cv.Schema(
+    {
+        cv.GenerateID(): cv.declare_id(ADFResampler),
+    }
+)
 
 ADF_PIPELINE_ELEMENT_SCHEMA = cv.Schema({})
+
+#    cv.typed_schema(
+#    {
+#        "resampler":  CONFIG_SCHEMA_RESAMPLER,
+#    },
+#    lower=True,
+#    space="-",
+#    default_type="resampler",
 
 
 # ADF-Pipeline component global settings
@@ -81,7 +84,7 @@ ADF_PIPELINE_ELEMENT_SCHEMA = cv.Schema({})
 
 @coroutine_with_priority(55.0)
 async def to_code(config):
-    cg.add_define("USE_ESP_ADF")
+    # cg.add_define("USE_ESP_ADF")
 
     cg.add_platformio_option("build_unflags", "-Wl,--end-group")
 
