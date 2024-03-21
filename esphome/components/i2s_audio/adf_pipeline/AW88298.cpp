@@ -5,6 +5,10 @@
 #include "i2s_stream_mod.h"
 #include "../../adf_pipeline/adf_pipeline.h"
 
+#include "soc/i2s_reg.h"
+#include "soc/i2s_struct.h"
+//#include "soc/reg.h"
+
 namespace esphome {
 using namespace esp_adf;
 namespace i2s_audio {
@@ -128,7 +132,7 @@ void ADFI2SOut_AW88298::setup(){
     reg = aw9523.reg( AW9523_REG_OUTPUT1 ).get();
     ESP_LOGCONFIG(TAG, "read :0x%x", reg );
 
-    uint8_t result = 1;
+    uint8_t result = 0;
     uint8_t reg0x02 = (result == 0) ? 0b00000111 : 0b00000101;
     uint8_t reg0x03 = (result == 0) ? 0b10000011 : 0b00000011;
     aw9523.reg( 0x02 ) = reg0x02; //port0 output ctrl
@@ -213,6 +217,13 @@ void ADFI2SOut_AW88298::on_pipeline_status_change(){
     val = 0;
     this->read_byte_16(AW88298_REG_SYSCTRL, &val );
     esph_log_d( TAG, "read AW88298_REG_SYSCTRL :0x%x", val );
+
+    val = 0x0008; // RMSE=0 HAGCE=0 HDCCE=0 HMUTE=0
+    this->write_bytes_16( AW88298_REG_SYSCTRL2, &val, 1);
+    val = 0;
+    this->read_byte_16( AW88298_REG_SYSCTRL2 , &val );
+    esph_log_d( TAG, "read AW88298_REG_SYSCTRL2 :0x%x", val );
+
 
     val = 0;
     this->read_byte_16( 0x01, &val );
@@ -393,10 +404,44 @@ void ADFI2SOut_AW88298::on_settings_request(AudioPipelineSettingsRequest &reques
     val = 0;
     this->read_byte_16( 0x01, &val );
     esph_log_d( TAG, "read AW88298_SYS_STATUS :0x%x", val );
+
+
+    uint32_t clkm_div_num = I2S0.tx_clkm_conf.tx_clkm_div_num;
+    uint32_t clkm_clk_active = I2S0.tx_clkm_conf.tx_clk_active;
+    uint32_t clkm_clk_sel = I2S0.tx_clkm_conf.tx_clk_sel;
+
+    ESP_LOGI(TAG, "I2S Clock Config: clkm_div_num = %u, clkm_clk_active = %u, clkm_sel = %u",
+             clkm_div_num, clkm_clk_active, clkm_clk_sel);
+
+    uint32_t clkm_div_z = I2S0.tx_clkm_div_conf.tx_clkm_div_z;
+    uint32_t clkm_div_x = I2S0.tx_clkm_div_conf.tx_clkm_div_x;
+    uint32_t clkm_div_y = I2S0.tx_clkm_div_conf.tx_clkm_div_y;
+    uint32_t clkm_div_yn1 = I2S0.tx_clkm_div_conf.tx_clkm_div_yn1;
+
+    ESP_LOGI(TAG, "I2S Clock Division Parameters: z = %u, y = %u, x = %u, yn1 = %u",
+             clkm_div_z, clkm_div_y, clkm_div_x, clkm_div_yn1);
+
+    if( clkm_div_yn1 == 0){
+      uint32_t b = clkm_div_z;
+      uint32_t a = (clkm_div_x + 1) * b + clkm_div_y;
+      ESP_LOGI(TAG, "I2S Clock Division Parameters: a = %u, b = %u", a, b);
+    }
+
+
     return;
   }
 
   if (request.target_volume > -1) {
+
+    uint16_t vbat_det = 0;
+    this->read_byte_16(0x12, &vbat_det);
+    esph_log_d( TAG, "read vbat_det :0x%x", vbat_det );
+
+    uint16_t pvdd_det = 0;
+    this->read_byte_16(0x14, &pvdd_det);
+    esph_log_d( TAG, "read vbat_det :0x%x", pvdd_det );
+
+
 
     uint16_t status = 0;
     this->read_byte_16( 0x01, &status );
@@ -405,8 +450,11 @@ void ADFI2SOut_AW88298::on_settings_request(AudioPipelineSettingsRequest &reques
     this->read_byte_16( AW88298_REG_SYSCTRL, &systctrl );
     esph_log_d( TAG, "read AW88298_REG_SYSCTRL :0x%x", systctrl );
 
+    /*
     float cur_clk = i2s_get_clk(this->parent_->get_port());
     esph_log_d( TAG, "current clock : %4.2f", cur_clk );
+    */
+
     if( status & 1 ){
       uint16_t val  = 0x4000; // I2SEN=1 AMPPD=0 PWDN=0
       val |= (1 << 6) ; // I2S Enable
@@ -414,12 +462,24 @@ void ADFI2SOut_AW88298::on_settings_request(AudioPipelineSettingsRequest &reques
       this->write_bytes_16( AW88298_REG_SYSCTRL,  &val, 1);
     }
 
-    int target_volume = (int) (request.target_volume * 64.) - 32;
-    if (i2s_alc_volume_set(this->adf_i2s_stream_writer_, target_volume) != ESP_OK) {
-      esph_log_e(TAG, "error setting volume to %d", target_volume);
-      request.failed = true;
-      request.failed_by = this;
-      return;
+    //aw88298_write_reg( 0x0C, 0x0064 );  // volume setting (full volume)
+    // 0 to 96 dB
+    // 7:4 in unit of -6dB
+    // 3:0 in unit of -0.5dB
+    uint16_t val = (1. - request.target_volume) * 192.;
+    val = (val / 12) << 4 | (val % 12);
+    val = (val << 8 ) | 0x0064;
+    this->write_bytes_16( AW88298_REG_HAGCCFG3, &val, 1 );
+
+
+    if( false ){
+      int target_volume = (int) (request.target_volume * 64.) - 32;
+      if (i2s_alc_volume_set(this->adf_i2s_stream_writer_, target_volume) != ESP_OK) {
+        esph_log_e(TAG, "error setting volume to %d", target_volume);
+        request.failed = true;
+        request.failed_by = this;
+        return;
+      }
     }
   }
 }
