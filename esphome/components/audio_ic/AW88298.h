@@ -4,7 +4,7 @@
 #include "esphome/core/component.h"
 
 namespace esphome {
-namespace aw88298 {
+namespace audio_ic {
 
 class AW88298Component : public Component, public i2c::I2CDevice {
  public:

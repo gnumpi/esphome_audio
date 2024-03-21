@@ -5,7 +5,7 @@
 #include <soc/io_mux_reg.h>
 
 namespace esphome {
-namespace aw88298 {
+namespace audio_ic {
 
 static const char *TAG = "AW88298";
 
