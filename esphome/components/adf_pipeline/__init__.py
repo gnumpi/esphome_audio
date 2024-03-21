@@ -81,7 +81,7 @@ ADF_PIPELINE_ELEMENT_SCHEMA = cv.Schema({})
 
 @coroutine_with_priority(55.0)
 async def to_code(config):
-    cg.add_define("USE_ESP_ADF")
+    # cg.add_define("USE_ESP_ADF")
 
     cg.add_platformio_option("build_unflags", "-Wl,--end-group")
 
