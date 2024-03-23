@@ -20,7 +20,7 @@
 #endif
 #include "esphome/components/socket/socket.h"
 
-#ifdef USE_ESP_ADF
+#ifdef USE_ESP_ADF_VAD
 #include <esp_vad.h>
 #endif
 
@@ -90,7 +90,7 @@ class VoiceAssistant : public Component {
   bool is_continuous() const { return this->continuous_; }
 
   void set_use_wake_word(bool use_wake_word) { this->use_wake_word_ = use_wake_word; }
-#ifdef USE_ESP_ADF
+#ifdef USE_ESP_ADF_VAD
   void set_vad_threshold(uint8_t vad_threshold) { this->vad_threshold_ = vad_threshold; }
 #endif
 
@@ -126,6 +126,9 @@ class VoiceAssistant : public Component {
 
  protected:
   int read_microphone_();
+#ifdef USE_ESP_ADF_VAD
+  int read_microphone_vad_(size_t request_samples);
+#endif
   void set_state_(State state);
   void set_state_(State state, State desired_state);
   void signal_stop_();
@@ -170,18 +173,20 @@ class VoiceAssistant : public Component {
 #ifdef USE_MEDIA_PLAYER
   media_player::MediaPlayer *media_player_{nullptr};
 #endif
-
+  uint32_t prior_invoke{0};
   bool local_output_{false};
 
   std::string conversation_id_{""};
 
   HighFrequencyLoopRequester high_freq_;
 
-#ifdef USE_ESP_ADF
+#ifdef USE_ESP_ADF_VAD
   vad_handle_t vad_instance_;
   uint8_t vad_threshold_{5};
   uint8_t vad_counter_{0};
+  size_t samples_in_read_buffer_{0};
 #endif
+
   std::unique_ptr<RingBuffer> ring_buffer_;
 
   bool use_wake_word_;

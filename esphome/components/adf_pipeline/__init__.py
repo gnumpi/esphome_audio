@@ -81,7 +81,7 @@ ADF_PIPELINE_ELEMENT_SCHEMA = cv.Schema({})
 
 @coroutine_with_priority(55.0)
 async def to_code(config):
-    # cg.add_define("USE_ESP_ADF")
+    cg.add_define("USE_ESP_ADF_VAD")
 
     cg.add_platformio_option("build_unflags", "-Wl,--end-group")
 
@@ -127,4 +127,10 @@ async def to_code(config):
             "audio_recorder",
             "tone_partition",
         ],
+    )
+
+    esp32.add_idf_component(
+        name="esp-dsp",
+        repo="https://github.com/espressif/esp-dsp",
+        ref="v1.2.0",
     )

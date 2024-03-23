@@ -283,6 +283,7 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
         } else
 #endif
         {
+            ESP_LOGD(TAG, "Filled with zeros");
             memset(in_buffer, 0x00, in_len);
         }
         r_size = in_len;
@@ -297,6 +298,7 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
         w_size = audio_element_output(self, in_buffer, r_size);
         audio_element_update_byte_pos(self, w_size);
     } else {
+        ESP_LOGD(TAG, "Clear DMA buffer");
         esp_err_t ret = i2s_stream_clear_dma_buffer(self);
         if (ret != ESP_OK) {
             return ret;

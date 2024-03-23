@@ -4,6 +4,7 @@
 #include "i2s_stream_mod.h"
 #include "../../adf_pipeline/adf_pipeline.h"
 #include "../../adf_pipeline/sdk_ext.h"
+#include <filter_resample.h>
 
 namespace esphome {
 using namespace esp_adf;
@@ -32,11 +33,12 @@ bool ADFElementI2SIn::init_adf_elements_() {
       .sample_rate = this->sample_rate_,
       .bits_per_sample = this->bits_per_sample_,
       .channel_format = this->channel_,
+      //.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
       //.intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-      .dma_buf_count = 4,
-      .dma_buf_len = 256,
+      .dma_buf_count = 8,
+      .dma_buf_len = 128,
       .use_apll = false,
       .tx_desc_auto_clear = true,
       .fixed_mclk = 0,
@@ -62,7 +64,7 @@ bool ADFElementI2SIn::init_adf_elements_() {
       .i2s_port = this->parent_->get_port(),
       .use_alc = false,
       .volume = 0,
-      .out_rb_size = (8 * 256),
+      .out_rb_size = (1024 * 16),
       .task_stack = I2S_STREAM_TASK_STACK,
       .task_core = I2S_STREAM_TASK_CORE,
       .task_prio = I2S_STREAM_TASK_PRIO,
@@ -73,15 +75,12 @@ bool ADFElementI2SIn::init_adf_elements_() {
       .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,
   };
 
-
   this->adf_i2s_stream_reader_ = i2s_stream_init(&i2s_cfg);
-  this->adf_i2s_stream_reader_->buf_size = 2 * 256;
+  //this->adf_i2s_stream_reader_->buf_size = 8 * 256;
 
   i2s_pin_config_t pin_config = this->parent_->get_pin_config();
   pin_config.data_in_num = this->din_pin_;
   i2s_set_pin(this->parent_->get_port(), &pin_config);
-
-  audio_element_set_music_info(this->adf_i2s_stream_reader_, this->sample_rate_, 1, this->bits_per_sample_);
 
   uint32_t bits_cfg = I2S_BITS_PER_SAMPLE_16BIT;
   if ( this->bits_per_sample_ == I2S_BITS_PER_SAMPLE_24BIT)
@@ -95,6 +94,35 @@ bool ADFElementI2SIn::init_adf_elements_() {
 
   sdk_audio_elements_.push_back(this->adf_i2s_stream_reader_);
   sdk_element_tags_.push_back("i2s_in");
+
+  /*
+  rsp_filter_cfg_t rsp_cfg = {
+      .src_rate = 16000,
+      .src_ch = 2,
+      .dest_rate = 16000,
+      .dest_bits = 16,
+      .dest_ch = 1,
+      .src_bits = this->bits_per_sample_,
+      .mode = RESAMPLE_DECODE_MODE,
+      .max_indata_bytes = RSP_FILTER_BUFFER_BYTE,
+      .out_len_bytes = RSP_FILTER_BUFFER_BYTE,
+      .type = ESP_RESAMPLE_TYPE_AUTO,
+      .complexity = 2,
+      .down_ch_idx = 0,
+      .prefer_flag = ESP_RSP_PREFER_TYPE_SPEED,
+      .out_rb_size = RSP_FILTER_RINGBUFFER_SIZE,
+      .task_stack = RSP_FILTER_TASK_STACK,
+      .task_core = RSP_FILTER_TASK_CORE,
+      .task_prio = RSP_FILTER_TASK_PRIO,
+      .stack_in_ext = true,
+  };
+  audio_element_handle_t filter = rsp_filter_init(&rsp_cfg);
+
+  sdk_audio_elements_.push_back(filter);
+  sdk_element_tags_.push_back("filter");
+  */
+
+  audio_element_set_music_info(this->adf_i2s_stream_reader_, 16000, 1, this->bits_per_sample_);
 
   AudioPipelineSettingsRequest request{this};
     request.sampling_rate = this->sample_rate_;

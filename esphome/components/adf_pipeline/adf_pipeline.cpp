@@ -358,6 +358,13 @@ bool ADFPipeline::build_adf_pipeline_() {
   return true;
 }
 
+void ADFPipeline::reset_ringbuffer(){
+  if( this->adf_pipeline_){
+    audio_pipeline_reset_ringbuffer(this->adf_pipeline_);
+  }
+
+}
+
 bool ADFPipeline::reset_() {
   bool ret = false;
   if ( this->destroy_on_stop_ ){

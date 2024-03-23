@@ -64,6 +64,8 @@ class ADFPipeline {
   int get_number_of_elements() { return pipeline_elements_.size(); }
   std::vector<std::string> get_element_names();
 
+  void reset_ringbuffer();
+
   // Send a settings request to all pipeline elements
   bool request_settings(AudioPipelineSettingsRequest &request);
   void on_settings_request_failed(AudioPipelineSettingsRequest request) {}
