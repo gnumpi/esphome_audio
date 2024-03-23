@@ -18,9 +18,7 @@ static const char *const TAG = "voice_assistant";
 static const size_t SAMPLE_RATE_HZ = 16000;
 static const size_t INPUT_BUFFER_SIZE = 32 * SAMPLE_RATE_HZ / 1000;  // 32ms * 16kHz / 1000ms
 
-
 #ifdef USE_ESP_ADF_VAD
-static const size_t VAD_MAX_THRESHOLD = 5;
 static const size_t VAD_SAMPLES_PER_CHUNK = VAD_FRAME_LENGTH_MS * SAMPLE_RATE_HZ / 1000;
 static const size_t BUFFER_LENGTH_MSEC = 2048; //cached audio which is send after VAD detection
 static const size_t BUFFER_SIZE = BUFFER_LENGTH_MSEC * SAMPLE_RATE_HZ / 1000;

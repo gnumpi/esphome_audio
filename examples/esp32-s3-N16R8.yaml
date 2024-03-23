@@ -3,10 +3,12 @@ substitutions:
 
 external_components:
   - source:
-      type: git
-      url: https://github.com/gnumpi/esphome_audio
-      ref: main
-    components: [ adf_pipeline, i2s_audio ]
+      #type: git
+      #url: https://github.com/gnumpi/esphome_audio
+      #ref: main
+      type: local
+      path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
+    components: [ adf_pipeline, i2s_audio, voice_assistant ]
 
 
 esphome:
@@ -82,7 +84,7 @@ adf_pipeline:
     i2s_din_pin: GPIO4
     channel: left
     sample_rate: 16000
-    bits_per_sample: 16bit
+    bits_per_sample: 32bit
 
 
 microphone:
@@ -91,6 +93,15 @@ microphone:
     pipeline:
       - adf_i2s_in
       - self
+
+#microphone:
+#  - platform: i2s_audio
+#    id: adf_microphone
+#    adc_type: external
+#    i2s_din_pin: GPIO4
+#    pdm: false
+#    i2s_audio_id: i2s_in
+#    channel: left
 
 #speaker:
 #  - platform: adf_pipeline
@@ -115,6 +126,7 @@ voice_assistant:
   #speaker: adf_speaker
   media_player: adf_media_player
   use_wake_word: True
+  vad_threshold: 3
 
   noise_suppression_level: 4
   auto_gain: 31dBFS
