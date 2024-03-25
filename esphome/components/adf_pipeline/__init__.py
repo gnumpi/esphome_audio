@@ -6,7 +6,8 @@ import esphome.codegen as cg
 from esphome.components.esp32 import add_idf_component
 from esphome.components import esp32
 import esphome.config_validation as cv
-from esphome.core import coroutine_with_priority
+from esphome.core import coroutine_with_priority, ID
+
 
 CODEOWNERS = ["@gnumpi"]
 DEPENDENCIES = []
@@ -25,13 +26,13 @@ ADFPipelineSink = esp_adf_ns.class_("ADFPipelineSinkElement", ADFPipelineElement
 ADFPipelineSource = esp_adf_ns.class_("ADFPipelineSourceElement", ADFPipelineElement)
 ADFPipelineProcess = esp_adf_ns.class_("ADFPipelineProcessElement", ADFPipelineElement)
 
-ADFResampler = esp_adf_ns.class_("ADFResampler", ADFPipelineProcess, ADFPipelineElement)
-
+BUILT_IN_AUDIO_ELEMENT_IDS = ["resampler"]
 
 # Pipeline Controller
 
 COMPONENT_TYPES = ["sink", "source", "filter"]
 SELF_DESCRIPTORS = ["this", "source", "sink", "self"]
+
 ADF_PIPELINE_CONTROLLER_SCHEMA = cv.Schema(
     {
         cv.Optional(CONF_ADF_COMPONENT_TYPE): cv.one_of(*COMPONENT_TYPES),
@@ -39,47 +40,47 @@ ADF_PIPELINE_CONTROLLER_SCHEMA = cv.Schema(
         cv.Optional(CONF_ADF_PIPELINE): cv.ensure_list(
             cv.Any(
                 cv.one_of(*SELF_DESCRIPTORS),
+                cv.one_of(*BUILT_IN_AUDIO_ELEMENT_IDS),
                 cv.use_id(ADFPipelineElement),
             )
         ),
     }
 )
 
+ADFResampler = esp_adf_ns.class_("ADFResampler", ADFPipelineProcess, ADFPipelineElement)
 
-async def setup_pipeline_controller(cntrl: ADFPipelineController, config: dict) -> None:
+
+async def setup_pipeline_controller(cntrl, config: dict) -> None:
     """Set controller parameter and register elements to pipeline."""
 
     cg.add(cntrl.set_keep_alive(config[CONF_ADF_KEEP_PIPELINE_ALIVE]))
 
     if CONF_ADF_PIPELINE in config:
         for comp_id in config[CONF_ADF_PIPELINE]:
-            if comp_id not in SELF_DESCRIPTORS:
-                comp = await cg.get_variable(comp_id)
+            if comp_id in SELF_DESCRIPTORS:
+                cg.add(cntrl.append_own_elements())
+            elif comp_id in BUILT_IN_AUDIO_ELEMENT_IDS:
+                element_id = ID(
+                    cv.validate_id_name("resampler"),
+                    is_declaration=True,
+                    type=ADFResampler,
+                )
+                comp = cg.new_Pvariable(element_id)
                 cg.add(cntrl.add_element_to_pipeline(comp))
             else:
-                cg.add(cntrl.append_own_elements())
+                comp = await cg.get_variable(comp_id)
+                cg.add(cntrl.add_element_to_pipeline(comp))
 
 
 # Pipeline Elements
 
-CONFIG_SCHEMA_RESAMPLER = cv.Schema(
-    {
-        cv.GenerateID(): cv.declare_id(ADFResampler),
-    }
-)
-
 ADF_PIPELINE_ELEMENT_SCHEMA = cv.Schema({})
 
-#    cv.typed_schema(
-#    {
-#        "resampler":  CONFIG_SCHEMA_RESAMPLER,
-#    },
-#    lower=True,
-#    space="-",
-#    default_type="resampler",
-
-
-# ADF-Pipeline component global settings
+element_classes = {
+    "resampler": esp_adf_ns.class_(
+        "ADFResampler", ADFPipelineProcess, ADFPipelineElement
+    )
+}
 
 
 @coroutine_with_priority(55.0)

@@ -18,7 +18,7 @@ class ADFResampler : public ADFPipelineProcessElement {
 
  protected:
   bool init_adf_elements_() override;
-  void clear_adf_elements_() override;
+  //void clear_adf_elements_() override;
   void on_settings_request(AudioPipelineSettingsRequest &request) override;
 
   audio_element_handle_t sdk_resampler_;

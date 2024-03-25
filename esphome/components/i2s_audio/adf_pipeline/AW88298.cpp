@@ -398,8 +398,9 @@ void ADFI2SOut_AW88298::on_settings_request(AudioPipelineSettingsRequest &reques
   }
 
   bool rate_bits_channels_updated = false;
-  if (request.sampling_rate > 0 && (uint32_t) request.sampling_rate != this->sample_rate_) {
-    this->sample_rate_ = request.sampling_rate;
+  if ( this->sample_rate_ != 48000 &&
+    request.sampling_rate > 0 && (uint32_t) request.sampling_rate != this->sample_rate_) {
+    this->sample_rate_ = 48000;//request.sampling_rate;
     rate_bits_channels_updated = true;
   }
 
@@ -427,7 +428,8 @@ void ADFI2SOut_AW88298::on_settings_request(AudioPipelineSettingsRequest &reques
 
   if (rate_bits_channels_updated) {
 
-    audio_element_set_music_info(this->adf_i2s_stream_writer_,this->sample_rate_, this->channels_, this->bits_per_sample_ );
+    audio_element_set_music_info(this->adf_i2s_stream_writer_,this->sample_rate_, this->channels_,
+        this->bits_per_sample_ );
 
     if( this->pipeline_->getState() == PipelineState::STARTING &&
      this->pipeline_->getState() == PipelineState::RUNNING ){

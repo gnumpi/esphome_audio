@@ -36,8 +36,12 @@ bool ADFResampler::init_adf_elements_(){
   this->sdk_resampler_= rsp_filter_init(&rsp_cfg);
   sdk_audio_elements_.push_back(this->sdk_resampler_);
   sdk_element_tags_.push_back("resampler");
+  return true;
 }
 
+void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
+
+}
 
 }  // namespace esp_adf
 }  // namespace esphome
