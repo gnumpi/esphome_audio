@@ -41,7 +41,7 @@ size_t ADFMicrophone::read(int16_t *buf, size_t len) {
       size_t samples_read = bytes_read / sizeof(uint32_t);
 
       std::vector<int16_t> samples;
-      uint8_t shift = 16 - this->gain_log_2_ ;
+      uint8_t shift = 16 - this->gain_log2_ ;
       samples.resize(samples_read);
       for (size_t i = 0; i < samples_read; i++) {
         int32_t temp = ( reinterpret_cast<int32_t *>(buf)[i] ) >> shift;
