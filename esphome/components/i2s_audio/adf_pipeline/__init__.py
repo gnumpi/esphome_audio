@@ -135,5 +135,6 @@ async def to_code(config):
         cg.add(var.set_bits_per_sample(config[CONF_BITS_PER_SAMPLE]))
         cg.add(var.set_pdm(config[CONF_PDM]))
     elif config["type"] == "aw88298":
+        cg.add_define("ADF_PIPELINE_I2C_IC")
         cg.add(var.set_dout_pin(config[CONF_I2S_DOUT_PIN]))
         await i2c.register_i2c_device(var, config)

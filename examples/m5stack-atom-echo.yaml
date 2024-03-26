@@ -56,13 +56,13 @@ i2s_audio:
 
 adf_pipeline:
   - platform: i2s_audio
-    type: sink
+    type: i2s_tx
     id: adf_i2s_out
     i2s_audio_id: i2s_dplx
     i2s_dout_pin: GPIO22
 
   - platform: i2s_audio
-    type: source
+    type: i2s_rx
     id: adf_i2s_in
     i2s_audio_id: i2s_dplx
     i2s_din_pin: GPIO23

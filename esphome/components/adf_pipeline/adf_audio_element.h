@@ -31,8 +31,13 @@ class AudioPipelineSettingsRequest {
   int sampling_rate{-1};
   int bit_depth{-1};
   int number_of_channels{-1};
-  float target_volume{-1};
+  float target_volume{-1.};
   int mute{-1};
+
+  int final_sampling_rate{-1};
+  int final_bit_depth{-1};
+  int final_number_of_channels{-1};
+  float final_volume{-1.};
 
   bool failed{false};
   int error_code{0};

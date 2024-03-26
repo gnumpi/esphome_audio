@@ -1,6 +1,6 @@
 #include "AW88298.h"
 
-#ifdef USE_ESP_IDF
+#ifdef ADF_PIPELINE_I2C_IC
 
 #include "i2s_stream_mod.h"
 #include "../../adf_pipeline/adf_pipeline.h"
@@ -26,7 +26,7 @@ const int AW88298_REG_BSTCTRL2  = 0x61;
 
 void ADFI2SOut_AW88298::setup(){
     ADFElementI2SOut::setup();
-
+    this->use_adf_alc_ = false;
     /*
     M5.begin();
 
@@ -392,16 +392,45 @@ bool ADFI2SOut_AW88298::setup_aw88298_(){
     return true;
 }
 
+void debug_clk_rates(){
+    uint32_t clkm_div_num = I2S0.tx_clkm_conf.tx_clkm_div_num;
+    uint32_t clkm_clk_active = I2S0.tx_clkm_conf.tx_clk_active;
+    uint32_t clkm_clk_sel = I2S0.tx_clkm_conf.tx_clk_sel;
+
+    ESP_LOGI(TAG, "I2S Clock Config: clkm_div_num = %u, clkm_clk_active = %u, clkm_sel = %u",
+             clkm_div_num, clkm_clk_active, clkm_clk_sel);
+
+    uint32_t clkm_div_z = I2S0.tx_clkm_div_conf.tx_clkm_div_z;
+    uint32_t clkm_div_x = I2S0.tx_clkm_div_conf.tx_clkm_div_x;
+    uint32_t clkm_div_y = I2S0.tx_clkm_div_conf.tx_clkm_div_y;
+    uint32_t clkm_div_yn1 = I2S0.tx_clkm_div_conf.tx_clkm_div_yn1;
+
+    ESP_LOGI(TAG, "I2S Clock Division Parameters: z = %u, y = %u, x = %u, yn1 = %u",
+             clkm_div_z, clkm_div_y, clkm_div_x, clkm_div_yn1);
+
+    if( clkm_div_yn1 == 0){
+      uint32_t b = clkm_div_z;
+      uint32_t a = (clkm_div_x + 1) * b + clkm_div_y;
+      ESP_LOGI(TAG, "I2S Clock Division Parameters: a = %u, b = %u", a, b);
+    }
+
+
+}
+
+
+
 void ADFI2SOut_AW88298::on_settings_request(AudioPipelineSettingsRequest &request) {
   if ( !this->adf_i2s_stream_writer_ ){
     return;
   }
 
   bool rate_bits_channels_updated = false;
-  if ( this->sample_rate_ != 48000 &&
-    request.sampling_rate > 0 && (uint32_t) request.sampling_rate != this->sample_rate_) {
-    this->sample_rate_ = 48000;//request.sampling_rate;
-    rate_bits_channels_updated = true;
+  if ( request.sampling_rate > 0 ){
+    uint32_t final_rate = request.sampling_rate >= 44100 ? 48000 : 16000;
+    if( final_rate != this->sample_rate_){
+      this->sample_rate_ = final_rate;
+      rate_bits_channels_updated = true;
+    }
   }
 
   if(request.number_of_channels > 0 && (uint8_t) request.number_of_channels != this->channels_)
@@ -467,42 +496,9 @@ void ADFI2SOut_AW88298::on_settings_request(AudioPipelineSettingsRequest &reques
     esph_log_d( TAG, "read AW88298_SYS_STATUS :0x%x", val );
 
 
-    uint32_t clkm_div_num = I2S0.tx_clkm_conf.tx_clkm_div_num;
-    uint32_t clkm_clk_active = I2S0.tx_clkm_conf.tx_clk_active;
-    uint32_t clkm_clk_sel = I2S0.tx_clkm_conf.tx_clk_sel;
-
-    ESP_LOGI(TAG, "I2S Clock Config: clkm_div_num = %u, clkm_clk_active = %u, clkm_sel = %u",
-             clkm_div_num, clkm_clk_active, clkm_clk_sel);
-
-    uint32_t clkm_div_z = I2S0.tx_clkm_div_conf.tx_clkm_div_z;
-    uint32_t clkm_div_x = I2S0.tx_clkm_div_conf.tx_clkm_div_x;
-    uint32_t clkm_div_y = I2S0.tx_clkm_div_conf.tx_clkm_div_y;
-    uint32_t clkm_div_yn1 = I2S0.tx_clkm_div_conf.tx_clkm_div_yn1;
-
-    ESP_LOGI(TAG, "I2S Clock Division Parameters: z = %u, y = %u, x = %u, yn1 = %u",
-             clkm_div_z, clkm_div_y, clkm_div_x, clkm_div_yn1);
-
-    if( clkm_div_yn1 == 0){
-      uint32_t b = clkm_div_z;
-      uint32_t a = (clkm_div_x + 1) * b + clkm_div_y;
-      ESP_LOGI(TAG, "I2S Clock Division Parameters: a = %u, b = %u", a, b);
-    }
-
-
-    return;
   }
 
   if (request.target_volume > -1) {
-
-    uint16_t vbat_det = 0;
-    this->read_byte_16(0x12, &vbat_det);
-    esph_log_d( TAG, "read vbat_det :0x%x", vbat_det );
-
-    uint16_t pvdd_det = 0;
-    this->read_byte_16(0x14, &pvdd_det);
-    esph_log_d( TAG, "read vbat_det :0x%x", pvdd_det );
-
-
 
     uint16_t status = 0;
     this->read_byte_16( 0x01, &status );
@@ -510,11 +506,6 @@ void ADFI2SOut_AW88298::on_settings_request(AudioPipelineSettingsRequest &reques
     uint16_t systctrl = 0;
     this->read_byte_16( AW88298_REG_SYSCTRL, &systctrl );
     esph_log_d( TAG, "read AW88298_REG_SYSCTRL :0x%x", systctrl );
-
-    /*
-    float cur_clk = i2s_get_clk(this->parent_->get_port());
-    esph_log_d( TAG, "current clock : %4.2f", cur_clk );
-    */
 
     if( status & 1 ){
       uint16_t val  = 0x4000; // I2SEN=1 AMPPD=0 PWDN=0
@@ -532,8 +523,7 @@ void ADFI2SOut_AW88298::on_settings_request(AudioPipelineSettingsRequest &reques
     val = (val << 8 ) | 0x0064;
     this->write_bytes_16( AW88298_REG_HAGCCFG3, &val, 1 );
 
-
-    if( false ){
+    if( this->use_adf_alc_ ){
       int target_volume = (int) (request.target_volume * 64.) - 32;
       if (i2s_alc_volume_set(this->adf_i2s_stream_writer_, target_volume) != ESP_OK) {
         esph_log_e(TAG, "error setting volume to %d", target_volume);
@@ -543,6 +533,11 @@ void ADFI2SOut_AW88298::on_settings_request(AudioPipelineSettingsRequest &reques
       }
     }
   }
+
+  request.final_sampling_rate = this->sample_rate_;
+  request.final_bit_depth = this->bits_per_sample_;
+  request.number_of_channels = this->channels_;
+
 }
 
 
