@@ -20,10 +20,7 @@ class ADFI2SOut_AW88298 : public ADFElementI2SOut, public i2c::I2CDevice {
   void on_pipeline_status_change() override;
 
 protected:
-  bool setup_aw88298_();
-
-  void sdk_event_handler_(audio_event_iface_msg_t &msg);
-  void on_settings_request(AudioPipelineSettingsRequest &request) override;
+   void on_settings_request(AudioPipelineSettingsRequest &request) override;
 };
 
 }  // namespace esp_adf
