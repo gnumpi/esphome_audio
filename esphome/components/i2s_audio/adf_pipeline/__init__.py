@@ -52,6 +52,9 @@ ADFI2SOut_AW88298 = i2s_audio_ns.class_(
     "ADFI2SOut_AW88298", ADFElementI2SOut, i2c.I2CDevice
 )
 
+ADFI2SIn_ES7210 = i2s_audio_ns.class_("ADFI2SIn_ES7210", ADFElementI2SIn, i2c.I2CDevice)
+
+
 ICS = ["AW88298"]
 
 i2s_channel_fmt_t = cg.global_ns.enum("i2s_channel_fmt_t")
@@ -108,12 +111,19 @@ CONFIG_SCHEMA_AW88298 = CONFIG_SCHEMA_OUT.extend(
     )
 )
 
+CONFIG_SCHEMA_ES7210 = CONFIG_SCHEMA_IN.extend(
+    cv.Schema({cv.GenerateID(): cv.declare_id(ADFI2SIn_ES7210)}).extend(
+        i2c.i2c_device_schema(0x36)
+    )
+)
+
 
 CONFIG_SCHEMA = cv.typed_schema(
     {
         "i2s_tx": CONFIG_SCHEMA_OUT,
         "i2s_rx": CONFIG_SCHEMA_IN,
         "aw88298": CONFIG_SCHEMA_AW88298,
+        "es7210": CONFIG_SCHEMA_ES7210,
     },
     lower=True,
     space="-",
@@ -126,15 +136,15 @@ async def to_code(config):
     await cg.register_component(var, config)
 
     await cg.register_parented(var, config[CONF_I2S_AUDIO_ID])
-    if config["type"] == "i2s_tx":
+    if config["type"] in ["i2s_tx", "aw88298"]:
         cg.add(var.set_dout_pin(config[CONF_I2S_DOUT_PIN]))
-    elif config["type"] == "i2s_rx":
+    elif config["type"] in ["i2s_rx", "es7210"]:
         cg.add(var.set_din_pin(config[CONF_I2S_DIN_PIN]))
         cg.add(var.set_channel(config[CONF_CHANNEL]))
         cg.add(var.set_sample_rate(config[CONF_SAMPLE_RATE]))
         cg.add(var.set_bits_per_sample(config[CONF_BITS_PER_SAMPLE]))
         cg.add(var.set_pdm(config[CONF_PDM]))
-    elif config["type"] == "aw88298":
+
+    if config["type"] in ["aw88298", "es7210"]:
         cg.add_define("ADF_PIPELINE_I2C_IC")
-        cg.add(var.set_dout_pin(config[CONF_I2S_DOUT_PIN]))
         await i2c.register_i2c_device(var, config)

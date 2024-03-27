@@ -104,6 +104,10 @@ void I2SAudioMicrophone::stop_() {
 }
 
 size_t I2SAudioMicrophone::read(int16_t *buf, size_t len) {
+  // internal reading bit depth should be in-transparent to caller
+  if (this->bits_per_sample_ == I2S_BITS_PER_SAMPLE_32BIT){
+    len <<= 1;
+  }
   size_t bytes_read = 0;
   esp_err_t err = i2s_read(this->parent_->get_port(), buf, len, &bytes_read, (100 / portTICK_PERIOD_MS));
   if (err != ESP_OK) {

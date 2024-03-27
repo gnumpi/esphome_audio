@@ -68,6 +68,16 @@ constexpr uint8_t ES7210_MIC3_4_POWER_DOWN = 0x4C;
 
 
 void ADFI2SIn_ES7210::setup(){
+      uint8_t chip_id = 0;
+      chip_id = this->reg(0x3D).get();
+      if( chip_id != 0x72){
+        esph_log_e(TAG, "Invalid chip id!" );
+        this->mark_failed();
+      }
+
+      //try read:
+      // 0x3D : CHIP ID1 [0x72]
+      // 0x3E : CHIP ID0 [0x10]
 
       i2c::I2CDevice es7210;
       es7210.set_i2c_bus( this->bus_);
@@ -84,35 +94,62 @@ void ADFI2SIn_ES7210::setup(){
       {
         { 0x00, 0x41 }, // RESET_CTL
         { 0x01, 0x1f }, // CLK_ON_OFF
-        //{ 0x06, 0x00 }, // DIGITAL_PDN
-        { 0x06, 0x01 }, // DIGITAL_PDN (disable pull down resistors)
+
+        { 0x06, 0x00 }, // DIGITAL_PDN
+        //{ 0x06, 0x01 }, // DIGITAL_PDN (disable pull down resistors)
+
         { 0x07, 0x20 }, // ADC_OSR
-        { 0x08, 0x10 }, // MODE_CFG
-        { 0x09, 0x30 }, // TCT0_CHPINI
-        { 0x0A, 0x30 }, // TCT1_CHPINI
+        { 0x08, 0x10 }, // MODE_CFG [2ch, no_invert, EQ on, single speed, LRCK: slave mode]
+
+        { 0x09, 0x30 }, // TCT0 CHIPINI_LGTH [48] period=CHIPINI_LGTH/(LRCK frequency)*16
+        { 0x0A, 0x30 }, // TCT1 PWRUP_LGTH [48] period=PWRUP_LGTH/(LRCK frequency)*16
+
+        //{0x0B,0x00}, // CLEAR_RAM, FORCE_CSM, ADC34_MUTE_FLAG, ADC12_MUTE_FLAG, CSM_STATE
+        //{0x0C,0x00}, // Interrupt control
+        //{0,0D,0x09}, // I2C_IBTHD_SEL, CLKDBLK_PW_SEL, CLKDBL_PATH_SEL, LRCK_EXTEND, DELAY_SEL
+
+        //{0x10, 0x00}, // DMIC-Ctrl ADC34_DMIC_ON, ADC12_DMIC_ON, ADC34_DMIC_GAIN, ADC12_DMIC_GAIN
+
+
         { 0x20, 0x0a }, // ADC34_HPF2
         { 0x21, 0x2a }, // ADC34_HPF1
         { 0x22, 0x0a }, // ADC12_HPF2
         { 0x23, 0x2a }, // ADC12_HPF1
-        { 0x02, 0xC1 },
-        { 0x04, 0x01 },
-        { 0x05, 0x00 },
-        { 0x11, 0x60 },
-        { 0x40, 0x42 }, // ANALOG_SYS
-        { 0x41, 0x70 }, // MICBIAS12
-        { 0x42, 0x70 }, // MICBIAS34
-        { 0x43, 0x1B }, // MIC1_GAIN
-        { 0x44, 0x1B }, // MIC2_GAIN
-        { 0x45, 0x00 }, // MIC3_GAIN
-        { 0x46, 0x00 }, // MIC4_GAIN
-        { 0x47, 0x00 }, // MIC1_LP
-        { 0x48, 0x00 }, // MIC2_LP
-        { 0x49, 0x00 }, // MIC3_LP
-        { 0x4A, 0x00 }, // MIC4_LP
-        { 0x4B, 0x00 }, // MIC12_PDN
-        { 0x4C, 0xFF }, // MIC34_PDN
-        //{ 0x01, 0x14 }, // CLK_ON_OFF
-        { 0x01, 0xBF }, // CLK_ON_OFF
+
+        //0x24 to 0x37 EQ coefficients
+
+        { 0x02, 0xC1 }, // Main clk cntrl [bypass DLL, use clock doubler, CLK_ADC_DIV: no divide]
+      //{ 0x03, 0x04 }, // MCL cntrl [MCLK from pad, divide by 4]
+        { 0x04, 0x01 }, // Master LRCK divider 1 [ M_LRCK_DIV[11:8] ]
+        { 0x05, 0x00 }, // Master LRCK divider 0 [ M_LRCK_DIV[ 7:0] ]
+
+        { 0x11, 0x60 }, //SDP IF: SP_WL, SP_LRP, SP_PROTOCOL [16bit, L/R normal polarity, I2S]
+      //{ 0x12, 0x00 }, // SDOUT_MODE: [ADC12 to SDOUT1, ADC34 to SDOUT2]
+      //{ 0x13, 0x00 }, // ADC AUTO-MUTE [no auto-mute]
+      //{ 0x14, 0x00 }, // ADC34 MUTE Cntrl
+      //{ 0x15, 0x00 }, // ADC12 MUTE Cntrl
+      //{ 0x16, 0x00 }, // Automatic Level Control (ALC) [ALC12 and ALC34 off]
+      //{ 0x17, 0x00 }, // ALC common cfg
+      //{ 0x18, 0xF7 }, // ADC34 ALC LEVEL
+      //{ 0x19, 0xF7 }, // ADC12 ALC LEVEL
+      //{ 0x1A, 0x00 }, // ALC common cfg 2
+
+        { 0x40, 0x42 }, // ANALOG_SYS [ VX2OFF: turn off (VDDA=3.3V), VMIDSEL: 500 kΩ divider enabled]
+        { 0x41, 0x70 }, // MICBIAS12 [LVL_MICBIAS12: 2.87V (VDDM=3.3V), ADC12BIAS_SWH: x1]
+        { 0x42, 0x70 }, // MICBIAS34 [LVL_MICBIAS34: 2.87V (VDDM=3.3V), ADC34BIAS_SWH: x1]
+        { 0x43, 0x1B }, // MIC1_GAIN [SELMIC1: select MIC1P and MIC1N, GAIN: 33dB]
+        { 0x44, 0x1B }, // MIC2_GAIN [SELMIC2: select MIC2P and MIC2N, GAIN: 33dB]
+        { 0x45, 0x00 }, // MIC3_GAIN [deselect MIC3]
+        { 0x46, 0x00 }, // MIC4_GAIN [deselect MIC4]
+        { 0x47, 0x00 }, // MIC1 Low Power [all set to normal]
+        { 0x48, 0x00 }, // MIC2 Low Power [all set to normal]
+        { 0x49, 0x00 }, // MIC3 Low Power [all set to normal]
+        { 0x4A, 0x00 }, // MIC4 Low Power [all set to normal]
+        { 0x4B, 0x00 }, // MIC 1/2 power down [all set to normal]
+        { 0x4C, 0xFF }, // MIC3 3/4 power down [all set to power down]
+
+        { 0x01, 0x14 }, // CLK_ON_OFF
+        //{ 0x01, 0xBF }, // CLK_ON_OFF
       };
       for (auto& d: data)
       {
@@ -120,40 +157,14 @@ void ADFI2SIn_ES7210::setup(){
       }
 }
 
-/*
-static constexpr reg_data_t data[] =
-{
-    { 0x00, 0x41 }, // Reset Control: Soft reset of the chip to ensure starting from a known state.
-    { 0x01, 0x1f }, // Clock On/Off Control: Initially enables all internal clocks before configuration.
-    { 0x06, 0x01 }, // Digital Power Down: Disables internal pull-down resistors to optimize power consumption.
-    { 0x07, 0x20 }, // ADC OSR (Oversampling Rate): Sets a specific oversampling rate for improved noise performance.
-    { 0x08, 0x10 }, // Mode Configuration: Selects the operational mode of the device (e.g., mono, stereo).
-    { 0x09, 0x30 }, // Time Control 0 for Chip Initialization: Configures timing for the initialization sequence.
-    { 0x0A, 0x30 }, // Time Control 1 for Chip Initialization: Further timing configuration for initialization.
-    { 0x20, 0x0a }, // ADC34 High-Pass Filter 2: Configures the high-pass filter for ADC channels 3 and 4.
-    { 0x21, 0x2a }, // ADC34 High-Pass Filter 1: Fine-tunes the high-pass filter settings for channels 3 and 4.
-    { 0x22, 0x0a }, // ADC12 High-Pass Filter 2: Configures the high-pass filter for ADC channels 1 and 2.
-    { 0x23, 0x2a }, // ADC12 High-Pass Filter 1: Fine-tunes the high-pass filter settings for channels 1 and 2.
-    { 0x02, 0xC1 }, // Main Clock Control: Adjusts main clock features, possibly enabling a clock multiplier.
-    { 0x04, 0x01 }, // Master LRCK Divider: Sets the LRCK divider, affecting the audio sample rate.
-    { 0x05, 0x00 }, // Master LRCK Divider (continued): Completes LRCK division configuration.
-    { 0x11, 0x60 }, // SDP Interface Config: Configures the Serial Data Port for audio data transmission.
-    { 0x40, 0x42 }, // Analog System Configuration: Adjusts the analog system settings for optimal performance.
-    { 0x41, 0x70 }, // MIC1/2 Bias Voltage: Sets the bias voltage for microphones 1 and 2, optimizing their performance.
-    { 0x42, 0x70 }, // MIC3/4 Bias Voltage: Sets the bias voltage for microphones 3 and 4.
-    { 0x43, 0x1B }, // MIC1 Gain: Configures the gain for microphone 1, affecting the amplitude of the captured signal.
-    { 0x44, 0x1B }, // MIC2 Gain: Configures the gain for microphone 2.
-    { 0x45, 0x00 }, // MIC3 Gain: Sets microphone 3 to default gain, indicating no additional amplification.
-    { 0x46, 0x00 }, // MIC4 Gain: Sets microphone 4 to default gain.
-    { 0x47, 0x00 }, // MIC1 Low Power: Disables low power mode for microphone 1, ensuring full performance.
-    { 0x48, 0x00 }, // MIC2 Low Power: Disables low power mode for microphone 2.
-    { 0x49, 0x00 }, // MIC3 Low Power: Disables low power mode for microphone 3.
-    { 0x4A, 0x00 }, // MIC4 Low Power: Disables low power mode for microphone 4.
-    { 0x4B, 0x00 }, // MIC1/2 Power Down: Ensures microphones 1 and 2 are powered and ready for use.
-    { 0x4C, 0xFF }, // MIC3/4 Power Down: Powers down microphones 3 and 4 to conserve energy.
-    { 0x01, 0xBF }, // Clock On/Off Control (updated): Adjusts clock settings after initial configuration for optimized operation.
-};
-*/
+
+void ADFI2SIn_ES7210::dump_config(){
+    uint8_t mode_cfg = this->reg(ES7210_MODE_CONFIG).get();
+    esph_log_config(TAG, "Register: ");
+    esph_log_config(TAG, "   ES7210_MODE_CONFIG: %d", mode_cfg);
+
+}
+
 
 }
 }

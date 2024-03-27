@@ -38,12 +38,13 @@ size_t ADFMicrophone::read(int16_t *buf, size_t len) {
     {
       len = ( len << 2 ) >> 2;
       size_t bytes_read = this->pcm_stream_.stream_read_bytes((char *) buf, len << 1 );
-      size_t samples_read = bytes_read / sizeof(int32_t);
+      size_t samples_read = bytes_read / sizeof(uint32_t);
 
       std::vector<int16_t> samples;
+      uint8_t shift = 16 - this->gain_log2_ ;
       samples.resize(samples_read);
       for (size_t i = 0; i < samples_read; i++) {
-         int32_t temp = ( reinterpret_cast<int32_t *>(buf)[i] ) >> 14;
+        int32_t temp = ( reinterpret_cast<int32_t *>(buf)[i] ) >> shift;
          samples[i] = (int16_t) clamp<int32_t>(temp, INT16_MIN, INT16_MAX );
       }
       memcpy(buf, samples.data(), samples_read * sizeof(int16_t));
