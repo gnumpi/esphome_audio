@@ -6,6 +6,7 @@ import esphome.codegen as cg
 from esphome.components.esp32 import add_idf_component
 from esphome.components import esp32
 import esphome.config_validation as cv
+from esphome.const import CONF_ID
 from esphome.core import coroutine_with_priority, ID
 
 
@@ -61,7 +62,7 @@ async def setup_pipeline_controller(cntrl, config: dict) -> None:
                 cg.add(cntrl.append_own_elements())
             elif comp_id in BUILT_IN_AUDIO_ELEMENT_IDS:
                 element_id = ID(
-                    cv.validate_id_name("resampler"),
+                    cv.validate_id_name(config[CONF_ID].id + "_resampler"),
                     is_declaration=True,
                     type=ADFResampler,
                 )

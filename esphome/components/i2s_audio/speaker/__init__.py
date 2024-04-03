@@ -1,15 +1,17 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import pins
-from esphome.const import CONF_ID, CONF_MODE
+from esphome.const import CONF_ID, CONF_MODE, CONF_MODEL
 from esphome.components import esp32, speaker
 
 from .. import (
     CONF_I2S_AUDIO_ID,
     CONF_I2S_DOUT_PIN,
+    CONFIG_SCHEMA_EXT_DAC,
     I2SAudioComponent,
     I2SAudioOut,
     i2s_audio_ns,
+    register_dac,
 )
 
 CODEOWNERS = ["@jesserockz"]
@@ -30,6 +32,7 @@ INTERNAL_DAC_OPTIONS = {
     "stereo": i2s_dac_mode_t.I2S_DAC_CHANNEL_BOTH_EN,
 }
 
+
 EXTERNAL_DAC_OPTIONS = ["mono", "stereo"]
 
 NO_INTERNAL_DAC_VARIANTS = [esp32.const.VARIANT_ESP32S2]
@@ -43,6 +46,8 @@ def validate_esp32_variant(config):
         raise cv.Invalid(f"{variant} does not have an internal DAC")
     return config
 
+
+CONF_DAC = "dac"
 
 CONFIG_SCHEMA = cv.All(
     cv.typed_schema(
@@ -64,6 +69,9 @@ CONFIG_SCHEMA = cv.All(
                     cv.Optional(CONF_MODE, default="mono"): cv.one_of(
                         *EXTERNAL_DAC_OPTIONS, lower=True
                     ),
+                    cv.Optional(
+                        CONF_DAC, default={CONF_MODEL: "generic"}
+                    ): CONFIG_SCHEMA_EXT_DAC,
                 }
             ).extend(cv.COMPONENT_SCHEMA),
         },
@@ -85,3 +93,4 @@ async def to_code(config):
     else:
         cg.add(var.set_dout_pin(config[CONF_I2S_DOUT_PIN]))
         cg.add(var.set_external_dac_channels(2 if config[CONF_MODE] == "stereo" else 1))
+        await register_dac(var, config[CONF_DAC])

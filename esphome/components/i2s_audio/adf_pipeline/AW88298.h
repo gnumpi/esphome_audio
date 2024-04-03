@@ -20,6 +20,7 @@ class ADFI2SOut_AW88298 : public ADFElementI2SOut, public i2c::I2CDevice {
   void on_pipeline_status_change() override;
 
 protected:
+   bool init_was_called_{false};
    void on_settings_request(AudioPipelineSettingsRequest &request) override;
 };
 

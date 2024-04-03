@@ -35,7 +35,7 @@ class ADFElementI2SIn : public I2SAudioIn, public ADFPipelineSourceElement, publ
   uint32_t sample_rate_;
   i2s_bits_per_sample_t bits_per_sample_;
   bool use_apll_;
-
+  bool valid_settings_{false};
   bool init_adf_elements_() override;
   void clear_adf_elements_() override;
   audio_element_handle_t adf_i2s_stream_reader_;

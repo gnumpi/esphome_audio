@@ -4,6 +4,7 @@
 #include "i2s_stream_mod.h"
 #include "../../adf_pipeline/adf_pipeline.h"
 #include "../../adf_pipeline/sdk_ext.h"
+#include "../external_adc.h"
 
 namespace esphome {
 using namespace esp_adf;
@@ -18,6 +19,10 @@ bool ADFElementI2SIn::init_adf_elements_() {
   }
   if (this->sdk_audio_elements_.size() > 0)
     return true;
+
+  if (this->external_adc_ != nullptr){
+    this->external_adc_->init_device();
+  }
 
   i2s_bits_per_chan_t channel_bits  = I2S_BITS_PER_CHAN_DEFAULT;
 
@@ -81,6 +86,10 @@ bool ADFElementI2SIn::init_adf_elements_() {
   pin_config.data_in_num = this->din_pin_;
   i2s_set_pin(this->parent_->get_port(), &pin_config);
 
+  if (this->external_adc_ != nullptr){
+    this->external_adc_->apply_i2s_settings(i2s_config);
+  }
+
   audio_element_set_music_info(this->adf_i2s_stream_reader_, this->sample_rate_, 1, this->bits_per_sample_);
 
   uint32_t bits_cfg = I2S_BITS_PER_SAMPLE_16BIT;
@@ -96,20 +105,22 @@ bool ADFElementI2SIn::init_adf_elements_() {
   sdk_audio_elements_.push_back(this->adf_i2s_stream_reader_);
   sdk_element_tags_.push_back("i2s_in");
 
-  AudioPipelineSettingsRequest request{this};
-    request.sampling_rate = this->sample_rate_;
-    request.bit_depth = this->bits_per_sample_;
-    request.number_of_channels = 1;
-
-  if (!pipeline_->request_settings(request)){
-    esph_log_e(TAG, "Bit depth %d is not supported by .", this->bits_per_sample_ );
-  }
-
   return true;
 };
 
 bool ADFElementI2SIn::is_ready(){
-  return this->parent_->set_read_mode();
+  if( !this->parent_->set_read_mode() )
+  {
+    return false;
+  }
+  if( !this->valid_settings_){
+    AudioPipelineSettingsRequest request{this};
+    request.sampling_rate = this->sample_rate_;
+    request.bit_depth = this->bits_per_sample_;
+    request.number_of_channels = 2;
+    this->valid_settings_ = pipeline_->request_settings(request);
+  }
+  return this->valid_settings_;
 }
 
 void ADFElementI2SIn::clear_adf_elements_(){

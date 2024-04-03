@@ -10,6 +10,7 @@ import esphome.config_validation as cv
 from esphome.const import CONF_ID, CONF_CHANNEL
 
 from ... import adf_pipeline as esp_adf
+from ... import i2s_audio as i2s
 
 from .. import (
     CONF_I2S_AUDIO_ID,
@@ -83,7 +84,7 @@ _validate_bits = cv.float_with_unit("bits", "bit")
 CONF_ID_AW88298 = "conf_id_aw88298"
 
 
-CONFIG_SCHEMA_IN = esp_adf.ADF_PIPELINE_ELEMENT_SCHEMA.extend(
+CONFIG_SCHEMA_IN = i2s.CONFIG_SCHEMA_I2S_IN.extend(
     {
         cv.GenerateID(): cv.declare_id(ADFElementI2SIn),
         cv.GenerateID(CONF_I2S_AUDIO_ID): cv.use_id(I2SAudioComponent),
@@ -97,11 +98,9 @@ CONFIG_SCHEMA_IN = esp_adf.ADF_PIPELINE_ELEMENT_SCHEMA.extend(
     }
 )
 
-CONFIG_SCHEMA_OUT = esp_adf.ADF_PIPELINE_ELEMENT_SCHEMA.extend(
+CONFIG_SCHEMA_OUT = i2s.CONFIG_SCHEMA_I2S_OUT.extend(
     {
         cv.GenerateID(): cv.declare_id(ADFElementI2SOut),
-        cv.GenerateID(CONF_I2S_AUDIO_ID): cv.use_id(I2SAudioComponent),
-        cv.Required(CONF_I2S_DOUT_PIN): pins.internal_gpio_output_pin_number,
     }
 )
 
@@ -138,12 +137,14 @@ async def to_code(config):
     await cg.register_parented(var, config[CONF_I2S_AUDIO_ID])
     if config["type"] in ["i2s_tx", "aw88298"]:
         cg.add(var.set_dout_pin(config[CONF_I2S_DOUT_PIN]))
+        await i2s.register_dac(var, config[i2s.CONF_I2S_DAC])
     elif config["type"] in ["i2s_rx", "es7210"]:
         cg.add(var.set_din_pin(config[CONF_I2S_DIN_PIN]))
         cg.add(var.set_channel(config[CONF_CHANNEL]))
         cg.add(var.set_sample_rate(config[CONF_SAMPLE_RATE]))
         cg.add(var.set_bits_per_sample(config[CONF_BITS_PER_SAMPLE]))
         cg.add(var.set_pdm(config[CONF_PDM]))
+        await i2s.register_adc(var, config[i2s.CONF_I2S_ADC])
 
     if config["type"] in ["aw88298", "es7210"]:
         cg.add_define("ADF_PIPELINE_I2C_IC")

@@ -122,7 +122,7 @@ void ADFI2SOut_AW88298::on_settings_request(AudioPipelineSettingsRequest &reques
     }
   }
 
-  if(request.number_of_channels > 0 && (uint8_t) request.number_of_channels != this->channels_)
+  if( !this->init_was_called_ || (request.number_of_channels > 0 && (uint8_t) request.number_of_channels != this->channels_))
   {
     this->channels_ = request.number_of_channels;
     rate_bits_channels_updated = true;
@@ -183,7 +183,7 @@ void ADFI2SOut_AW88298::on_settings_request(AudioPipelineSettingsRequest &reques
     val = 0;
     this->read_byte_16( 0x01, &val );
     esph_log_d( TAG, "read AW88298_SYS_STATUS :0x%x", val );
-
+    this->init_was_called_ = true;
 
   }
 

@@ -23,11 +23,11 @@ typedef struct rsp_filter {
 
 bool ADFResampler::init_adf_elements_(){
     rsp_filter_cfg_t rsp_cfg = {
-      .src_rate = 44100,
-      .src_ch = 2,
-      .dest_rate = 48000,
+      .src_rate = this->src_rate_,
+      .src_ch = this->src_num_channels_,
+      .dest_rate = this->dst_rate_,
       .dest_bits = 16,
-      .dest_ch = 2,
+      .dest_ch = this->dst_num_channels_,
       .src_bits = 16,
       .mode = RESAMPLE_DECODE_MODE,
       .max_indata_bytes = RSP_FILTER_BUFFER_BYTE,
