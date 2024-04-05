@@ -84,6 +84,13 @@ bool ES7210::init_device(){
       return true;
 }
 
+bool ES7210::apply_i2s_settings(const i2s_driver_config_t&  i2s_cfg){
+    //hard coded to 16bit,
+    return true;
+}
+
+
+
 
 }
 }

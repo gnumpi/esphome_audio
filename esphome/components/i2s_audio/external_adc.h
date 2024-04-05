@@ -28,6 +28,7 @@ protected:
 class ES7210 : public ExternalADC {
 public:
   bool init_device() override;
+  bool apply_i2s_settings(const i2s_driver_config_t&  i2s_cfg) override;
 };
 
 }

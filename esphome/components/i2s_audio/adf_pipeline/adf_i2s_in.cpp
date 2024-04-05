@@ -13,10 +13,6 @@ namespace i2s_audio {
 static const char *const TAG = "adf_i2s_in";
 
 bool ADFElementI2SIn::init_adf_elements_() {
-  if (!this->parent_->set_read_mode() )
-  {
-    return false;
-  }
   if (this->sdk_audio_elements_.size() > 0)
     return true;
 
@@ -29,10 +25,11 @@ bool ADFElementI2SIn::init_adf_elements_() {
   if ( this->bits_per_sample_ == I2S_BITS_PER_SAMPLE_24BIT)
   {
     channel_bits = I2S_BITS_PER_CHAN_32BIT;
-
   }
 
-  i2s_driver_config_t i2s_config = {
+  i2s_driver_config_t i2s_config;
+  if( this->parent_->adjustable()){
+    i2s_config = {
       .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_RX),
       .sample_rate = this->sample_rate_,
       .bits_per_sample = this->bits_per_sample_,
@@ -47,21 +44,25 @@ bool ADFElementI2SIn::init_adf_elements_() {
       .fixed_mclk = 0,
       .mclk_multiple = I2S_MCLK_MULTIPLE_256,
       .bits_per_chan = channel_bits,
-  #if SOC_I2S_SUPPORTS_TDM
+    #if SOC_I2S_SUPPORTS_TDM
       .chan_mask = I2S_CHANNEL_MONO,
       .total_chan = 0,
       .left_align = false,
       .big_edin = false,
       .bit_order_msb = false,
       .skip_msk = false,
-#endif
-  };
+    #endif
+    };
+  } else {
+    i2s_config = this->parent_->get_i2s_cfg();
+  }
+
 
   if( this->pdm_){
       i2s_config.mode = (i2s_mode_t) (i2s_config.mode | I2S_MODE_PDM);
   }
 
-    i2s_stream_cfg_t i2s_cfg = {
+  i2s_stream_cfg_t i2s_stream_cfg = {
       .type = AUDIO_STREAM_READER,
       .i2s_config = i2s_config,
       .i2s_port = this->parent_->get_port(),
@@ -73,18 +74,15 @@ bool ADFElementI2SIn::init_adf_elements_() {
       .task_prio = I2S_STREAM_TASK_PRIO,
       .stack_in_ext = false,
       .multi_out_num = 0,
-      .uninstall_drv = true,
+      .uninstall_drv = false,
       .need_expand = false,
       .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,
   };
 
-
-  this->adf_i2s_stream_reader_ = i2s_stream_init(&i2s_cfg);
+  this->adf_i2s_stream_reader_ = i2s_stream_init(&i2s_stream_cfg);
   this->adf_i2s_stream_reader_->buf_size = 2 * 256;
 
-  i2s_pin_config_t pin_config = this->parent_->get_pin_config();
-  pin_config.data_in_num = this->din_pin_;
-  i2s_set_pin(this->parent_->get_port(), &pin_config);
+  this->install_i2s_driver(i2s_config);
 
   if (this->external_adc_ != nullptr){
     this->external_adc_->apply_i2s_settings(i2s_config);
@@ -109,7 +107,7 @@ bool ADFElementI2SIn::init_adf_elements_() {
 };
 
 bool ADFElementI2SIn::is_ready(){
-  if( !this->parent_->set_read_mode() )
+  if( !this->set_i2s_access() )
   {
     return false;
   }
@@ -126,7 +124,7 @@ bool ADFElementI2SIn::is_ready(){
 void ADFElementI2SIn::clear_adf_elements_(){
   this->sdk_audio_elements_.clear();
   this->sdk_element_tags_.clear();
-  this->parent_->release_read_mode();
+  this->release_i2s_access();
 }
 
 

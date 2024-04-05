@@ -24,48 +24,36 @@ void I2SAudioComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up I2S Audio...");
 }
 
-bool I2SAudioComponent::set_mode_(int mode){
+bool I2SAudioComponent::set_access_(uint8_t access){
   bool success = false;
   this->lock();
-  esph_log_d(TAG, "Set I2S Lock Mode: %d", mode);
-  I2SAccessState req_state = mode == 1 ? I2SAccessState::EXCLUSIVE_RX : I2SAccessState::EXCLUSIVE_TX;
-  if( this->access_state_ == I2SAccessState::FREE ){
-    this->access_state_ = req_state;
+  if( this->access_mode_ == I2SAccessMode::DUPLEX ){
+    this->access_state_ |= access;
+    success = true;
   }
-  success = this->access_state_ == req_state;
+  else {
+    if( this->access_state_ == I2SAccess::FREE ){
+      this->access_state_ = access;
+    }
+    success = this->access_state_ & access;
+  }
   this->unlock();
   return success;
   }
 
-bool I2SAudioComponent::release_mode_(int mode){
-  bool success = false;
+bool I2SAudioComponent::release_access_(uint8_t access){
   this->lock();
-  esph_log_d(TAG, "Release I2S Lock Mode: %d", mode);
-  I2SAccessState req_state = mode == 1 ? I2SAccessState::EXCLUSIVE_RX : I2SAccessState::EXCLUSIVE_TX;
-  if( this->access_state_ == req_state ) {
-    this->access_state_ = I2SAccessState::FREE;
-  }
-  success = this->access_state_ == I2SAccessState::FREE;
+  this->access_state_ = this->access_state_ & (~access);
   this->unlock();
-  return success;
+  return true;
 }
 
 i2s_driver_config_t I2SAudioComponent::get_i2s_cfg() const {
-  uint8_t mode = I2S_MODE_MASTER;
-  switch( this->access_mode_){
-    case I2SAccessMode::EXCLUSIVE_RX:
-      mode = I2S_MODE_MASTER | I2S_MODE_RX;
-      break;
-    case I2SAccessMode::EXCLUSIVE_TX:
-      mode = I2S_MODE_MASTER | I2S_MODE_TX;
-      break;
-    case I2SAccessMode::DUPLEX:
-      mode = I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX;
-      break;
-  }
+  uint8_t mode = I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX;
+
   i2s_driver_config_t config = {
       .mode = (i2s_mode_t) mode,
-      .sample_rate = this->sample_rate_,
+      .sample_rate = 16000,
       .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
       .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
@@ -90,39 +78,60 @@ i2s_driver_config_t I2SAudioComponent::get_i2s_cfg() const {
   return config;
 }
 
-bool I2SAudioComponent::install_i2s_driver(){
+bool I2SAudioComponent::install_i2s_driver_(i2s_driver_config_t i2s_cfg, uint8_t access){
   bool success = false;
   this->lock();
-  if( this->access_state_ == I2SAccessState::FREE ){
-    i2s_driver_config_t i2s_cfg = this->get_i2s_cfg();
+  if( this->access_state_ == I2SAccess::FREE ){
     success = ESP_OK == i2s_driver_install(this->get_port(), &i2s_cfg, 0, nullptr);
+    esph_log_d(TAG, "Installing driver : %s", success ? "yes" : "no" );
     i2s_pin_config_t pin_config = this->get_pin_config();
-    if( this->audio_in_ != nullptr )
-    {
-      pin_config.data_in_num = this->audio_in_->get_din_pin();
+    if( success ){
+      if( this->audio_in_ != nullptr )
+      {
+        pin_config.data_in_num = this->audio_in_->get_din_pin();
+      }
+      if( this->audio_out_ != nullptr )
+      {
+        pin_config.data_out_num = this->audio_out_->get_dout_pin();
+      }
+      success &= ESP_OK == i2s_set_pin(this->get_port(), &pin_config);
+      if( success ){
+        this->access_state_ = access;
+        this->installed_cfg_ = i2s_cfg;
+      }
     }
-    if( this->audio_out_ != nullptr )
-    {
-      pin_config.data_out_num = this->audio_out_->get_dout_pin();
+  } else if (this->access_mode_ == I2SAccessMode::DUPLEX && (this->access_state_ & access) == 0){
+    success = this->validate_cfg_for_duplex_(i2s_cfg);
+    if(success){
+      this->access_state_ |= access;
     }
-    success &= ESP_OK == i2s_set_pin(this->get_port(), &pin_config);
   }
   this->unlock();
   return success;
 }
 
-bool I2SAudioComponent::uninstall_i2s_driver(){
+bool I2SAudioComponent::uninstall_i2s_driver_(uint8_t access){
   bool success = false;
   this->lock();
-  i2s_zero_dma_buffer(this->get_port());
-  esp_err_t err = i2s_driver_uninstall(this->get_port());
-  if (err == ESP_OK) {
-    success = true;
+  // check that i2s is not occupied by others
+  if( (this->access_state_ & ~access) == 0 ){
+    i2s_zero_dma_buffer(this->get_port());
+    esp_err_t err = i2s_driver_uninstall(this->get_port());
+    if (err == ESP_OK) {
+      success = true;
+    }
   }
   this->unlock();
   return success;
 }
 
+bool I2SAudioComponent::validate_cfg_for_duplex_(i2s_driver_config_t& i2s_cfg){
+  i2s_driver_config_t& installed = this->installed_cfg_;
+  return (
+         installed.sample_rate == i2s_cfg.sample_rate
+     &&  installed.bits_per_chan == i2s_cfg.bits_per_chan
+  );
+}
 
 
 }  // namespace i2s_audio

@@ -2,7 +2,7 @@ import esphome.config_validation as cv
 import esphome.codegen as cg
 
 from esphome import pins
-from esphome.const import CONF_CHANNEL, CONF_ID, CONF_NUMBER
+from esphome.const import CONF_CHANNEL, CONF_ID, CONF_MODEL, CONF_NUMBER
 from esphome.components import microphone, esp32
 from esphome.components.adc import ESP32_VARIANT_ADC1_PIN_TO_CHANNEL, validate_adc_pin
 
@@ -10,8 +10,11 @@ from .. import (
     i2s_audio_ns,
     I2SAudioComponent,
     I2SAudioIn,
+    CONF_I2S_ADC,
     CONF_I2S_AUDIO_ID,
     CONF_I2S_DIN_PIN,
+    CONFIG_SCHEMA_EXT_ADC,
+    register_adc,
 )
 
 CODEOWNERS = ["@jesserockz"]
@@ -84,6 +87,9 @@ CONFIG_SCHEMA = cv.All(
                 {
                     cv.Required(CONF_I2S_DIN_PIN): pins.internal_gpio_input_pin_number,
                     cv.Required(CONF_PDM): cv.boolean,
+                    cv.Optional(
+                        CONF_I2S_ADC, default={CONF_MODEL: "generic"}
+                    ): CONFIG_SCHEMA_EXT_ADC,
                 }
             ),
         },
@@ -107,6 +113,7 @@ async def to_code(config):
     else:
         cg.add(var.set_din_pin(config[CONF_I2S_DIN_PIN]))
         cg.add(var.set_pdm(config[CONF_PDM]))
+        await register_adc(var, config[CONF_I2S_ADC])
 
     cg.add(var.set_channel(config[CONF_CHANNEL]))
     cg.add(var.set_sample_rate(config[CONF_SAMPLE_RATE]))

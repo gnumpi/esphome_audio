@@ -72,8 +72,8 @@ void ADFPipeline::stop() {
     case PipelineState::STARTING:
     case PipelineState::RUNNING:
     case PipelineState::PAUSED:
-      set_state_(PipelineState::STOPPING);
       stop_();
+      set_state_(PipelineState::STOPPING);
       break;
     default:
       esph_log_d(TAG, "Called 'stop' while in %s state.",LOG_STR_ARG(pipeline_state_to_string(this->state_)) );
@@ -133,18 +133,35 @@ void ADFPipeline::check_all_started_(){
 
 
 void ADFPipeline::check_all_stopped_(){
+  static uint32_t timeout_invoke = 0;
+  if(timeout_invoke == 0){
+    timeout_invoke = millis();
+  }
+  /*
+  esp_err_t err = audio_pipeline_wait_for_stop_with_ticks(this->adf_pipeline_, 0);
+  if( err == ESP_ERR_TIMEOUT && (millis() - timeout_invoke < 3000 )){
+    return;
+  }
+  if( err != ESP_OK ){
+    esph_log_d(TAG, "Timout while waiting for pipeline to terminate.");
+  }
+  */
+
   for (auto &comp : pipeline_elements_) {
     for (auto el : comp->get_adf_elements()) {
       esph_log_d(TAG, "Check element for stop [%s] status, %d", audio_element_get_tag(el), audio_element_get_state(el));
-      if (
-           audio_element_get_state(el) == AEL_STATE_INITIALIZING ||
-           audio_element_get_state(el) == AEL_STATE_RUNNING ||
-           audio_element_get_state(el) == AEL_STATE_PAUSED
+      if ( (millis() - timeout_invoke < 3000 ) &&
+           (
+            audio_element_get_state(el) == AEL_STATE_INITIALIZING ||
+            audio_element_get_state(el) == AEL_STATE_RUNNING ||
+            audio_element_get_state(el) == AEL_STATE_PAUSED
+           )
          ){
         return;
       }
     }
   }
+  timeout_invoke = 0;
   /*
   In one of this states:
   AEL_STATE_NONE          = 0,
@@ -201,7 +218,10 @@ void ADFPipeline::check_for_pipeline_events_(){
         switch (status) {
           case AEL_STATUS_STATE_STOPPED:
           case AEL_STATUS_STATE_FINISHED:
-            check_all_stopped_();
+            if( this->state_ == PipelineState::RUNNING){
+              this->set_state_(PipelineState::STOPPING);
+              check_all_stopped_();
+            }
             break;
           case AEL_STATUS_STATE_RUNNING:
             check_all_started_();
@@ -227,10 +247,12 @@ void ADFPipeline::watch_() {
       break;
     case PipelineState::STARTING:
     case PipelineState::RUNNING:
-    case PipelineState::STOPPING:
     case PipelineState::PAUSING:
     case PipelineState::RESUMING:
       check_for_pipeline_events_();
+      break;
+    case PipelineState::STOPPING:
+      check_all_stopped_();
       break;
     case PipelineState::STOPPED:
       break;

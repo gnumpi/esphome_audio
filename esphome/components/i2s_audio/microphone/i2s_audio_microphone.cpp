@@ -3,7 +3,7 @@
 #ifdef USE_ESP32
 
 #include <driver/i2s.h>
-
+#include "../external_adc.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
 
@@ -45,6 +45,9 @@ void I2SAudioMicrophone::start_() {
   if (!this->parent_->try_lock()) {
     return;  // Waiting for another i2s to return lock
   }
+  if( this->external_adc_ != nullptr ){
+    this->external_adc_->init_device();
+  }
   i2s_driver_config_t config = {
       .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_RX),
       .sample_rate = this->sample_rate_,
@@ -81,6 +84,11 @@ void I2SAudioMicrophone::start_() {
 
     i2s_set_pin(this->parent_->get_port(), &pin_config);
   }
+
+  if( this->external_adc_ != nullptr ){
+    this->external_adc_->apply_i2s_settings(config);
+  }
+
   this->state_ = microphone::STATE_RUNNING;
   this->high_freq_.start();
 }

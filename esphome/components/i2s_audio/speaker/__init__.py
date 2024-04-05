@@ -7,6 +7,7 @@ from esphome.components import esp32, speaker
 from .. import (
     CONF_I2S_AUDIO_ID,
     CONF_I2S_DOUT_PIN,
+    CONF_I2S_DAC,
     CONFIG_SCHEMA_EXT_DAC,
     I2SAudioComponent,
     I2SAudioOut,
@@ -47,8 +48,6 @@ def validate_esp32_variant(config):
     return config
 
 
-CONF_DAC = "dac"
-
 CONFIG_SCHEMA = cv.All(
     cv.typed_schema(
         {
@@ -70,7 +69,7 @@ CONFIG_SCHEMA = cv.All(
                         *EXTERNAL_DAC_OPTIONS, lower=True
                     ),
                     cv.Optional(
-                        CONF_DAC, default={CONF_MODEL: "generic"}
+                        CONF_I2S_DAC, default={CONF_MODEL: "generic"}
                     ): CONFIG_SCHEMA_EXT_DAC,
                 }
             ).extend(cv.COMPONENT_SCHEMA),
@@ -93,4 +92,4 @@ async def to_code(config):
     else:
         cg.add(var.set_dout_pin(config[CONF_I2S_DOUT_PIN]))
         cg.add(var.set_external_dac_channels(2 if config[CONF_MODE] == "stereo" else 1))
-        await register_dac(var, config[CONF_DAC])
+        await register_dac(var, config[CONF_I2S_DAC])
