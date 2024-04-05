@@ -4,8 +4,10 @@
 #include "../../adf_pipeline/sdk_ext.h"
 #include "i2s_stream_mod.h"
 #include "../../adf_pipeline/adf_pipeline.h"
-#include "../external_dac.h"
 
+#ifdef I2S_EXTERNAL_DAC
+#include "../external_dac.h"
+#endif
 namespace esphome {
 using namespace esp_adf;
 namespace i2s_audio {
@@ -27,9 +29,11 @@ bool ADFElementI2SOut::init_adf_elements_() {
   if (this->sdk_audio_elements_.size() > 0)
     return true;
 
+#ifdef I2S_EXTERNAL_DAC
   if (this->external_dac_ != nullptr){
     this->external_dac_->init_device();
   }
+#endif
 
 i2s_driver_config_t i2s_config;
 if( this->parent_->adjustable()){
@@ -88,9 +92,11 @@ if( this->parent_->adjustable()){
       esph_log_e(TAG, "error while setting sample rate and bit depth,");
   }
   */
+#ifdef I2S_EXTERNAL_DAC
   if (this->external_dac_ != nullptr){
     this->external_dac_->apply_i2s_settings(i2s_config);
   }
+#endif
 
   sdk_audio_elements_.push_back(this->adf_i2s_stream_writer_);
   sdk_element_tags_.push_back("i2s_out");
@@ -184,11 +190,11 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
       return;
     }
   }
-
+#ifdef I2S_EXTERNAL_DAC
   if( this->external_dac_ != nullptr && request.target_volume > -1){
     this->external_dac_->set_volume( request.target_volume);
   }
-
+#endif
 }
 
 }  // namespace i2s_audio

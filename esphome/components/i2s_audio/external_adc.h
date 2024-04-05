@@ -3,7 +3,6 @@
 #include "esphome/core/defines.h"
 #include "esphome/core/gpio.h"
 
-#define I2S_EXTERNAL_ADC
 #ifdef I2S_EXTERNAL_ADC
 
 #include "esphome/components/i2c/i2c.h"

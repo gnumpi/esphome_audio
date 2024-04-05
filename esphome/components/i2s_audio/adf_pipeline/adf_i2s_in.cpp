@@ -4,8 +4,10 @@
 #include "i2s_stream_mod.h"
 #include "../../adf_pipeline/adf_pipeline.h"
 #include "../../adf_pipeline/sdk_ext.h"
-#include "../external_adc.h"
 
+#ifdef I2S_EXTERNAL_ADC
+#include "../external_adc.h"
+#endif
 namespace esphome {
 using namespace esp_adf;
 namespace i2s_audio {
@@ -16,9 +18,11 @@ bool ADFElementI2SIn::init_adf_elements_() {
   if (this->sdk_audio_elements_.size() > 0)
     return true;
 
+#ifdef I2S_EXTERNAL_ADC
   if (this->external_adc_ != nullptr){
     this->external_adc_->init_device();
   }
+#endif
 
   i2s_bits_per_chan_t channel_bits  = I2S_BITS_PER_CHAN_DEFAULT;
 
@@ -84,9 +88,11 @@ bool ADFElementI2SIn::init_adf_elements_() {
 
   this->install_i2s_driver(i2s_config);
 
+#ifdef I2S_EXTERNAL_ADC
   if (this->external_adc_ != nullptr){
     this->external_adc_->apply_i2s_settings(i2s_config);
   }
+#endif
 
   audio_element_set_music_info(this->adf_i2s_stream_reader_, this->sample_rate_, 1, this->bits_per_sample_);
 

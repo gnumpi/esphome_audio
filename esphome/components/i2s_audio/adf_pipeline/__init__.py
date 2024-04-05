@@ -15,7 +15,7 @@ from .. import (
     I2S_AUDIO_OUT,
     CONFIG_SCHEMA_I2S_READER,
     CONFIG_SCHEMA_I2S_WRITER,
-    final_validate_device_schema,
+    #    final_validate_device_schema,
     register_i2s_reader,
     register_i2s_writer,
 )
@@ -63,7 +63,7 @@ CONFIG_SCHEMA = cv.typed_schema(
     space="-",
 )
 
-FINAL_VALIDATE_SCHEMA = final_validate_device_schema("adf_i2s")
+# FINAL_VALIDATE_SCHEMA = final_validate_device_schema("adf_i2s")
 
 
 async def to_code(config):
