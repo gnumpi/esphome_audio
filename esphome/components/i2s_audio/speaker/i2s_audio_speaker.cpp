@@ -3,11 +3,13 @@
 #ifdef USE_ESP32
 
 #include <driver/i2s.h>
-#include "../external_dac.h"
 #include "esphome/core/application.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
 
+#if I2S_EXTERNAL_DAC
+#include "../external_dac.h"
+#endif
 namespace esphome {
 namespace i2s_audio {
 
@@ -35,9 +37,11 @@ void I2SAudioSpeaker::start_() {
 void I2SAudioSpeaker::player_task(void *params) {
   I2SAudioSpeaker *this_speaker = (I2SAudioSpeaker *) params;
 
+#if I2S_EXTERNAL_DAC
   if( this_speaker->external_dac_ != nullptr ){
     this_speaker->external_dac_->init_device();
   }
+#endif
 
   TaskEvent event;
   event.type = TaskEventType::STARTING;
@@ -89,9 +93,11 @@ void I2SAudioSpeaker::player_task(void *params) {
   }
 #endif
 
+#if I2S_EXTERNAL_DAC
   if( this_speaker->external_dac_ != nullptr ){
     this_speaker->external_dac_->apply_i2s_settings(config);
   }
+#endif
 
   DataEvent data_event;
 

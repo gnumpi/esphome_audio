@@ -9,12 +9,12 @@ from esphome.components.adc import ESP32_VARIANT_ADC1_PIN_TO_CHANNEL, validate_a
 from .. import (
     i2s_audio_ns,
     I2SAudioComponent,
-    I2SAudioIn,
+    I2SReader,
     CONF_I2S_ADC,
     CONF_I2S_AUDIO_ID,
     CONF_I2S_DIN_PIN,
-    CONFIG_SCHEMA_EXT_ADC,
-    register_adc,
+    CONFIG_SCHEMA_ADC,
+    # register_adc,
 )
 
 CODEOWNERS = ["@jesserockz"]
@@ -28,7 +28,7 @@ CONF_BITS_PER_SAMPLE = "bits_per_sample"
 CONF_USE_APLL = "use_apll"
 
 I2SAudioMicrophone = i2s_audio_ns.class_(
-    "I2SAudioMicrophone", I2SAudioIn, microphone.Microphone, cg.Component
+    "I2SAudioMicrophone", I2SReader, microphone.Microphone, cg.Component
 )
 
 i2s_channel_fmt_t = cg.global_ns.enum("i2s_channel_fmt_t")
@@ -89,7 +89,7 @@ CONFIG_SCHEMA = cv.All(
                     cv.Required(CONF_PDM): cv.boolean,
                     cv.Optional(
                         CONF_I2S_ADC, default={CONF_MODEL: "generic"}
-                    ): CONFIG_SCHEMA_EXT_ADC,
+                    ): CONFIG_SCHEMA_ADC,
                 }
             ),
         },
@@ -113,7 +113,7 @@ async def to_code(config):
     else:
         cg.add(var.set_din_pin(config[CONF_I2S_DIN_PIN]))
         cg.add(var.set_pdm(config[CONF_PDM]))
-        await register_adc(var, config[CONF_I2S_ADC])
+        # await register_adc(var, config[CONF_I2S_ADC])
 
     cg.add(var.set_channel(config[CONF_CHANNEL]))
     cg.add(var.set_sample_rate(config[CONF_SAMPLE_RATE]))

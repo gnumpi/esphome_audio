@@ -221,6 +221,7 @@ async def register_i2s_reader(reader, config: dict) -> None:
     await cg.register_parented(reader, config[CONF_I2S_AUDIO_ID])
     cg.add(i2s_cntrl.set_audio_in(reader))
 
+    cg.add(reader.set_pdm(config[CONF_PDM]))
     if CONF_I2S_DIN_PIN in config:
         cg.add(reader.set_din_pin(config[CONF_I2S_DIN_PIN]))
 

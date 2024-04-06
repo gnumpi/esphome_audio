@@ -3,9 +3,12 @@
 #ifdef USE_ESP32
 
 #include <driver/i2s.h>
-#include "../external_adc.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
+
+#if I2S_EXTERNAL_ADC
+#include "../external_adc.h"
+#endif
 
 namespace esphome {
 namespace i2s_audio {
@@ -45,9 +48,13 @@ void I2SAudioMicrophone::start_() {
   if (!this->parent_->try_lock()) {
     return;  // Waiting for another i2s to return lock
   }
+
+#if I2S_EXTERNAL_ADC
   if( this->external_adc_ != nullptr ){
     this->external_adc_->init_device();
   }
+#endif
+
   i2s_driver_config_t config = {
       .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_RX),
       .sample_rate = this->sample_rate_,
@@ -85,9 +92,11 @@ void I2SAudioMicrophone::start_() {
     i2s_set_pin(this->parent_->get_port(), &pin_config);
   }
 
+#if I2S_EXTERNAL_ADC
   if( this->external_adc_ != nullptr ){
     this->external_adc_->apply_i2s_settings(config);
   }
+#endif
 
   this->state_ = microphone::STATE_RUNNING;
   this->high_freq_.start();
@@ -112,10 +121,6 @@ void I2SAudioMicrophone::stop_() {
 }
 
 size_t I2SAudioMicrophone::read(int16_t *buf, size_t len) {
-  // internal reading bit depth should be in-transparent to caller
-  if (this->bits_per_sample_ == I2S_BITS_PER_SAMPLE_32BIT){
-    len <<= 1;
-  }
   size_t bytes_read = 0;
   esp_err_t err = i2s_read(this->parent_->get_port(), buf, len, &bytes_read, (100 / portTICK_PERIOD_MS));
   if (err != ESP_OK) {

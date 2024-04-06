@@ -137,19 +137,10 @@ void ADFPipeline::check_all_stopped_(){
   if(timeout_invoke == 0){
     timeout_invoke = millis();
   }
-  /*
-  esp_err_t err = audio_pipeline_wait_for_stop_with_ticks(this->adf_pipeline_, 0);
-  if( err == ESP_ERR_TIMEOUT && (millis() - timeout_invoke < 3000 )){
-    return;
-  }
-  if( err != ESP_OK ){
-    esph_log_d(TAG, "Timout while waiting for pipeline to terminate.");
-  }
-  */
 
   for (auto &comp : pipeline_elements_) {
     for (auto el : comp->get_adf_elements()) {
-      esph_log_d(TAG, "Check element for stop [%s] status, %d", audio_element_get_tag(el), audio_element_get_state(el));
+      //esph_log_d(TAG, "Check element for stop [%s] status, %d", audio_element_get_tag(el), audio_element_get_state(el));
       if ( (millis() - timeout_invoke < 3000 ) &&
            (
             audio_element_get_state(el) == AEL_STATE_INITIALIZING ||

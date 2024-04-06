@@ -76,6 +76,7 @@ void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
       settings_changed = true;
     }
   }
+  esph_log_d(TAG, "New settings: SRC: rate: %d, ch: %d DST: rate: %d, ch: %d ", this->src_rate_,this->src_num_channels_, this->dst_rate_, this->dst_num_channels_);
 
   if( this->sdk_resampler_ && settings_changed)
   {

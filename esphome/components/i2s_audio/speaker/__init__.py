@@ -8,18 +8,18 @@ from .. import (
     CONF_I2S_AUDIO_ID,
     CONF_I2S_DOUT_PIN,
     CONF_I2S_DAC,
-    CONFIG_SCHEMA_EXT_DAC,
+    CONFIG_SCHEMA_DAC,
     I2SAudioComponent,
-    I2SAudioOut,
+    I2SWriter,
     i2s_audio_ns,
-    register_dac,
+    # register_dac,
 )
 
 CODEOWNERS = ["@jesserockz"]
 DEPENDENCIES = ["i2s_audio"]
 
 I2SAudioSpeaker = i2s_audio_ns.class_(
-    "I2SAudioSpeaker", cg.Component, speaker.Speaker, I2SAudioOut
+    "I2SAudioSpeaker", cg.Component, speaker.Speaker, I2SWriter
 )
 
 i2s_dac_mode_t = cg.global_ns.enum("i2s_dac_mode_t")
@@ -70,7 +70,7 @@ CONFIG_SCHEMA = cv.All(
                     ),
                     cv.Optional(
                         CONF_I2S_DAC, default={CONF_MODEL: "generic"}
-                    ): CONFIG_SCHEMA_EXT_DAC,
+                    ): CONFIG_SCHEMA_DAC,
                 }
             ).extend(cv.COMPONENT_SCHEMA),
         },
@@ -92,4 +92,4 @@ async def to_code(config):
     else:
         cg.add(var.set_dout_pin(config[CONF_I2S_DOUT_PIN]))
         cg.add(var.set_external_dac_channels(2 if config[CONF_MODE] == "stereo" else 1))
-        await register_dac(var, config[CONF_I2S_DAC])
+        # await register_dac(var, config[CONF_I2S_DAC])

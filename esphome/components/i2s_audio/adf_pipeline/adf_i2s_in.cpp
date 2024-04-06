@@ -23,6 +23,9 @@ bool ADFElementI2SIn::init_adf_elements_() {
     this->external_adc_->init_device();
   }
 #endif
+  if ( !this->set_i2s_access() ){
+    return false;
+  }
 
   i2s_bits_per_chan_t channel_bits  = I2S_BITS_PER_CHAN_DEFAULT;
 
@@ -130,7 +133,7 @@ bool ADFElementI2SIn::is_ready(){
 void ADFElementI2SIn::clear_adf_elements_(){
   this->sdk_audio_elements_.clear();
   this->sdk_element_tags_.clear();
-  this->release_i2s_access();
+  this->uninstall_i2s_driver();
 }
 
 

@@ -84,7 +84,7 @@ class I2SAudioIn : public Parented<I2SAudioComponent> {
 public:
    bool install_i2s_driver(i2s_driver_config_t i2s_cfg){
       return this->parent_->install_i2s_driver_(i2s_cfg, I2SAccess::RX);}
-   bool uinstall_i2s_driver(){ return this->parent_->uninstall_i2s_driver_(I2SAccess::RX);}
+   bool uninstall_i2s_driver(){ return this->parent_->uninstall_i2s_driver_(I2SAccess::RX);}
    bool set_i2s_access(){return this->parent_->set_access_(I2SAccess::RX);};
    bool release_i2s_access(){return this->parent_->release_access_(I2SAccess::RX);};
 
@@ -92,16 +92,19 @@ public:
    void set_din_pin(int8_t pin) { this->din_pin_ = pin; }
    int8_t get_din_pin() { return this->din_pin_; }
 
+   void set_pdm(bool pdm) { this->pdm_ = pdm; }
+
 protected:
    ExternalADC* external_adc_{};
    int8_t din_pin_{I2S_PIN_NO_CHANGE};
+   bool pdm_{false};
 };
 
 class I2SAudioOut : public Parented<I2SAudioComponent> {
 public:
    bool install_i2s_driver(i2s_driver_config_t i2s_cfg){
       return this->parent_->install_i2s_driver_(i2s_cfg, I2SAccess::TX); }
-   bool uinstall_i2s_driver(){ return this->parent_->uninstall_i2s_driver_(I2SAccess::RX);}
+   bool uninstall_i2s_driver(){ return this->parent_->uninstall_i2s_driver_(I2SAccess::TX);}
    bool set_i2s_access(){return this->parent_->set_access_(I2SAccess::TX);};
    bool release_i2s_access(){return this->parent_->release_access_(I2SAccess::TX);};
 

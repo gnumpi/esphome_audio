@@ -81,7 +81,7 @@ i2s_driver_config_t I2SAudioComponent::get_i2s_cfg() const {
 bool I2SAudioComponent::install_i2s_driver_(i2s_driver_config_t i2s_cfg, uint8_t access){
   bool success = false;
   this->lock();
-  if( this->access_state_ == I2SAccess::FREE ){
+  if( this->access_state_ == I2SAccess::FREE || this->access_state_ == access ){
     success = ESP_OK == i2s_driver_install(this->get_port(), &i2s_cfg, 0, nullptr);
     esph_log_d(TAG, "Installing driver : %s", success ? "yes" : "no" );
     i2s_pin_config_t pin_config = this->get_pin_config();
@@ -119,7 +119,12 @@ bool I2SAudioComponent::uninstall_i2s_driver_(uint8_t access){
     esp_err_t err = i2s_driver_uninstall(this->get_port());
     if (err == ESP_OK) {
       success = true;
+      this->access_state_ = I2SAccess::FREE;
     }
+  }
+  else {
+    // other component hasn't released yet, release caller
+    this->release_access_(access);
   }
   this->unlock();
   return success;
