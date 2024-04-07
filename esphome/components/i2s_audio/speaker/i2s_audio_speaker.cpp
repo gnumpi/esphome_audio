@@ -20,13 +20,18 @@ static const char *const TAG = "i2s_audio.speaker";
 void I2SAudioSpeaker::setup() {
   ESP_LOGCONFIG(TAG, "Setting up I2S Audio Speaker...");
 
+  this->set_bits_per_sample(I2S_BITS_PER_SAMPLE_16BIT);
+  this->set_channel(I2S_CHANNEL_FMT_ONLY_RIGHT);
+  this->set_sample_rate(16000);
+
   this->buffer_queue_ = xQueueCreate(BUFFER_COUNT, sizeof(DataEvent));
   this->event_queue_ = xQueueCreate(BUFFER_COUNT, sizeof(TaskEvent));
 }
 
 void I2SAudioSpeaker::start() { this->state_ = speaker::STATE_STARTING; }
+
 void I2SAudioSpeaker::start_() {
-  if (!this->parent_->try_lock()) {
+  if (!this->claim_i2s_access()) {
     return;  // Waiting for another i2s component to return lock
   }
   this->state_ = speaker::STATE_RUNNING;
@@ -47,31 +52,19 @@ void I2SAudioSpeaker::player_task(void *params) {
   event.type = TaskEventType::STARTING;
   xQueueSend(this_speaker->event_queue_, &event, portMAX_DELAY);
 
-  i2s_driver_config_t config = {
-      .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_TX),
-      .sample_rate = 16000,
-      .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-      .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
-      .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-      .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-      .dma_buf_count = 8,
-      .dma_buf_len = 128,
-      .use_apll = false,
-      .tx_desc_auto_clear = true,
-      .fixed_mclk = I2S_PIN_NO_CHANGE,
-      .mclk_multiple = I2S_MCLK_MULTIPLE_DEFAULT,
-      .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
-  };
+  i2s_driver_config_t config = this_speaker->get_i2s_cfg();
+  config.mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_TX);
+
 #if SOC_I2S_SUPPORTS_DAC
   if (this_speaker->internal_dac_mode_ != I2S_DAC_CHANNEL_DISABLE) {
     config.mode = (i2s_mode_t) (config.mode | I2S_MODE_DAC_BUILT_IN);
   }
 #endif
 
-  esp_err_t err = i2s_driver_install(this_speaker->parent_->get_port(), &config, 0, nullptr);
-  if (err != ESP_OK) {
+  bool success = this_speaker->install_i2s_driver(config);
+  if (!success) {
     event.type = TaskEventType::WARNING;
-    event.err = err;
+    event.err = -2;
     xQueueSend(this_speaker->event_queue_, &event, 0);
     event.type = TaskEventType::STOPPED;
     xQueueSend(this_speaker->event_queue_, &event, 0);
@@ -104,8 +97,6 @@ void I2SAudioSpeaker::player_task(void *params) {
   event.type = TaskEventType::STARTED;
   xQueueSend(this_speaker->event_queue_, &event, portMAX_DELAY);
 
-  int16_t buffer[BUFFER_SIZE / 2];
-
   while (true) {
     if (xQueueReceive(this_speaker->buffer_queue_, &data_event, 100 / portTICK_PERIOD_MS) != pdTRUE) {
       break;  // End of audio from main thread
@@ -116,23 +107,12 @@ void I2SAudioSpeaker::player_task(void *params) {
       break;
     }
     size_t bytes_written;
-
-    memmove(buffer, data_event.data, data_event.len);
-    size_t remaining = data_event.len / 2;
-    size_t current = 0;
-
-    while (remaining > 0) {
-      uint32_t sample = (buffer[current] << 16) | (buffer[current] & 0xFFFF);
-
-      esp_err_t err = i2s_write(this_speaker->parent_->get_port(), &sample, sizeof(sample), &bytes_written,
+    esp_err_t err = i2s_write(this_speaker->parent_->get_port(), data_event.data, data_event.len, &bytes_written,
                                 (10 / portTICK_PERIOD_MS));
-      if (err != ESP_OK) {
-        event = {.type = TaskEventType::WARNING, .err = err};
-        xQueueSend(this_speaker->event_queue_, &event, portMAX_DELAY);
-        continue;
-      }
-      remaining--;
-      current++;
+    if (err != ESP_OK) {
+      event = {.type = TaskEventType::WARNING, .err = err};
+      xQueueSend(this_speaker->event_queue_, &event, portMAX_DELAY);
+      continue;
     }
 
     event.type = TaskEventType::PLAYING;
@@ -144,7 +124,7 @@ void I2SAudioSpeaker::player_task(void *params) {
   event.type = TaskEventType::STOPPING;
   xQueueSend(this_speaker->event_queue_, &event, portMAX_DELAY);
 
-  i2s_driver_uninstall(this_speaker->parent_->get_port());
+  this_speaker->uninstall_i2s_driver();
 
   event.type = TaskEventType::STOPPED;
   xQueueSend(this_speaker->event_queue_, &event, portMAX_DELAY);
@@ -187,7 +167,7 @@ void I2SAudioSpeaker::watch_() {
         this->state_ = speaker::STATE_STOPPED;
         vTaskDelete(this->player_task_handle_);
         this->player_task_handle_ = nullptr;
-        this->parent_->unlock();
+        this->release_i2s_access();
         xQueueReset(this->buffer_queue_);
         ESP_LOGD(TAG, "Stopped I2S Audio Speaker");
         break;

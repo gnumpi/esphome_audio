@@ -23,7 +23,7 @@ bool ADFElementI2SIn::init_adf_elements_() {
     this->external_adc_->init_device();
   }
 #endif
-  if ( !this->set_i2s_access() ){
+  if ( !this->claim_i2s_access() ){
     return false;
   }
 
@@ -116,7 +116,7 @@ bool ADFElementI2SIn::init_adf_elements_() {
 };
 
 bool ADFElementI2SIn::is_ready(){
-  if( !this->set_i2s_access() )
+  if( !this->claim_i2s_access() )
   {
     return false;
   }

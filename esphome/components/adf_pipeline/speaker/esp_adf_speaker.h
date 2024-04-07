@@ -36,6 +36,7 @@ class ADFSpeaker : public speaker::Speaker, public ADFPipelineController {
 
   // Pipeline implementations
   void on_pipeline_state_change(PipelineState state) override;
+  void request_pipeline_settings_();
   PCMSource pcm_stream_;
 };
 

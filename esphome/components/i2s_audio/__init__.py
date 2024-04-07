@@ -95,8 +95,8 @@ async def to_code(config):
         cg.add(var.set_mclk_pin(config[CONF_I2S_MCLK_PIN]))
 
 
-I2SReader = i2s_audio_ns.class_("I2SAudioIn", cg.Parented.template(I2SAudioComponent))
-I2SWriter = i2s_audio_ns.class_("I2SAudioOut", cg.Parented.template(I2SAudioComponent))
+I2SReader = i2s_audio_ns.class_("I2SReader", cg.Parented.template(I2SAudioComponent))
+I2SWriter = i2s_audio_ns.class_("I2SWriter", cg.Parented.template(I2SAudioComponent))
 
 ExternalDAC = i2s_audio_ns.class_("ExternalDAC", i2c.I2CDevice)
 AW88298 = i2s_audio_ns.class_("AW88298", ExternalDAC, i2c.I2CDevice)

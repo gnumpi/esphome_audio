@@ -12,7 +12,7 @@ namespace esphome {
 using namespace esp_adf;
 namespace i2s_audio {
 
-class ADFElementI2SOut : public I2SAudioOut, public ADFPipelineSinkElement, public Component {
+class ADFElementI2SOut : public I2SWriter, public ADFPipelineSinkElement, public Component {
  public:
   // ESPHome Component implementations
   void setup() override;

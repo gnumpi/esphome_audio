@@ -38,7 +38,7 @@ struct DataEvent {
   uint8_t data[BUFFER_SIZE];
 };
 
-class I2SAudioSpeaker : public Component, public speaker::Speaker, public I2SAudioOut {
+class I2SAudioSpeaker : public Component, public speaker::Speaker, public I2SWriter {
  public:
   float get_setup_priority() const override { return esphome::setup_priority::LATE; }
 

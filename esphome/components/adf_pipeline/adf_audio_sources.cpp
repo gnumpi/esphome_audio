@@ -154,13 +154,27 @@ bool PCMSource::init_adf_elements_() {
       .type = AUDIO_STREAM_WRITER,
       .out_rb_size = 8 * 1024,
   };
+
   adf_raw_stream_writer_ = raw_stream_init(&raw_cfg);
+  audio_element_set_output_timeout(this->adf_raw_stream_writer_, 10 / portTICK_PERIOD_MS);
   this->sdk_audio_elements_.push_back(this->adf_raw_stream_writer_);
   this->sdk_element_tags_.push_back("pcm_writer");
   return true;
 }
 
-int PCMSource::stream_write(char *buffer, int len) { return raw_stream_write(adf_raw_stream_writer_, buffer, len); }
+//int PCMSource::stream_write(char *buffer, int len) { return len ? raw_stream_write(adf_raw_stream_writer_, buffer, len) : 0; }
+
+
+int PCMSource::stream_write(char *buffer, int len) {
+  int ret = audio_element_output(this->adf_raw_stream_writer_, buffer, len);
+  if (ret < 0 && (ret != AEL_IO_TIMEOUT)) {
+    audio_element_report_status(this->adf_raw_stream_writer_, AEL_STATUS_STATE_STOPPED);
+  } else if (ret < 0) {
+    return 0;
+  }
+  return ret;
+}
+
 
 bool PCMSource::has_buffered_data() const {
   ringbuf_handle_t rb = audio_element_get_output_ringbuf(adf_raw_stream_writer_);

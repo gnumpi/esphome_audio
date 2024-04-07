@@ -20,7 +20,7 @@ static const char *const TAG = "i2s_audio.microphone";
 void I2SAudioMicrophone::setup() {
   ESP_LOGCONFIG(TAG, "Setting up I2S Audio Microphone...");
 #if SOC_I2S_SUPPORTS_ADC
-  if (this->adc_) {
+  if (this->use_internal_adc_) {
     if (this->parent_->get_port() != I2S_NUM_0) {
       ESP_LOGE(TAG, "Internal ADC only works on I2S0!");
       this->mark_failed();
@@ -35,6 +35,7 @@ void I2SAudioMicrophone::setup() {
       return;
     }
   }
+
 }
 
 void I2SAudioMicrophone::start() {
@@ -45,7 +46,7 @@ void I2SAudioMicrophone::start() {
   this->state_ = microphone::STATE_STARTING;
 }
 void I2SAudioMicrophone::start_() {
-  if (!this->parent_->try_lock()) {
+  if (!this->claim_i2s_access()) {
     return;  // Waiting for another i2s to return lock
   }
 
@@ -55,24 +56,11 @@ void I2SAudioMicrophone::start_() {
   }
 #endif
 
-  i2s_driver_config_t config = {
-      .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_RX),
-      .sample_rate = this->sample_rate_,
-      .bits_per_sample = this->bits_per_sample_,
-      .channel_format = this->channel_,
-      .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-      .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-      .dma_buf_count = 4,
-      .dma_buf_len = 256,
-      .use_apll = this->use_apll_,
-      .tx_desc_auto_clear = false,
-      .fixed_mclk = 0,
-      .mclk_multiple = I2S_MCLK_MULTIPLE_DEFAULT,
-      .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
-  };
+i2s_driver_config_t config = this->get_i2s_cfg();
+config.mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_RX);
 
 #if SOC_I2S_SUPPORTS_ADC
-  if (this->adc_) {
+  if (this->use_internal_adc_) {
     config.mode = (i2s_mode_t) (config.mode | I2S_MODE_ADC_BUILT_IN);
     i2s_driver_install(this->parent_->get_port(), &config, 0, nullptr);
 
@@ -84,8 +72,7 @@ void I2SAudioMicrophone::start_() {
     if (this->pdm_)
       config.mode = (i2s_mode_t) (config.mode | I2S_MODE_PDM);
 
-    i2s_driver_install(this->parent_->get_port(), &config, 0, nullptr);
-
+    this->install_i2s_driver(config);
     i2s_pin_config_t pin_config = this->parent_->get_pin_config();
     pin_config.data_in_num = this->din_pin_;
 
@@ -113,9 +100,8 @@ void I2SAudioMicrophone::stop() {
 }
 
 void I2SAudioMicrophone::stop_() {
-  i2s_stop(this->parent_->get_port());
-  i2s_driver_uninstall(this->parent_->get_port());
-  this->parent_->unlock();
+  this->uninstall_i2s_driver();
+  this->release_i2s_access();
   this->state_ = microphone::STATE_STOPPED;
   this->high_freq_.stop();
 }
@@ -138,10 +124,11 @@ size_t I2SAudioMicrophone::read(int16_t *buf, size_t len) {
   } else if (this->bits_per_sample_ == I2S_BITS_PER_SAMPLE_32BIT) {
     std::vector<int16_t> samples;
     size_t samples_read = bytes_read / sizeof(int32_t);
+    uint8_t shift = 16 - this->gain_log2_ ;
     samples.resize(samples_read);
     for (size_t i = 0; i < samples_read; i++) {
-      int32_t temp = reinterpret_cast<int32_t *>(buf)[i] >> 14;
-      samples[i] = clamp<int16_t>(temp, INT16_MIN, INT16_MAX);
+      int32_t temp = reinterpret_cast<int32_t *>(buf)[i] >> shift;
+      samples[i] = static_cast<int16_t>(clamp<int32_t>(temp, INT16_MIN, INT16_MAX));
     }
     memcpy(buf, samples.data(), samples_read * sizeof(int16_t));
     return samples_read * sizeof(int16_t);

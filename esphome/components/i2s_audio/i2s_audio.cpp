@@ -24,7 +24,7 @@ void I2SAudioComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up I2S Audio...");
 }
 
-bool I2SAudioComponent::set_access_(uint8_t access){
+bool I2SAudioComponent::claim_access_(uint8_t access){
   bool success = false;
   this->lock();
   if( this->access_mode_ == I2SAccessMode::DUPLEX ){
@@ -120,10 +120,13 @@ bool I2SAudioComponent::uninstall_i2s_driver_(uint8_t access){
     if (err == ESP_OK) {
       success = true;
       this->access_state_ = I2SAccess::FREE;
+    } else {
+      esph_log_e(TAG, "Couldn't unload driver");
     }
   }
   else {
     // other component hasn't released yet, release caller
+    esph_log_d(TAG, "Other component hasn't released");
     this->release_access_(access);
   }
   this->unlock();
@@ -137,6 +140,39 @@ bool I2SAudioComponent::validate_cfg_for_duplex_(i2s_driver_config_t& i2s_cfg){
      &&  installed.bits_per_chan == i2s_cfg.bits_per_chan
   );
 }
+
+i2s_driver_config_t I2SSettings::get_i2s_cfg() const {
+  uint8_t mode = I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX;
+
+  i2s_driver_config_t config = {
+      .mode = (i2s_mode_t) mode,
+      .sample_rate = this->sample_rate_,
+      .bits_per_sample = this->bits_per_sample_,
+      .channel_format = this->channel_fmt_,
+      .communication_format = I2S_COMM_FORMAT_STAND_I2S,
+      .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+      .dma_buf_count = 8,
+      .dma_buf_len = 128,
+      .use_apll = false,
+      .tx_desc_auto_clear = true,
+      .fixed_mclk = I2S_PIN_NO_CHANGE,
+      .mclk_multiple = I2S_MCLK_MULTIPLE_DEFAULT,
+      .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
+#if SOC_I2S_SUPPORTS_TDM
+      .chan_mask = I2S_CHANNEL_MONO,
+      .total_chan = 0,
+      .left_align = false,
+      .big_edin = false,
+      .bit_order_msb = false,
+      .skip_msk = false,
+#endif
+  };
+
+  return config;
+}
+
+
+
 
 
 }  // namespace i2s_audio

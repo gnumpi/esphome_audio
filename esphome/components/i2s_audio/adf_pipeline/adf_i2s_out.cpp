@@ -26,7 +26,7 @@ bool ADFElementI2SOut::init_adf_elements_() {
   if (this->sdk_audio_elements_.size() > 0)
     return true;
 
- if ( !this->set_i2s_access() ){
+ if ( !this->claim_i2s_access() ){
     return false;
   }
 
@@ -42,11 +42,12 @@ if( this->parent_->adjustable()){
         .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_TX),
         .sample_rate = 16000,
         .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
+        //.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
         .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
         .communication_format = I2S_COMM_FORMAT_STAND_I2S,
         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
-        .dma_buf_count = 4,
-        .dma_buf_len = 1024,
+        .dma_buf_count = 8,
+        .dma_buf_len = 128,
         .use_apll = false,
         .tx_desc_auto_clear = true,
         .fixed_mclk = 0,
@@ -71,7 +72,7 @@ if( this->parent_->adjustable()){
       .i2s_port = this->parent_->get_port(),
       .use_alc = this->use_adf_alc_,
       .volume = 0,
-      .out_rb_size = (6 * 1024),
+      .out_rb_size = (4 * 1024),
       .task_stack = I2S_STREAM_TASK_STACK,
       .task_core = I2S_STREAM_TASK_CORE,
       .task_prio = I2S_STREAM_TASK_PRIO,
@@ -86,18 +87,20 @@ if( this->parent_->adjustable()){
   this->adf_i2s_stream_writer_->buf_size = 1 * 1024;
 
   this->install_i2s_driver(i2s_config);
-  i2s_zero_dma_buffer(this->parent_->get_port());
+  //i2s_zero_dma_buffer(this->parent_->get_port());
 
   this->bits_per_sample_ = 16;
   this->sample_rate_ = 16000;
-  this->channels_ = 1;
+  this->channels_ = 2;
 
   if( this->parent_->adjustable())
   {
+    /*
     if (i2s_stream_set_clk(this->adf_i2s_stream_writer_, this->sample_rate_, this->bits_per_sample_,
                            1) != ESP_OK) {
       esph_log_e(TAG, "error while setting sample rate and bit depth,");
-     }
+    }
+    */
   }
 
 
@@ -121,7 +124,7 @@ void ADFElementI2SOut::clear_adf_elements_(){
 }
 
 bool ADFElementI2SOut::is_ready(){
-  return this->set_i2s_access();
+  return this->claim_i2s_access();
 }
 
 void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request) {
