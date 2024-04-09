@@ -10,6 +10,7 @@ namespace i2s_audio {
 static const char *const TAG = "i2s_external_adc";
 
 bool ES7210::init_device(){
+    esph_log_d(TAG, "Init ES7210...");
     struct __attribute__((packed)) reg_data_t
       {
         uint8_t reg;

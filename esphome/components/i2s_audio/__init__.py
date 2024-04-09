@@ -108,6 +108,7 @@ ES7210 = i2s_audio_ns.class_("ES7210", ExternalADC, i2c.I2CDevice)
 I2S_AUDIO_IN = "audio_in"
 I2S_AUDIO_OUT = "audio_out"
 
+
 CONFIG_SCHEMA_DAC = cv.typed_schema(
     {
         "generic": cv.Schema({}),
@@ -128,7 +129,7 @@ CONFIG_SCHEMA_DAC = cv.typed_schema(
     default_type="generic",
 )
 
-CONFIG_SCHEMA_I2S_WRITER = cv.Schema(
+CONFIG_SCHEMA_I2S_WRITER = i2s.CONFIG_SCHEMA_I2S_COMMON.extend(
     {
         cv.GenerateID(CONF_I2S_AUDIO_ID): cv.use_id(I2SAudioComponent),
         cv.Required(CONF_I2S_DOUT_PIN): pins.internal_gpio_output_pin_number,
@@ -151,7 +152,7 @@ CONFIG_SCHEMA_ADC = cv.typed_schema(
     key=CONF_MODEL,
 )
 
-CONFIG_SCHEMA_I2S_READER = cv.Schema(
+CONFIG_SCHEMA_I2S_READER = i2s.CONFIG_SCHEMA_I2S_COMMON.extend(
     {
         cv.GenerateID(CONF_I2S_AUDIO_ID): cv.use_id(I2SAudioComponent),
         cv.Required(CONF_I2S_DIN_PIN): pins.internal_gpio_input_pin_number,
@@ -195,10 +196,19 @@ def final_validate_device_schema(name: str) -> cv.Schema:
     return create_schema
 
 
+async def apply_i2s_settings(var, config) -> None:
+    cg.add(var.set_channel(config[i2s.CONF_CHANNEL]))
+    cg.add(var.set_sample_rate(config[i2s.CONF_SAMPLE_RATE]))
+    cg.add(var.set_bits_per_sample(config[i2s.CONF_BITS_PER_SAMPLE]))
+    cg.add(var.set_use_apll(config[i2s.CONF_USE_APLL]))
+    cg.add(var.set_fixed_settings(config[i2s.CONF_FIXED_SETTINGS]))
+
+
 async def register_i2s_writer(writer, config: dict) -> None:
     i2s_cntrl = await cg.get_variable(config[CONF_I2S_AUDIO_ID])
     await cg.register_parented(writer, config[CONF_I2S_AUDIO_ID])
     cg.add(i2s_cntrl.set_audio_out(writer))
+    await apply_i2s_settings(writer, config)
 
     if CONF_I2S_DOUT_PIN in config:
         cg.add(writer.set_dout_pin(config[CONF_I2S_DOUT_PIN]))
@@ -221,7 +231,9 @@ async def register_i2s_reader(reader, config: dict) -> None:
     await cg.register_parented(reader, config[CONF_I2S_AUDIO_ID])
     cg.add(i2s_cntrl.set_audio_in(reader))
 
+    await apply_i2s_settings(reader, config)
     cg.add(reader.set_pdm(config[CONF_PDM]))
+
     if CONF_I2S_DIN_PIN in config:
         cg.add(reader.set_din_pin(config[CONF_I2S_DIN_PIN]))
 

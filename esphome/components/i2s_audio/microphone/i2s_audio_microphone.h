@@ -17,9 +17,10 @@ class I2SAudioMicrophone : public I2SReader, public microphone::Microphone, publ
   void stop() override;
 
   void loop() override;
+  void dump_config() override;
 
   size_t read(int16_t *buf, size_t len) override;
-  void set_gain_log2( uint8_t gain_log2){this->gain_log2_ = gain_log2;}
+  void set_gain_log2(uint8_t gain_log2){this->gain_log2_ = gain_log2;}
 
  protected:
   void start_();

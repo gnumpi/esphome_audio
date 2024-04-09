@@ -10,13 +10,16 @@
 namespace esphome {
 namespace esp_adf {
 
-static const char *const TAG = "esp_adf.microphone";
+static const char *const TAG = "esp_adf_pipeline.microphone";
 
 void ADFMicrophone::setup() {
   esp_log_level_set("wifi", ESP_LOG_WARN);
 }
 
-void ADFMicrophone::dump_config() {}
+void ADFMicrophone::dump_config() {
+  esph_log_config(TAG, "ADF-Microphone");
+  ADFPipelineController::dump_config();
+}
 
 void ADFMicrophone::start() {
   if ( this->state_ == microphone::STATE_RUNNING){
@@ -56,8 +59,6 @@ size_t ADFMicrophone::read(int16_t *buf, size_t len) {
 }
 
 void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
-  esph_log_d(TAG, "Mic state: %d", this->state_);
-  esph_log_d(TAG, "Pipeline State %d: ", state );
   switch (state) {
     case PipelineState::STARTING:
       this->state_ = microphone::STATE_STARTING;
@@ -84,7 +85,6 @@ void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
     case PipelineState::DESTROYING:
       break;
     }
-  esph_log_d(TAG, "Mic state: %d", this->state_);
 }
 
 }  // namespace esp_adf

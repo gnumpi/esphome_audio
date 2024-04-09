@@ -19,7 +19,9 @@ class ADFElementI2SOut : public I2SWriter, public ADFPipelineSinkElement, public
 
   // ADFPipelieSourceElement implementations
   const std::string get_name() override { return "I2S_Writer"; }
+  void dump_config() override { this->dump_i2s_settings(); }
   bool is_ready() override;
+
 
   void set_external_dac_channels(uint8_t channels) { this->external_dac_channels_ = channels; }
 
@@ -27,11 +29,9 @@ class ADFElementI2SOut : public I2SWriter, public ADFPipelineSinkElement, public
   void on_settings_request(AudioPipelineSettingsRequest &request) override;
   uint8_t external_dac_channels_;
   uint8_t mono_channel_select_;
-
-  uint32_t sample_rate_;
-  uint8_t bits_per_sample_;
   uint8_t channels_;
   bool use_adf_alc_{false};
+  bool adjustable_{false};
 
   bool init_adf_elements_() override;
   void clear_adf_elements_() override;

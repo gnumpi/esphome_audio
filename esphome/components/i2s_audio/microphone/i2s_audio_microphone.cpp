@@ -6,7 +6,7 @@
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
 
-#if I2S_EXTERNAL_ADC
+#ifdef I2S_EXTERNAL_ADC
 #include "../external_adc.h"
 #endif
 
@@ -35,7 +35,9 @@ void I2SAudioMicrophone::setup() {
       return;
     }
   }
-
+}
+void I2SAudioMicrophone::dump_config() {
+  this->dump_i2s_settings();
 }
 
 void I2SAudioMicrophone::start() {
@@ -50,14 +52,14 @@ void I2SAudioMicrophone::start_() {
     return;  // Waiting for another i2s to return lock
   }
 
-#if I2S_EXTERNAL_ADC
+#ifdef I2S_EXTERNAL_ADC
   if( this->external_adc_ != nullptr ){
     this->external_adc_->init_device();
   }
 #endif
 
 i2s_driver_config_t config = this->get_i2s_cfg();
-config.mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_RX);
+//config.mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_RX);
 
 #if SOC_I2S_SUPPORTS_ADC
   if (this->use_internal_adc_) {
@@ -73,13 +75,10 @@ config.mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_RX);
       config.mode = (i2s_mode_t) (config.mode | I2S_MODE_PDM);
 
     this->install_i2s_driver(config);
-    i2s_pin_config_t pin_config = this->parent_->get_pin_config();
-    pin_config.data_in_num = this->din_pin_;
 
-    i2s_set_pin(this->parent_->get_port(), &pin_config);
   }
 
-#if I2S_EXTERNAL_ADC
+#ifdef I2S_EXTERNAL_ADC
   if( this->external_adc_ != nullptr ){
     this->external_adc_->apply_i2s_settings(config);
   }
@@ -108,12 +107,13 @@ void I2SAudioMicrophone::stop_() {
 
 size_t I2SAudioMicrophone::read(int16_t *buf, size_t len) {
   size_t bytes_read = 0;
-  esp_err_t err = i2s_read(this->parent_->get_port(), buf, len, &bytes_read, (100 / portTICK_PERIOD_MS));
+  esp_err_t err = i2s_read(this->parent_->get_port(), buf, len, &bytes_read, (1 / portTICK_PERIOD_MS));
   if (err != ESP_OK) {
     ESP_LOGW(TAG, "Error reading from I2S microphone: %s", esp_err_to_name(err));
     this->status_set_warning();
     return 0;
   }
+
   if (bytes_read == 0) {
     this->status_set_warning();
     return 0;

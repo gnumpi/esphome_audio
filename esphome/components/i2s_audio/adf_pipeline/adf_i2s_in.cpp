@@ -27,47 +27,7 @@ bool ADFElementI2SIn::init_adf_elements_() {
     return false;
   }
 
-  i2s_bits_per_chan_t channel_bits  = I2S_BITS_PER_CHAN_DEFAULT;
-
-  if ( this->bits_per_sample_ == I2S_BITS_PER_SAMPLE_24BIT)
-  {
-    channel_bits = I2S_BITS_PER_CHAN_32BIT;
-  }
-
-  i2s_driver_config_t i2s_config;
-  if( this->parent_->adjustable()){
-    i2s_config = {
-      .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_RX),
-      .sample_rate = this->sample_rate_,
-      .bits_per_sample = this->bits_per_sample_,
-      .channel_format = this->channel_,
-      .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-      //.intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
-      .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-      .dma_buf_count = 4,
-      .dma_buf_len = 256,
-      .use_apll = false,
-      .tx_desc_auto_clear = true,
-      .fixed_mclk = 0,
-      .mclk_multiple = I2S_MCLK_MULTIPLE_256,
-      .bits_per_chan = channel_bits,
-    #if SOC_I2S_SUPPORTS_TDM
-      .chan_mask = I2S_CHANNEL_MONO,
-      .total_chan = 0,
-      .left_align = false,
-      .big_edin = false,
-      .bit_order_msb = false,
-      .skip_msk = false,
-    #endif
-    };
-  } else {
-    i2s_config = this->parent_->get_i2s_cfg();
-  }
-
-
-  if( this->pdm_){
-      i2s_config.mode = (i2s_mode_t) (i2s_config.mode | I2S_MODE_PDM);
-  }
+  i2s_driver_config_t i2s_config = this->get_i2s_cfg();
 
   i2s_stream_cfg_t i2s_stream_cfg = {
       .type = AUDIO_STREAM_READER,
@@ -98,16 +58,6 @@ bool ADFElementI2SIn::init_adf_elements_() {
 #endif
 
   audio_element_set_music_info(this->adf_i2s_stream_reader_, this->sample_rate_, 1, this->bits_per_sample_);
-
-  uint32_t bits_cfg = I2S_BITS_PER_SAMPLE_16BIT;
-  if ( this->bits_per_sample_ == I2S_BITS_PER_SAMPLE_24BIT)
-  {
-    bits_cfg = (I2S_BITS_PER_CHAN_32BIT << 16) | I2S_BITS_PER_SAMPLE_24BIT;
-  }
-  else if (( this->bits_per_sample_ == I2S_BITS_PER_SAMPLE_32BIT) )
-  {
-    bits_cfg = I2S_BITS_PER_SAMPLE_32BIT;
-  }
 
   sdk_audio_elements_.push_back(this->adf_i2s_stream_reader_);
   sdk_element_tags_.push_back("i2s_in");

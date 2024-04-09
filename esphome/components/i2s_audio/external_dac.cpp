@@ -27,6 +27,8 @@ bool AW88298::init_device(){
 }
 
 bool AW88298::apply_i2s_settings(const i2s_driver_config_t&  i2s_cfg){
+  esph_log_d(TAG, "Setup AW88298");
+
   uint16_t val  = 0x4000; // I2SEN=1 AMPPD=0 PWDN=0
              val |= (1 << 6) ; // I2S Enable
              val |= (1 << 1) ; // power down amp for configuration

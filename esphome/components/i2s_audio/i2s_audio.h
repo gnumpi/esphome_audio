@@ -1,5 +1,6 @@
 #pragma once
 
+#include "esphome/core/defines.h"
 #ifdef USE_ESP32
 
 #include <driver/i2s.h>
@@ -23,6 +24,7 @@ class I2SWriter;
 class I2SAudioComponent : public Component {
  public:
   void setup() override;
+  void dump_config() override;
 
   i2s_pin_config_t get_pin_config() const {
     return {
@@ -33,8 +35,6 @@ class I2SAudioComponent : public Component {
         .data_in_num = I2S_PIN_NO_CHANGE,
     };
   }
-
-  i2s_driver_config_t get_i2s_cfg() const;
 
   void set_mclk_pin(int pin) { this->mclk_pin_ = pin; }
   void set_bclk_pin(int pin) { this->bclk_pin_ = pin; }
@@ -49,7 +49,7 @@ class I2SAudioComponent : public Component {
   void set_audio_out(I2SWriter* comp_out){ this->audio_out_ = comp_out;}
 
   void set_access_mode(I2SAccessMode access_mode){this->access_mode_ = access_mode;}
-  bool adjustable(){return this->access_mode_ == I2SAccessMode::EXCLUSIVE;}
+  bool is_exclusive(){return this->access_mode_ == I2SAccessMode::EXCLUSIVE;}
 
  protected:
   friend I2SReader;
@@ -84,14 +84,17 @@ public:
   I2SSettings() = default;
   I2SSettings(uint8_t access) : i2s_access_(access) {}
 
-  //virtual i2s_mode_t get_i2s_mode() const;
   i2s_driver_config_t get_i2s_cfg() const;
+  void dump_i2s_settings() const;
 
   void set_use_apll(uint32_t use_apll) { this->use_apll_ = use_apll; }
   void set_bits_per_sample(i2s_bits_per_sample_t bits_per_sample) { this->bits_per_sample_ = bits_per_sample; }
   void set_channel(i2s_channel_fmt_t channel_fmt) { this->channel_fmt_ = channel_fmt; }
   void set_pdm(bool pdm) { this->pdm_ = pdm; }
   void set_sample_rate(uint32_t sample_rate) { this->sample_rate_ = sample_rate; }
+  void set_fixed_settings(bool is_fixed){ this->is_fixed_ = is_fixed; }
+  int num_of_channels() const { return (this->channel_fmt_ == I2S_CHANNEL_FMT_ONLY_RIGHT
+   || this->channel_fmt_ == I2S_CHANNEL_FMT_ONLY_RIGHT) ? 1 : 2; }
 
 protected:
    bool use_apll_{false};
@@ -102,6 +105,7 @@ protected:
    bool pdm_{false};
    uint32_t sample_rate_;
 
+   bool is_fixed_{false};
    uint8_t i2s_access_;
 };
 
@@ -115,6 +119,7 @@ public:
    bool uninstall_i2s_driver(){ return this->parent_->uninstall_i2s_driver_(I2SAccess::RX);}
    bool claim_i2s_access(){return this->parent_->claim_access_(I2SAccess::RX);}
    bool release_i2s_access(){return this->parent_->release_access_(I2SAccess::RX);}
+   bool is_adjustable(){return !this->is_fixed_ && this->parent_->is_exclusive();}
 #if SOC_I2S_SUPPORTS_ADC
   void set_adc_channel(adc1_channel_t channel) {
     this->adc_channel_ = channel;
@@ -148,6 +153,7 @@ public:
    bool uninstall_i2s_driver(){ return this->parent_->uninstall_i2s_driver_(I2SAccess::TX);}
    bool claim_i2s_access(){return this->parent_->claim_access_(I2SAccess::TX);}
    bool release_i2s_access(){return this->parent_->release_access_(I2SAccess::TX);}
+   bool is_adjustable(){return !this->is_fixed_ && this->parent_->is_exclusive();}
 
 #if SOC_I2S_SUPPORTS_DAC
   void set_internal_dac_mode(i2s_dac_mode_t mode) { this->internal_dac_mode_ = mode; }

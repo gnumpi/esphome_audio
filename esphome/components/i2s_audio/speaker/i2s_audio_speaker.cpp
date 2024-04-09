@@ -7,7 +7,7 @@
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
 
-#if I2S_EXTERNAL_DAC
+#ifdef I2S_EXTERNAL_DAC
 #include "../external_dac.h"
 #endif
 namespace esphome {
@@ -28,6 +28,11 @@ void I2SAudioSpeaker::setup() {
   this->event_queue_ = xQueueCreate(BUFFER_COUNT, sizeof(TaskEvent));
 }
 
+void I2SAudioSpeaker::dump_config() {
+  this->dump_i2s_settings();
+}
+
+
 void I2SAudioSpeaker::start() { this->state_ = speaker::STATE_STARTING; }
 
 void I2SAudioSpeaker::start_() {
@@ -42,7 +47,7 @@ void I2SAudioSpeaker::start_() {
 void I2SAudioSpeaker::player_task(void *params) {
   I2SAudioSpeaker *this_speaker = (I2SAudioSpeaker *) params;
 
-#if I2S_EXTERNAL_DAC
+#ifdef I2S_EXTERNAL_DAC
   if( this_speaker->external_dac_ != nullptr ){
     this_speaker->external_dac_->init_device();
   }
@@ -86,7 +91,7 @@ void I2SAudioSpeaker::player_task(void *params) {
   }
 #endif
 
-#if I2S_EXTERNAL_DAC
+#ifdef I2S_EXTERNAL_DAC
   if( this_speaker->external_dac_ != nullptr ){
     this_speaker->external_dac_->apply_i2s_settings(config);
   }

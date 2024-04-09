@@ -1,12 +1,12 @@
 ---
 external_components:
   - source:
-      type: git
-      url: https://github.com/gnumpi/esphome_audio
-      ref: main
-      #type: local
-      #path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
-    components: [ adf_pipeline, i2s_audio, voice_assistant ]
+      #type: git
+      #url: https://github.com/gnumpi/esphome_audio
+      #ref: main
+      type: local
+      path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
+    components: [ adf_pipeline, i2s_audio ]
 
 
 esphome:
@@ -30,18 +30,6 @@ ota:
 packages:
   wifi: !include common/wifi.yaml
 
-wifi:
-  on_connect:
-    - delay: 5s  # Gives time for improv results to be transmitted
-    - ble.disable:
-  on_disconnect:
-    - ble.enable:
-
-
-improv_serial:
-
-esp32_improv:
-  authorizer: none
 
 button:
   - platform: factory_reset
@@ -52,63 +40,62 @@ i2s_audio:
   - id: i2s_dplx
     i2s_lrclk_pin: GPIO33
     i2s_bclk_pin: GPIO19
+    access_mode: exclusive
 
 
 adf_pipeline:
   - platform: i2s_audio
-    type: i2s_tx
+    type: audio_out
     id: adf_i2s_out
     i2s_audio_id: i2s_dplx
     i2s_dout_pin: GPIO22
 
-  - platform: i2s_audio
-    type: i2s_rx
-    id: adf_i2s_in
-    i2s_audio_id: i2s_dplx
-    i2s_din_pin: GPIO23
-    #adc_type: external
-    pdm: true
-    bits_per_sample: 16bit
+  #- platform: i2s_audio
+  #  type: audio_in
+  #  id: adf_i2s_in
+  #  i2s_audio_id: i2s_dplx
+  #  i2s_din_pin: GPIO23
+  #  #adc_type: external
+  #  pdm: true
+  #  #bits_per_sample: 16bit
 
 microphone:
-  - platform: adf_pipeline
+  - platform: i2s_audio
     id: echo_microphone
-    keep_pipeline_alive: false
-    pipeline:
-      - adf_i2s_in
-      - self
+    i2s_din_pin: GPIO23
+    adc_type: external
+    pdm: true
 
-media_player:
-  - platform: adf_pipeline
-    id: adf_media_player
-    name: m5stack-atom-echo
-    keep_pipeline_alive: false
-    internal: false
-    pipeline:
-      - self
-      - adf_i2s_out
-
-
-#speaker:
+#media_player:
 #  - platform: adf_pipeline
-#    id: echo_speaker
+#    id: adf_media_player
+#    name: m5stack-atom-echo
+#    keep_pipeline_alive: false
+#    internal: false
 #    pipeline:
-##      - self
+#      - self
+#      #- resampler
+#      - adf_i2s_out
+
+speaker:
+  - platform: adf_pipeline
+    id: adf_speaker
+    pipeline:
+      - self
       - adf_i2s_out
 
-    #i2s_dout_pin: GPIO22
-    #dac_type: external
-    #mode: mono
 
 voice_assistant:
   id: va
   microphone: echo_microphone
-  #speaker: echo_speaker
-  media_player: adf_media_player
+  #media_player: adf_media_player
+  speaker: adf_speaker
   noise_suppression_level: 2
   auto_gain: 31dBFS
-  volume_multiplier: 2.0
+  volume_multiplier: 4.0
+  use_wake_word: true
   #vad_threshold: 3
+
   on_listening:
     - light.turn_on:
         id: led
@@ -133,10 +120,10 @@ voice_assistant:
         effect: none
   on_end:
     - delay: 100ms
-    - wait_until:
-        not:
-          media_player.is_playing:
-          #speaker.is_playing:
+    #- wait_until:
+    #    not:
+    #      media_player.is_playing:
+
     - script.execute: reset_led
   on_error:
     - light.turn_on:

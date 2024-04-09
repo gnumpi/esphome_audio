@@ -40,6 +40,12 @@ static const LogString *pipeline_state_to_string(PipelineState state) {
   }
 }
 
+void ADFPipeline::dump_element_configs(){
+  for (auto &element : pipeline_elements_) {
+    element->dump_config();
+  }
+}
+
 void ADFPipeline::start() {
   esph_log_d(TAG, "Starting request, current state %s", LOG_STR_ARG(pipeline_state_to_string(this->state_)));
   switch( this->state_ ){

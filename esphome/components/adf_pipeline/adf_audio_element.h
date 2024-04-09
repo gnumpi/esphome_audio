@@ -55,6 +55,7 @@ class ADFPipelineElement {
 
   virtual AudioPipelineElementType get_element_type() const = 0;
   virtual const std::string get_name() = 0;
+  virtual void dump_config() const {}
 
   virtual void on_pipeline_status_change() {}
   virtual void on_settings_request(AudioPipelineSettingsRequest &request) {}

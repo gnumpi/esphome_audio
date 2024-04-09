@@ -44,6 +44,7 @@ class I2SAudioSpeaker : public Component, public speaker::Speaker, public I2SWri
 
   void setup() override;
   void loop() override;
+  void dump_config() override;
 
   void set_dout_pin(uint8_t pin) { this->dout_pin_ = pin; }
 #if SOC_I2S_SUPPORTS_DAC
@@ -60,7 +61,6 @@ class I2SAudioSpeaker : public Component, public speaker::Speaker, public I2SWri
 
  protected:
   void start_();
-  // void stop_();
   void watch_();
 
   static void player_task(void *params);

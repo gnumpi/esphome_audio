@@ -4,6 +4,8 @@ from esphome import pins
 from esphome.const import CONF_ID, CONF_MODE, CONF_MODEL
 from esphome.components import esp32, speaker
 
+from .. import i2s_settings as i2s
+
 from .. import (
     CONF_I2S_AUDIO_ID,
     CONF_I2S_DOUT_PIN,
@@ -12,7 +14,7 @@ from .. import (
     I2SAudioComponent,
     I2SWriter,
     i2s_audio_ns,
-    # register_dac,
+    register_i2s_writer,
 )
 
 CODEOWNERS = ["@jesserockz"]
@@ -72,7 +74,9 @@ CONFIG_SCHEMA = cv.All(
                         CONF_I2S_DAC, default={CONF_MODEL: "generic"}
                     ): CONFIG_SCHEMA_DAC,
                 }
-            ).extend(cv.COMPONENT_SCHEMA),
+            )
+            .extend(i2s.CONFIG_SCHEMA_I2S_COMMON)
+            .extend(cv.COMPONENT_SCHEMA),
         },
         key=CONF_DAC_TYPE,
     ),
@@ -90,6 +94,7 @@ async def to_code(config):
     if config[CONF_DAC_TYPE] == "internal":
         cg.add(var.set_internal_dac_mode(config[CONF_MODE]))
     else:
-        cg.add(var.set_dout_pin(config[CONF_I2S_DOUT_PIN]))
+        # cg.add(var.set_dout_pin(config[CONF_I2S_DOUT_PIN]))
         cg.add(var.set_external_dac_channels(2 if config[CONF_MODE] == "stereo" else 1))
-        # await register_dac(var, config[CONF_I2S_DAC])
+
+        await register_i2s_writer(var, config)

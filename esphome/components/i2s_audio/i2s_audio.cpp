@@ -24,6 +24,19 @@ void I2SAudioComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up I2S Audio...");
 }
 
+void I2SAudioComponent::dump_config(){
+  esph_log_config(TAG, "I2SController:");
+  esph_log_config(TAG, "  AccessMode: %s", this->access_mode_ == I2SAccessMode::DUPLEX ? "duplex" : "exclusive" );
+  esph_log_config(TAG, "  Port: %d", this->get_port() );
+  if( this->audio_in_ != nullptr ){
+    esph_log_config(TAG, "  Reader registered.");
+  }
+  if( this->audio_out_ != nullptr ){
+    esph_log_config(TAG, "  Writer registered.");
+  }
+}
+
+
 bool I2SAudioComponent::claim_access_(uint8_t access){
   bool success = false;
   this->lock();
@@ -48,40 +61,13 @@ bool I2SAudioComponent::release_access_(uint8_t access){
   return true;
 }
 
-i2s_driver_config_t I2SAudioComponent::get_i2s_cfg() const {
-  uint8_t mode = I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX;
-
-  i2s_driver_config_t config = {
-      .mode = (i2s_mode_t) mode,
-      .sample_rate = 16000,
-      .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-      .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
-      .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-      .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-      .dma_buf_count = 8,
-      .dma_buf_len = 128,
-      .use_apll = false,
-      .tx_desc_auto_clear = true,
-      .fixed_mclk = I2S_PIN_NO_CHANGE,
-      .mclk_multiple = I2S_MCLK_MULTIPLE_DEFAULT,
-      .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
-#if SOC_I2S_SUPPORTS_TDM
-      .chan_mask = I2S_CHANNEL_MONO,
-      .total_chan = 0,
-      .left_align = false,
-      .big_edin = false,
-      .bit_order_msb = false,
-      .skip_msk = false,
-#endif
-
-  };
-  return config;
-}
-
 bool I2SAudioComponent::install_i2s_driver_(i2s_driver_config_t i2s_cfg, uint8_t access){
   bool success = false;
   this->lock();
   if( this->access_state_ == I2SAccess::FREE || this->access_state_ == access ){
+    if(this->access_mode_ == I2SAccessMode::DUPLEX){
+      i2s_cfg.mode = (i2s_mode_t) (i2s_cfg.mode | I2S_MODE_TX | I2S_MODE_RX);
+    }
     success = ESP_OK == i2s_driver_install(this->get_port(), &i2s_cfg, 0, nullptr);
     esph_log_d(TAG, "Installing driver : %s", success ? "yes" : "no" );
     i2s_pin_config_t pin_config = this->get_pin_config();
@@ -125,7 +111,8 @@ bool I2SAudioComponent::uninstall_i2s_driver_(uint8_t access){
     }
   }
   else {
-    // other component hasn't released yet, release caller
+    // other component hasn't released yet
+    // don't uninstall driver, just release caller
     esph_log_d(TAG, "Other component hasn't released");
     this->release_access_(access);
   }
@@ -141,8 +128,27 @@ bool I2SAudioComponent::validate_cfg_for_duplex_(i2s_driver_config_t& i2s_cfg){
   );
 }
 
+
+void I2SSettings::dump_i2s_settings() const {
+  std::string init_str = this->is_fixed_ ? "Fixed-CFG" : "Initial-CFG";
+  if( this->i2s_access_ == I2SAccess::RX ){
+    esph_log_config(TAG, "I2S-Reader (%s):", init_str.c_str());
+  }
+  else{
+    esph_log_config(TAG, "I2S-Writer (%s):", init_str.c_str());
+  }
+  esph_log_config(TAG, "  sample-rate: %d bits_per_sample: %d", this->sample_rate_, this->bits_per_sample_ );
+  esph_log_config(TAG, "  channel_fmt: %d channels: %d", this->channel_fmt_, this->num_of_channels() );
+  esph_log_config(TAG, "  use_apll: %s, use_pdm: %s", this->use_apll_ ? "yes": "no", this->pdm_ ? "yes": "no");
+}
+
+
 i2s_driver_config_t I2SSettings::get_i2s_cfg() const {
-  uint8_t mode = I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX;
+  uint8_t mode = I2S_MODE_MASTER | ( this->i2s_access_ == I2SAccess::RX ? I2S_MODE_RX : I2S_MODE_TX);
+
+  if( this->pdm_){
+      mode = (i2s_mode_t) (mode | I2S_MODE_PDM);
+  }
 
   i2s_driver_config_t config = {
       .mode = (i2s_mode_t) mode,
@@ -151,8 +157,8 @@ i2s_driver_config_t I2SSettings::get_i2s_cfg() const {
       .channel_format = this->channel_fmt_,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-      .dma_buf_count = 8,
-      .dma_buf_len = 128,
+      .dma_buf_count = 4,
+      .dma_buf_len = 256,
       .use_apll = false,
       .tx_desc_auto_clear = true,
       .fixed_mclk = I2S_PIN_NO_CHANGE,
@@ -170,10 +176,6 @@ i2s_driver_config_t I2SSettings::get_i2s_cfg() const {
 
   return config;
 }
-
-
-
-
 
 }  // namespace i2s_audio
 }  // namespace esphome

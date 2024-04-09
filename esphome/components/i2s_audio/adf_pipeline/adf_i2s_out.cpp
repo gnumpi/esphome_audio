@@ -16,10 +16,8 @@ static const char *const TAG = "adf_i2s_out";
 
 
 void ADFElementI2SOut::setup() {
-  this->sample_rate_ = 16000;
-  this->bits_per_sample_ = 16;
   this->set_external_dac_channels(2);
-  this->channels_ = 2;
+  this->channels_ = this->num_of_channels();
 }
 
 bool ADFElementI2SOut::init_adf_elements_() {
@@ -36,35 +34,7 @@ bool ADFElementI2SOut::init_adf_elements_() {
   }
 #endif
 
-i2s_driver_config_t i2s_config;
-if( this->parent_->adjustable()){
-  i2s_config  = {
-        .mode = (i2s_mode_t) (I2S_MODE_MASTER | I2S_MODE_TX),
-        .sample_rate = 16000,
-        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-        //.channel_format = I2S_CHANNEL_FMT_ONLY_RIGHT,
-        .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
-        .communication_format = I2S_COMM_FORMAT_STAND_I2S,
-        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL2 | ESP_INTR_FLAG_IRAM,
-        .dma_buf_count = 8,
-        .dma_buf_len = 128,
-        .use_apll = false,
-        .tx_desc_auto_clear = true,
-        .fixed_mclk = 0,
-        .mclk_multiple = I2S_MCLK_MULTIPLE_DEFAULT,
-        .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT,
-  #if SOC_I2S_SUPPORTS_TDM
-        .chan_mask = I2S_CHANNEL_MONO,
-        .total_chan = 0,
-        .left_align = false,
-        .big_edin = false,
-        .bit_order_msb = false,
-        .skip_msk = false,
-  #endif
-  };
-} else {
-  i2s_config = this->parent_->get_i2s_cfg();
-}
+  i2s_driver_config_t i2s_config = this->get_i2s_cfg();
 
   i2s_stream_cfg_t i2s_cfg = {
       .type = AUDIO_STREAM_WRITER,
@@ -87,22 +57,6 @@ if( this->parent_->adjustable()){
   this->adf_i2s_stream_writer_->buf_size = 1 * 1024;
 
   this->install_i2s_driver(i2s_config);
-  //i2s_zero_dma_buffer(this->parent_->get_port());
-
-  this->bits_per_sample_ = 16;
-  this->sample_rate_ = 16000;
-  this->channels_ = 2;
-
-  if( this->parent_->adjustable())
-  {
-    /*
-    if (i2s_stream_set_clk(this->adf_i2s_stream_writer_, this->sample_rate_, this->bits_per_sample_,
-                           1) != ESP_OK) {
-      esph_log_e(TAG, "error while setting sample rate and bit depth,");
-    }
-    */
-  }
-
 
 #ifdef I2S_EXTERNAL_DAC
   if (this->external_dac_ != nullptr){
@@ -112,7 +66,6 @@ if( this->parent_->adjustable()){
 
   sdk_audio_elements_.push_back(this->adf_i2s_stream_writer_);
   sdk_element_tags_.push_back("i2s_out");
-
 
   return true;
 }
@@ -132,7 +85,7 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
     return;
   }
 
-  if (this->parent_->adjustable()){
+  if (this->is_adjustable()){
     bool rate_bits_channels_updated = false;
     if (request.sampling_rate > 0 && (uint32_t) request.sampling_rate != this->sample_rate_) {
       this->sample_rate_ = request.sampling_rate;
@@ -152,7 +105,7 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
         request.failed_by = this;
         return;
       }
-      this->bits_per_sample_ = request.bit_depth;
+      this->bits_per_sample_ = (i2s_bits_per_sample_t) request.bit_depth;
       rate_bits_channels_updated = true;
     }
 
