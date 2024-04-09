@@ -3,11 +3,11 @@ substitutions:
 
 external_components:
   - source:
-      #type: git
-      #url: https://github.com/gnumpi/esphome_audio
-      #ref: main
-      type: local
-      path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
+      type: git
+      url: https://github.com/gnumpi/esphome_audio
+      ref: dev-next
+      #type: local
+      #path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
     components: [ i2s_audio ]
 
 
@@ -57,7 +57,7 @@ packages:
 
 logger:
   hardware_uart : UART0
-  level: VERBOSE
+  level: DEBUG
 
 ota:
 
@@ -89,11 +89,18 @@ speaker:
     i2s_dout_pin: GPIO10
     dac_type: external
 
+micro_wake_word:
+  model: https://raw.githubusercontent.com/kahrendt/microWakeWord/18-add-beta-alexa-model/models/betas/alexa_v2.json
+  #model: okay_nabu
+  on_wake_word_detected:
+      - voice_assistant.start:
+
+
 
 voice_assistant:
   microphone: i2s_microphone
   speaker: i2s_speaker
-  use_wake_word: True
+  use_wake_word: False
 
   noise_suppression_level: 4
   auto_gain: 31dBFS
@@ -136,7 +143,8 @@ switch:
                   not:
                     - voice_assistant.is_running
                 then:
-                  - voice_assistant.start_continuous
+                  - micro_wake_word.start:
+                  #- voice_assistant.start_continuous
     on_turn_off:
       - if:
           condition:
