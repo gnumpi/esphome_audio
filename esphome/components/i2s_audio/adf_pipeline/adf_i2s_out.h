@@ -23,13 +23,8 @@ class ADFElementI2SOut : public I2SWriter, public ADFPipelineSinkElement, public
   bool is_ready() override;
 
 
-  void set_external_dac_channels(uint8_t channels) { this->external_dac_channels_ = channels; }
-
  protected:
   void on_settings_request(AudioPipelineSettingsRequest &request) override;
-  uint8_t external_dac_channels_;
-  uint8_t mono_channel_select_;
-  uint8_t channels_;
   bool use_adf_alc_{false};
   bool adjustable_{false};
 

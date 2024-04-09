@@ -94,7 +94,7 @@ public:
   void set_sample_rate(uint32_t sample_rate) { this->sample_rate_ = sample_rate; }
   void set_fixed_settings(bool is_fixed){ this->is_fixed_ = is_fixed; }
   int num_of_channels() const { return (this->channel_fmt_ == I2S_CHANNEL_FMT_ONLY_RIGHT
-   || this->channel_fmt_ == I2S_CHANNEL_FMT_ONLY_RIGHT) ? 1 : 2; }
+   || this->channel_fmt_ == I2S_CHANNEL_FMT_ONLY_LEFT) ? 1 : 2; }
 
 protected:
    bool use_apll_{false};

@@ -35,6 +35,7 @@ microphone:
     i2s_din_pin: GPIO23
     adc_type: external
     pdm: true
+    channel: right
 
 speaker:
   - platform: i2s_audio
@@ -221,11 +222,11 @@ external_components:
       - esp_adf
     refresh: 0s
   - source:
-      #type: git
-      #url: https://github.com/gnumpi/esphome_audio
-      #ref: main
-      type: local
-      path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
+      type: git
+      url: https://github.com/gnumpi/esphome_audio
+      ref: m5_core_s3
+      #type: local
+      #path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
     components: [ i2s_audio ]
 
 

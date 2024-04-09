@@ -16,8 +16,6 @@ static const char *const TAG = "adf_i2s_out";
 
 
 void ADFElementI2SOut::setup() {
-  this->set_external_dac_channels(2);
-  this->channels_ = this->num_of_channels();
 }
 
 bool ADFElementI2SOut::init_adf_elements_() {
@@ -92,9 +90,9 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
       rate_bits_channels_updated = true;
     }
 
-    if(request.number_of_channels > 0 && (uint8_t) request.number_of_channels != this->channels_)
+    if(request.number_of_channels > 0 && (uint8_t) request.number_of_channels != this->num_of_channels())
     {
-      this->channels_ = request.number_of_channels;
+      this->channel_fmt_ = request.number_of_channels == 1 ? I2S_CHANNEL_FMT_ONLY_RIGHT : I2S_CHANNEL_FMT_RIGHT_LEFT;
       rate_bits_channels_updated = true;
     }
 
@@ -111,11 +109,11 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
 
     if (rate_bits_channels_updated) {
 
-      audio_element_set_music_info(this->adf_i2s_stream_writer_,this->sample_rate_, this->channels_, this->bits_per_sample_ );
+      audio_element_set_music_info(this->adf_i2s_stream_writer_,this->sample_rate_, this->num_of_channels(), this->bits_per_sample_ );
 
-      esph_log_d(TAG, "update i2s clk settings: rate:%d bits:%d ch:%d",this->sample_rate_, this->bits_per_sample_, this->channels_);
+      esph_log_d(TAG, "update i2s clk settings: rate:%d bits:%d ch:%d",this->sample_rate_, this->bits_per_sample_, this->num_of_channels());
       if (i2s_stream_set_clk(this->adf_i2s_stream_writer_, this->sample_rate_, this->bits_per_sample_,
-                            this->channels_) != ESP_OK) {
+                            this->num_of_channels()) != ESP_OK) {
         esph_log_e(TAG, "error while setting sample rate and bit depth,");
         request.failed = true;
         request.failed_by = this;
@@ -129,11 +127,11 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
     esph_log_d(TAG, "Set final i2s settings: %d", this->sample_rate_);
     request.final_sampling_rate = this->sample_rate_;
     request.final_bit_depth = this->bits_per_sample_;
-    request.final_number_of_channels = this->channels_;
+    request.final_number_of_channels = this->num_of_channels();
   } else if (
        request.final_sampling_rate != this->sample_rate_
     || request.final_bit_depth != this->bits_per_sample_
-    || request.final_number_of_channels != this->channels_
+    || request.final_number_of_channels != this->num_of_channels()
   )
   {
     request.failed = true;

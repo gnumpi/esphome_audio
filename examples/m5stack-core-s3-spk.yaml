@@ -44,11 +44,11 @@ external_components:
     components: [ esp32_m5stack_core_s3, aw9523 ]
 
   - source:
-      #type: git
-      #url: https://github.com/gnumpi/esphome_audio
-      #ref: m5_core_s3
-      type: local
-      path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
+      type: git
+      url: https://github.com/gnumpi/esphome_audio
+      ref: m5_core_s3
+      #type: local
+      #path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
     components: [ i2s_audio ]
 
 

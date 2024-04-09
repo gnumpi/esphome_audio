@@ -40,8 +40,11 @@ size_t ADFMicrophone::read(int16_t *buf, size_t len) {
     if (this->pcm_stream_.get_bits_per_sample() == 32 || this->pcm_stream_.get_bits_per_sample() == 24)
     {
       len = ( len << 2 ) >> 2;
-      size_t bytes_read = this->pcm_stream_.stream_read_bytes((char *) buf, len << 1 );
-      size_t samples_read = bytes_read / sizeof(uint32_t);
+      size_t bytes_read = this->pcm_stream_.stream_read_bytes((char *) buf, len << 1  );
+      size_t samples_read = bytes_read / sizeof(int32_t);
+      if( samples_read == 0 ){
+        return 0;
+      }
 
       std::vector<int16_t> samples;
       uint8_t shift = 16 - this->gain_log2_ ;

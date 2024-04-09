@@ -8,7 +8,7 @@ external_components:
       #ref: main
       type: local
       path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
-    components: [ adf_pipeline, i2s_audio, voice_assistant ]
+    components: [ i2s_audio ]
 
 
 esphome:
@@ -70,54 +70,29 @@ i2s_audio:
     i2s_lrclk_pin: GPIO46
     i2s_bclk_pin: GPIO9
 
-adf_pipeline:
-  - platform: i2s_audio
-    type: audio_out
-    id: adf_i2s_out
-    i2s_audio_id: i2s_out
-    i2s_dout_pin: GPIO10
-
-  - platform: i2s_audio
-    type: audio_in
-    id: adf_i2s_in
-    i2s_audio_id: i2s_in
-    i2s_din_pin: GPIO4
-    pdm: false
-    #channel: left
-    #sample_rate: 16000
-    #bits_per_sample: 16bit
-
 
 microphone:
-  - platform: adf_pipeline
-    id: adf_microphone
-    pipeline:
-      - adf_i2s_in
-      - self
+  - platform: i2s_audio
+    id: i2s_microphone
+    i2s_audio_id: i2s_in
+    i2s_din_pin: GPIO4
+    adc_type: external
+    pdm: false
+    channel: left
+    sample_rate: 16000
+    bits_per_sample: 32bit
 
-#speaker:
-#  - platform: adf_pipeline
-#    id: adf_speaker
-#    pipeline:
-#      - self
-#      - adf_i2s_out
-
-
-media_player:
-  - platform: adf_pipeline
-    id: adf_media_player
-    name: s3-dev_media_player
-    internal: false
-    pipeline:
-      - self
-      - resampler
-      - adf_i2s_out
+speaker:
+  - platform: i2s_audio
+    id: i2s_speaker
+    i2s_audio_id: i2s_out
+    i2s_dout_pin: GPIO10
+    dac_type: external
 
 
 voice_assistant:
-  microphone: adf_microphone
-  #speaker: adf_speaker
-  media_player: adf_media_player
+  microphone: i2s_microphone
+  speaker: i2s_speaker
   use_wake_word: True
 
   noise_suppression_level: 4
