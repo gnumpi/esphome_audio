@@ -100,6 +100,7 @@ I2SWriter = i2s_audio_ns.class_("I2SWriter", cg.Parented.template(I2SAudioCompon
 
 ExternalDAC = i2s_audio_ns.class_("ExternalDAC", i2c.I2CDevice)
 AW88298 = i2s_audio_ns.class_("AW88298", ExternalDAC, i2c.I2CDevice)
+ES8388 = i2s_audio_ns.class_("ES8388", ExternalDAC, i2c.I2CDevice)
 
 ExternalADC = i2s_audio_ns.class_("ExternalADC", i2c.I2CDevice)
 ES7210 = i2s_audio_ns.class_("ES7210", ExternalADC, i2c.I2CDevice)
@@ -124,6 +125,11 @@ CONFIG_SCHEMA_DAC = cv.typed_schema(
                 cv.Optional(CONF_ENABLE_PIN): pins.gpio_output_pin_schema,
             }
         ).extend(i2c.i2c_device_schema(0x36)),
+        "es8388": cv.Schema(
+            {
+                cv.GenerateID(): cv.declare_id(ES8388),
+            }
+        ).extend(i2c.i2c_device_schema(0x10)),
     },
     key=CONF_MODEL,
     default_type="generic",
@@ -215,7 +221,7 @@ async def register_i2s_writer(writer, config: dict) -> None:
 
     if CONF_I2S_DAC in config:
         dac_cfg = config[CONF_I2S_DAC]
-        if dac_cfg["model"] in ["aw88298"]:
+        if dac_cfg["model"] in ["aw88298", "es8388"]:
             cg.add_define("I2S_EXTERNAL_DAC")
             dac = cg.new_Pvariable(dac_cfg[CONF_ID])
             cg.add(writer.set_external_dac(dac))

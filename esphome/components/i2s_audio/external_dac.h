@@ -35,6 +35,8 @@ class AW88298 : public ExternalDAC {
 
 class ES8388 : public ExternalDAC {
   bool init_device() override;
+  bool apply_i2s_settings(const i2s_driver_config_t&  i2s_cfg) override;
+  bool set_mute_audio( bool mute );
 };
 
 
