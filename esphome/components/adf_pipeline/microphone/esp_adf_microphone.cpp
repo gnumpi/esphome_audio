@@ -10,13 +10,16 @@
 namespace esphome {
 namespace esp_adf {
 
-static const char *const TAG = "esp_adf.microphone";
+static const char *const TAG = "esp_adf_pipeline.microphone";
 
 void ADFMicrophone::setup() {
   esp_log_level_set("wifi", ESP_LOG_WARN);
 }
 
-void ADFMicrophone::dump_config() {}
+void ADFMicrophone::dump_config() {
+  esph_log_config(TAG, "ADF-Microphone");
+  ADFPipelineController::dump_config();
+}
 
 void ADFMicrophone::start() {
   if ( this->state_ == microphone::STATE_RUNNING){
@@ -37,19 +40,21 @@ size_t ADFMicrophone::read(int16_t *buf, size_t len) {
     if (this->pcm_stream_.get_bits_per_sample() == 32 || this->pcm_stream_.get_bits_per_sample() == 24)
     {
       len = ( len << 2 ) >> 2;
-      size_t bytes_read = this->pcm_stream_.stream_read_bytes((char *) buf, len << 1 );
-      size_t samples_read = bytes_read / sizeof(uint32_t);
+      size_t bytes_read = this->pcm_stream_.stream_read_bytes((char *) buf, len << 1  );
+      size_t samples_read = bytes_read / sizeof(int32_t);
+      if( samples_read == 0 ){
+        return 0;
+      }
 
-      std::vector<uint16_t> samples;
-      uint8_t shift = 16 - this->gain_log_2_ ;
-      uint32_t add = 1 << (shift-1);
+      std::vector<int16_t> samples;
+      uint8_t shift = 16 - this->gain_log2_ ;
       samples.resize(samples_read);
       for (size_t i = 0; i < samples_read; i++) {
-        uint32_t temp = ( reinterpret_cast<uint32_t *>(buf)[i] ) >> shift;
-        samples[i] = (uint16_t) clamp<uint32_t>(temp, 0, 0xFFFF );
+        int32_t temp = ( reinterpret_cast<int32_t *>(buf)[i] ) >> shift;
+         samples[i] = (int16_t) clamp<int32_t>(temp, INT16_MIN, INT16_MAX );
       }
-      memcpy(buf, samples.data(), samples_read * sizeof(uint16_t));
-      return samples_read * sizeof(uint16_t);
+      memcpy(buf, samples.data(), samples_read * sizeof(int16_t));
+      return samples_read * sizeof(int16_t);
     }
     size_t bytes_read = 0;
     bytes_read =  this->pcm_stream_.stream_read_bytes((char *) buf, len);
@@ -57,8 +62,6 @@ size_t ADFMicrophone::read(int16_t *buf, size_t len) {
 }
 
 void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
-  esph_log_d(TAG, "Mic state: %d", this->state_);
-  esph_log_d(TAG, "Pipeline State %d: ", state );
   switch (state) {
     case PipelineState::STARTING:
       this->state_ = microphone::STATE_STARTING;
@@ -85,7 +88,6 @@ void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
     case PipelineState::DESTROYING:
       break;
     }
-  esph_log_d(TAG, "Mic state: %d", this->state_);
 }
 
 }  // namespace esp_adf

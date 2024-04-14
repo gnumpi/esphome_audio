@@ -22,7 +22,7 @@ enum class PipelineElementState : uint8_t { UNINITIALIZED = 0, INITIALIZED, PREP
 class ADFPipeline;
 class ADFPipelineElement;
 
-enum AudioPipelineElementType : uint8_t { AUDIO_PIPELINE_SOURCE = 0, AUDIO_PIPELINE_SINK, AUDIO_PIPELINE_TRANSFORM };
+enum AudioPipelineElementType : uint8_t { AUDIO_PIPELINE_SOURCE = 0, AUDIO_PIPELINE_SINK, AUDIO_PIPELINE_PROCESS };
 
 class AudioPipelineSettingsRequest {
  public:
@@ -31,8 +31,13 @@ class AudioPipelineSettingsRequest {
   int sampling_rate{-1};
   int bit_depth{-1};
   int number_of_channels{-1};
-  float target_volume{-1};
+  float target_volume{-1.};
   int mute{-1};
+
+  int final_sampling_rate{-1};
+  int final_bit_depth{-1};
+  int final_number_of_channels{-1};
+  float final_volume{-1.};
 
   bool failed{false};
   int error_code{0};
@@ -50,6 +55,7 @@ class ADFPipelineElement {
 
   virtual AudioPipelineElementType get_element_type() const = 0;
   virtual const std::string get_name() = 0;
+  virtual void dump_config() const {}
 
   virtual void on_pipeline_status_change() {}
   virtual void on_settings_request(AudioPipelineSettingsRequest &request) {}

@@ -55,16 +55,17 @@ i2s_audio:
 
 adf_pipeline:
   - platform: i2s_audio
-    type: sink
+    type: audio_out
     id: adf_i2s_out
     i2s_audio_id: i2s_out
     i2s_dout_pin: GPIO10
 
   - platform: i2s_audio
-    type: source
+    type: audio_in
     id: adf_i2s_in
     i2s_audio_id: i2s_in
     i2s_din_pin: GPIO4
+    pdm: false
 
 
 microphone:

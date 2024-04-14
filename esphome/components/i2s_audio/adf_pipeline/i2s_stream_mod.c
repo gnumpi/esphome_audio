@@ -382,11 +382,6 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
         cfg.write = _i2s_write;
     }
 
-    esp_err_t ret = i2s_driver_install(i2s->config.i2s_port, &i2s->config.i2s_config, 0, NULL);
-    if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
-        audio_free(i2s);
-        return NULL;
-    }
 
     el = audio_element_init(&cfg);
     AUDIO_MEM_CHECK(TAG, el, {

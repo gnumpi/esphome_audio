@@ -35,6 +35,9 @@ void ADFSpeaker::stop() {
 
 void ADFSpeaker::on_pipeline_state_change(PipelineState state) {
    switch (state) {
+      case PipelineState::PREPARING:
+        this->request_pipeline_settings_();
+        break;
       case PipelineState::STARTING:
         break;
       case PipelineState::STOPPING:
@@ -52,7 +55,6 @@ void ADFSpeaker::on_pipeline_state_change(PipelineState state) {
         break;
       case PipelineState::PAUSING:
       case PipelineState::RESUMING:
-      case PipelineState::PREPARING:
       case PipelineState::DESTROYING:
         break;
    }
@@ -93,6 +95,18 @@ size_t ADFSpeaker::play(const uint8_t *data, size_t length) {
 bool ADFSpeaker::has_buffered_data() const {
   return pcm_stream_.has_buffered_data();
 }
+
+void ADFSpeaker::request_pipeline_settings_(){
+    AudioPipelineSettingsRequest request{&this->pcm_stream_};
+    request.sampling_rate = 16000;
+    request.bit_depth = 16;
+    request.number_of_channels = 1;
+    if (!this->pipeline.request_settings(request)) {
+      esph_log_e(TAG, "Requested audio settings, didn't get accepted");
+      this->pipeline.on_settings_request_failed(request);
+    }
+}
+
 
 }  // namespace esp_adf
 }  // namespace esphome

@@ -2,16 +2,21 @@ import esphome.config_validation as cv
 import esphome.codegen as cg
 
 from esphome import pins
-from esphome.const import CONF_CHANNEL, CONF_ID, CONF_NUMBER
+from esphome.const import CONF_CHANNEL, CONF_ID, CONF_MODEL, CONF_NUMBER
 from esphome.components import microphone, esp32
 from esphome.components.adc import ESP32_VARIANT_ADC1_PIN_TO_CHANNEL, validate_adc_pin
+
+from .. import i2s_settings as i2s
 
 from .. import (
     i2s_audio_ns,
     I2SAudioComponent,
-    I2SAudioIn,
+    I2SReader,
+    CONF_I2S_ADC,
     CONF_I2S_AUDIO_ID,
     CONF_I2S_DIN_PIN,
+    CONFIG_SCHEMA_ADC,
+    register_i2s_reader,
 )
 
 CODEOWNERS = ["@jesserockz"]
@@ -25,7 +30,7 @@ CONF_BITS_PER_SAMPLE = "bits_per_sample"
 CONF_USE_APLL = "use_apll"
 
 I2SAudioMicrophone = i2s_audio_ns.class_(
-    "I2SAudioMicrophone", I2SAudioIn, microphone.Microphone, cg.Component
+    "I2SAudioMicrophone", I2SReader, microphone.Microphone, cg.Component
 )
 
 i2s_channel_fmt_t = cg.global_ns.enum("i2s_channel_fmt_t")
@@ -84,8 +89,11 @@ CONFIG_SCHEMA = cv.All(
                 {
                     cv.Required(CONF_I2S_DIN_PIN): pins.internal_gpio_input_pin_number,
                     cv.Required(CONF_PDM): cv.boolean,
+                    cv.Optional(
+                        CONF_I2S_ADC, default={CONF_MODEL: "generic"}
+                    ): CONFIG_SCHEMA_ADC,
                 }
-            ),
+            ).extend(i2s.CONFIG_SCHEMA_I2S_COMMON),
         },
         key=CONF_ADC_TYPE,
     ),
@@ -97,7 +105,7 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
 
-    await cg.register_parented(var, config[CONF_I2S_AUDIO_ID])
+    # await cg.register_parented(var, config[CONF_I2S_AUDIO_ID])
 
     if config[CONF_ADC_TYPE] == "internal":
         variant = esp32.get_esp32_variant()
@@ -105,12 +113,8 @@ async def to_code(config):
         channel = ESP32_VARIANT_ADC1_PIN_TO_CHANNEL[variant][pin_num]
         cg.add(var.set_adc_channel(channel))
     else:
-        cg.add(var.set_din_pin(config[CONF_I2S_DIN_PIN]))
-        cg.add(var.set_pdm(config[CONF_PDM]))
-
-    cg.add(var.set_channel(config[CONF_CHANNEL]))
-    cg.add(var.set_sample_rate(config[CONF_SAMPLE_RATE]))
-    cg.add(var.set_bits_per_sample(config[CONF_BITS_PER_SAMPLE]))
-    cg.add(var.set_use_apll(config[CONF_USE_APLL]))
+        # cg.add(var.set_din_pin(config[CONF_I2S_DIN_PIN]))
+        # cg.add(var.set_pdm(config[CONF_PDM]))
+        await register_i2s_reader(var, config)
 
     await microphone.register_microphone(var, config)

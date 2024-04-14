@@ -1,22 +1,27 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import pins
-from esphome.const import CONF_ID, CONF_MODE
+from esphome.const import CONF_ID, CONF_MODE, CONF_MODEL
 from esphome.components import esp32, speaker
+
+from .. import i2s_settings as i2s
 
 from .. import (
     CONF_I2S_AUDIO_ID,
     CONF_I2S_DOUT_PIN,
+    CONF_I2S_DAC,
+    CONFIG_SCHEMA_DAC,
     I2SAudioComponent,
-    I2SAudioOut,
+    I2SWriter,
     i2s_audio_ns,
+    register_i2s_writer,
 )
 
 CODEOWNERS = ["@jesserockz"]
 DEPENDENCIES = ["i2s_audio"]
 
 I2SAudioSpeaker = i2s_audio_ns.class_(
-    "I2SAudioSpeaker", cg.Component, speaker.Speaker, I2SAudioOut
+    "I2SAudioSpeaker", cg.Component, speaker.Speaker, I2SWriter
 )
 
 i2s_dac_mode_t = cg.global_ns.enum("i2s_dac_mode_t")
@@ -29,6 +34,7 @@ INTERNAL_DAC_OPTIONS = {
     "right": i2s_dac_mode_t.I2S_DAC_CHANNEL_RIGHT_EN,
     "stereo": i2s_dac_mode_t.I2S_DAC_CHANNEL_BOTH_EN,
 }
+
 
 EXTERNAL_DAC_OPTIONS = ["mono", "stereo"]
 
@@ -64,8 +70,13 @@ CONFIG_SCHEMA = cv.All(
                     cv.Optional(CONF_MODE, default="mono"): cv.one_of(
                         *EXTERNAL_DAC_OPTIONS, lower=True
                     ),
+                    cv.Optional(
+                        CONF_I2S_DAC, default={CONF_MODEL: "generic"}
+                    ): CONFIG_SCHEMA_DAC,
                 }
-            ).extend(cv.COMPONENT_SCHEMA),
+            )
+            .extend(i2s.CONFIG_SCHEMA_I2S_COMMON)
+            .extend(cv.COMPONENT_SCHEMA),
         },
         key=CONF_DAC_TYPE,
     ),
@@ -83,5 +94,7 @@ async def to_code(config):
     if config[CONF_DAC_TYPE] == "internal":
         cg.add(var.set_internal_dac_mode(config[CONF_MODE]))
     else:
-        cg.add(var.set_dout_pin(config[CONF_I2S_DOUT_PIN]))
+        # cg.add(var.set_dout_pin(config[CONF_I2S_DOUT_PIN]))
         cg.add(var.set_external_dac_channels(2 if config[CONF_MODE] == "stereo" else 1))
+
+        await register_i2s_writer(var, config)

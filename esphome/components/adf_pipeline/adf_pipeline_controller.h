@@ -19,7 +19,7 @@ class ADFPipelineElement;
 An ESPHome Component for managing an ADFPipeline
 */
 class ADFPipelineController : public Component {
- public:
+public:
   ADFPipelineController() : pipeline(this) {}
   ~ADFPipelineController() {}
 
@@ -28,10 +28,10 @@ class ADFPipelineController : public Component {
   void set_keep_alive(bool value) { this->pipeline.set_destroy_on_stop(!value); }
 
   void setup() override {}
-  void dump_config() override{};
+  void dump_config() override { pipeline.dump_element_configs(); };
   void loop() override { pipeline.loop(); }
 
- protected:
+protected:
   friend ADFPipeline;
   virtual void pipeline_event_handler(audio_event_iface_msg_t &msg) {}
   virtual void on_pipeline_state_change(PipelineState state) {}

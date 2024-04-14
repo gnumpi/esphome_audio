@@ -12,30 +12,23 @@ namespace esphome {
 using namespace esp_adf;
 namespace i2s_audio {
 
-class ADFElementI2SOut : public I2SAudioOut, public ADFPipelineSinkElement, public Component {
+class ADFElementI2SOut : public I2SWriter, public ADFPipelineSinkElement, public Component {
  public:
   // ESPHome Component implementations
   void setup() override;
 
   // ADFPipelieSourceElement implementations
-  const std::string get_name() override { return "I2S_Input"; }
+  const std::string get_name() override { return "I2S_Writer"; }
+  void dump_config() override { this->dump_i2s_settings(); }
   bool is_ready() override;
 
-  void set_dout_pin(uint8_t pin) { this->dout_pin_ = pin; }
-  void set_external_dac_channels(uint8_t channels) { this->external_dac_channels_ = channels; }
+  void set_use_adf_alc(bool use_alc){ this->use_adf_alc_ = use_alc; }
+
 
  protected:
   void on_settings_request(AudioPipelineSettingsRequest &request) override;
-  uint8_t dout_pin_{0};
-  uint8_t external_dac_channels_;
-  uint8_t mono_channel_select_;
-
-  uint32_t sample_rate_;
-  uint8_t bits_per_sample_;
-  uint8_t channels_;
-
-  std::vector<uint32_t> supported_samples_rates_;
-  std::vector<uint8_t> supported_bits_per_sample_;
+  bool use_adf_alc_{false};
+  bool adjustable_{false};
 
   bool init_adf_elements_() override;
   void clear_adf_elements_() override;

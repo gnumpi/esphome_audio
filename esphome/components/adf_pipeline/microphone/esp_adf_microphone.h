@@ -25,9 +25,12 @@ class ADFMicrophone : public microphone::Microphone, public ADFPipelineControlle
   void stop() override;
   size_t read(int16_t *buf, size_t len) override;
 
+  // additional setup
+  void set_gain_log2( uint8_t gain_log2){this->gain_log2_ = gain_log2;}
  protected:
-  uint8_t gain_log_2_{0};
   void on_pipeline_state_change(PipelineState state) override;
+
+  uint8_t gain_log2_{3};
   PCMSink pcm_stream_;
 };
 

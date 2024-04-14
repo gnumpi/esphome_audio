@@ -63,6 +63,7 @@ class ADFPipeline {
   void append_element(ADFPipelineElement *element);
   int get_number_of_elements() { return pipeline_elements_.size(); }
   std::vector<std::string> get_element_names();
+  void dump_element_configs();
 
   // Send a settings request to all pipeline elements
   bool request_settings(AudioPipelineSettingsRequest &request);
