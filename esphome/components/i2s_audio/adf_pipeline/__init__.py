@@ -41,6 +41,7 @@ ADFElementI2SIn = i2s_audio_ns.class_(
     cg.Component,
 )
 
+CONF_USE_ADF_ALC = "adf_alc"
 
 CONFIG_SCHEMA_IN = CONFIG_SCHEMA_I2S_READER.extend(
     {
@@ -51,6 +52,7 @@ CONFIG_SCHEMA_IN = CONFIG_SCHEMA_I2S_READER.extend(
 CONFIG_SCHEMA_OUT = CONFIG_SCHEMA_I2S_WRITER.extend(
     {
         cv.GenerateID(): cv.declare_id(ADFElementI2SOut),
+        cv.Optional(CONF_USE_ADF_ALC, default=True): cv.boolean,
     }
 )
 
@@ -75,3 +77,4 @@ async def to_code(config):
 
     elif config["type"] == I2S_AUDIO_OUT:
         await register_i2s_writer(var, config)
+        cg.add(var.set_use_adf_alc(config[CONF_USE_ADF_ALC]))

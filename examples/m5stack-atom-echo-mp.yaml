@@ -49,6 +49,7 @@ adf_pipeline:
     i2s_audio_id: i2s_dplx
     i2s_dout_pin: GPIO22
     fixed_settings: false
+    adf_alc: true
 
 microphone:
   - platform: i2s_audio

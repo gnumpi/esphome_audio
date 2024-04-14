@@ -22,6 +22,8 @@ class ADFElementI2SOut : public I2SWriter, public ADFPipelineSinkElement, public
   void dump_config() override { this->dump_i2s_settings(); }
   bool is_ready() override;
 
+  void set_use_adf_alc(bool use_alc){ this->use_adf_alc_ = use_alc; }
+
 
  protected:
   void on_settings_request(AudioPipelineSettingsRequest &request) override;
