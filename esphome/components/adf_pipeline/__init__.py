@@ -87,7 +87,7 @@ element_classes = {
 @coroutine_with_priority(55.0)
 async def to_code(config):
     cg.add_define("USE_ESP_ADF_VAD")
-
+    
     cg.add_platformio_option("build_unflags", "-Wl,--end-group")
 
     cg.add_platformio_option(
