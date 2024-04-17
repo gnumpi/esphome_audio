@@ -311,7 +311,7 @@ void ADFPipeline::set_state_(PipelineState state) {
 
 bool ADFPipeline::init_() { return build_adf_pipeline_(); }
 
-bool ADFPipeline::start_() { return audio_pipeline_run(adf_pipeline_) == ESP_OK; }
+bool ADFPipeline::start_() { return audio_pipeline_reset_ringbuffer(adf_pipeline_) == ESP_OK && audio_pipeline_run(adf_pipeline_) == ESP_OK; }
 
 bool ADFPipeline::stop_() { return audio_pipeline_stop(adf_pipeline_) == ESP_OK; }
 
@@ -364,8 +364,6 @@ bool ADFPipeline::build_adf_pipeline_() {
     return false;
   }
   delete link_tag_ptrs;
-
-  adf_last_element_in_pipeline_ = pipeline_elements_.back()->get_adf_elements().back();
 
   esph_log_d(TAG, "Setting up event listener.");
   audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
