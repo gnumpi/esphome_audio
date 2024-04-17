@@ -115,8 +115,7 @@ size_t I2SAudioMicrophone::read(int16_t *buf, size_t len) {
   }
 
   if (bytes_read == 0) {
-    this->status_set_warning();
-    return 0;
+     return 0;
   }
   this->status_clear_warning();
   if (this->bits_per_sample_ == I2S_BITS_PER_SAMPLE_16BIT) {
