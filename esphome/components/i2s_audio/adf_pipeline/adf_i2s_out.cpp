@@ -139,7 +139,7 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
   }
 
   if (this->use_adf_alc_ && request.target_volume > -1) {
-    int target_volume = (int) (request.target_volume * 64.) - 32;
+    int target_volume = (int) (request.target_volume * 128. * this->max_alc_val_) - 64;
     if (i2s_alc_volume_set(this->adf_i2s_stream_writer_, target_volume) != ESP_OK) {
       esph_log_e(TAG, "error setting volume to %d", target_volume);
       request.failed = true;
