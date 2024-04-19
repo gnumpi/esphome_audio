@@ -17,7 +17,7 @@ typedef struct {
 } pcm_format;
 
 
-enum class PipelineElementState : uint8_t { UNINITIALIZED = 0, INITIALIZED, PREPARE, PREPARING, WAIT_FOR_PREPARATION_DONE, READY };
+enum class PipelineElementState : uint8_t { UNINITIALIZED = 0, INITIALIZED, PREPARE, PREPARING, WAIT_FOR_PREPARATION_DONE, READY, STOPPING, STOPPED };
 
 class ADFPipeline;
 class ADFPipelineElement;
@@ -68,7 +68,8 @@ class ADFPipelineElement {
   virtual void prepare_elements() {}
 
   void set_pipeline(ADFPipeline *pipeline) { pipeline_ = pipeline; }
-  virtual bool is_ready() {return true;}
+  virtual bool is_ready() { return true; }
+  virtual bool ready_to_stop(){ return true; }
   virtual bool requires_destruction_on_stop(){ return false; }
 
  protected:

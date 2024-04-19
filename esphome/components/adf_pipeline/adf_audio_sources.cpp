@@ -77,7 +77,19 @@ bool HTTPStreamReaderAndDecoder::is_ready(){
       return false;
   }
 }
-
+bool HTTPStreamReaderAndDecoder::ready_to_stop(){
+  switch(this->element_state_){
+    case PipelineElementState::PREPARING:
+      this->terminate_prepare_pipeline_();
+      this->element_state_ = PipelineElementState::STOPPING;
+      return false;
+    case PipelineElementState::STOPPING:
+    case PipelineElementState::WAIT_FOR_PREPARATION_DONE:
+      return this->set_ready_when_prepare_pipeline_stopped_();
+    default:
+      return true;
+  }
+}
 // Start pipeline elements necessary for receiving audio settings from stream
 void HTTPStreamReaderAndDecoder::start_prepare_pipeline_(){
   if( audio_element_run(this->http_stream_reader_) != ESP_OK )
@@ -101,7 +113,6 @@ void HTTPStreamReaderAndDecoder::start_prepare_pipeline_(){
 void HTTPStreamReaderAndDecoder::terminate_prepare_pipeline_(){
   audio_element_stop(this->http_stream_reader_);
   audio_element_stop(this->decoder_);
-  this->element_state_ = PipelineElementState::WAIT_FOR_PREPARATION_DONE;
 }
 
 bool HTTPStreamReaderAndDecoder::set_ready_when_prepare_pipeline_stopped_(){
@@ -141,6 +152,7 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
     if( this->element_state_ == PipelineElementState::PREPARING )
     {
       this->terminate_prepare_pipeline_();
+      this->element_state_ = PipelineElementState::WAIT_FOR_PREPARATION_DONE;
     }
   }
 }

@@ -94,7 +94,6 @@ class ADFPipeline {
 
   audio_pipeline_handle_t adf_pipeline_{};
   audio_event_iface_handle_t adf_pipeline_event_{};
-  audio_element_handle_t adf_last_element_in_pipeline_{};
   std::vector<ADFPipelineElement *> pipeline_elements_;
   ADFPipelineController *parent_{nullptr};
 
