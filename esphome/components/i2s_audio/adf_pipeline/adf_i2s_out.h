@@ -23,11 +23,12 @@ class ADFElementI2SOut : public I2SWriter, public ADFPipelineSinkElement, public
   bool is_ready() override;
 
   void set_use_adf_alc(bool use_alc){ this->use_adf_alc_ = use_alc; }
-
+  void set_alc_max_val(float max_val){ this->max_alc_val_ = max_val;}
 
  protected:
   void on_settings_request(AudioPipelineSettingsRequest &request) override;
   bool use_adf_alc_{false};
+  float max_alc_val_{1.};
   bool adjustable_{false};
 
   bool init_adf_elements_() override;
