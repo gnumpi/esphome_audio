@@ -26,10 +26,19 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
 
   //
   void set_stream_uri(const std::string& new_uri);
+  void set_announcement_uri(const std::string& new_uri);
+
   void start() {pipeline.start();}
   void stop()  {pipeline.stop();}
 
- protected:
+  bool set_new_state(media_player::MediaPlayerState new_state){
+    if( this->state == new_state ){
+      return false;
+    }
+    this->state = new_state;
+    return true;
+  }
+  protected:
   // MediaPlayer implementation
   void control(const media_player::MediaPlayerCall &call) override;
 
@@ -42,7 +51,9 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
 
   bool muted_{false};
   bool play_intent_{false};
+  bool announcement_{false};
   optional<std::string> current_uri_{};
+  optional<std::string> announcement_uri_{};
 
   HTTPStreamReaderAndDecoder http_and_decoder_;
 };
