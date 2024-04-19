@@ -189,15 +189,17 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
       }
       else {
         this->state = media_player::MEDIA_PLAYER_STATE_PLAYING;
-        publish_state();
       }
+      publish_state();
       break;
     default:
       break;
   }
-  esph_log_i(TAG, "current media state: %s", media_player_state_to_string(this->state));
+  esph_log_i(TAG, "current mp state: %s", media_player_state_to_string(this->state));
   esph_log_i(TAG, "anouncement: %s", this->announcement_ ? "yes" : "false");
   esph_log_i(TAG, "play_intent: %s", this->play_intent_ ? "yes" : "false");
+  esph_log_i(TAG, "current_uri_: %s", this->current_uri_.has_value() ? "yes" : "false");
+
 }
 
 }  // namespace esp_adf
