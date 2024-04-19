@@ -145,6 +145,9 @@ void ADFPipeline::check_all_stopped_(){
   }
 
   for (auto &comp : pipeline_elements_) {
+    if( !comp->ready_to_stop() ){
+      return;
+    }
     for (auto el : comp->get_adf_elements()) {
       //esph_log_d(TAG, "Check element for stop [%s] status, %d", audio_element_get_tag(el), audio_element_get_state(el));
       if ( (millis() - timeout_invoke < 3000 ) &&

@@ -18,6 +18,7 @@ class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
   const std::string get_name() override { return "HTTPStreamReader"; }
   bool is_ready() override;
   void prepare_elements() override;
+  bool ready_to_stop() override;
 
  protected:
   bool init_adf_elements_() override;
