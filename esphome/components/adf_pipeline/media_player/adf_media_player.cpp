@@ -10,6 +10,7 @@ static const char *const TAG = "adf_media_player";
 
 void ADFMediaPlayer::setup() {
   state = media_player::MEDIA_PLAYER_STATE_IDLE;
+  this->restore_volume_if_needed();
 }
 
 void ADFMediaPlayer::dump_config() {
