@@ -36,6 +36,16 @@ external_components:
       url: https://github.com/gnumpi/esphome_audio
       ref: main
     components: [ adf_pipeline, i2s_audio ]
+
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      # need to set a s3 compatible board for the adf-sdk to compile
+      # board specific code is not used though
+      CONFIG_ESP32_S3_BOX_BOARD: "y"
 ```
 #### I2S-Settings:
 - **i2s_audio_id** (*Optional*, :ref:`config-id`): The ID of the :ref:`I²S Audio <i2s_audio>` you wish to use for this component.

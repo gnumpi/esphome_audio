@@ -114,7 +114,7 @@ bool I2SAudioComponent::uninstall_i2s_driver_(uint8_t access){
     // other component hasn't released yet
     // don't uninstall driver, just release caller
     esph_log_d(TAG, "Other component hasn't released");
-    this->release_access_(access);
+    this->access_state_ = this->access_state_ & (~access);
   }
   this->unlock();
   return success;
