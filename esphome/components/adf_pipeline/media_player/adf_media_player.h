@@ -3,6 +3,7 @@
 #ifdef USE_ESP_IDF
 
 #include "esphome/components/media_player/media_player.h"
+#include "esphome/core/preferences.h"
 
 #include "../adf_pipeline_controller.h"
 #include "../adf_audio_sources.h"
@@ -29,6 +30,9 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   void start() {pipeline.start();}
   void stop()  {pipeline.stop();}
 
+
+  void set_restore_volume(bool restore_volume){ this->restore_volume_ = restore_volume; }
+
  protected:
   // MediaPlayer implementation
   void control(const media_player::MediaPlayerCall &call) override;
@@ -44,6 +48,9 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   bool play_intent_{false};
   optional<std::string> current_uri_{};
 
+  bool restore_volume_{false};
+
+  ESPPreferenceObject rtc_;
   HTTPStreamReaderAndDecoder http_and_decoder_;
 };
 

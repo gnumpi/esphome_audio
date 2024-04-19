@@ -10,6 +10,12 @@ static const char *const TAG = "adf_media_player";
 
 void ADFMediaPlayer::setup() {
   state = media_player::MEDIA_PLAYER_STATE_IDLE;
+  if (this->restore_volume_) {
+    this->rtc_ = global_preferences->make_preference<float>(this->get_object_id_hash());
+    float target_volume;
+    if (this->rtc_.load(&target_volume))
+      set_volume_(target_volume);
+  }
 }
 
 void ADFMediaPlayer::dump_config() {
@@ -126,6 +132,8 @@ void ADFMediaPlayer::set_volume_(float volume, bool publish) {
   request.target_volume = volume;
   if (pipeline.request_settings(request)) {
     this->volume = volume;
+    if (this->restore_volume_) 
+       this->rtc_.save(&volume);
     if (publish)
       publish_state();
   }
