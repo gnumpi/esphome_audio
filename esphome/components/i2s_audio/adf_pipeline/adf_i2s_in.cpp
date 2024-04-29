@@ -38,7 +38,7 @@ bool ADFElementI2SIn::init_adf_elements_() {
       .out_rb_size = (8 * 256),
       .task_stack = I2S_STREAM_TASK_STACK,
       .task_core = I2S_STREAM_TASK_CORE,
-      .task_prio = I2S_STREAM_TASK_PRIO,
+      .task_prio = 4, //I2S_STREAM_TASK_PRIO,
       .stack_in_ext = false,
       .multi_out_num = 0,
       .uninstall_drv = false,
@@ -64,6 +64,7 @@ bool ADFElementI2SIn::init_adf_elements_() {
 
   return true;
 };
+
 
 bool ADFElementI2SIn::is_ready(){
   if( !this->claim_i2s_access() )

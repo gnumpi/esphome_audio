@@ -14,11 +14,13 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
  public:
   // Pipeline implementations
   void append_own_elements() { add_element_to_pipeline((ADFPipelineElement *) &(this->http_and_decoder_)); }
+  const std::string get_name() {return "MediaPlayer";}
 
   // ESPHome-Component implementations
   float get_setup_priority() const override { return esphome::setup_priority::LATE; }
   void setup() override;
   void dump_config() override;
+  void loop() override;
 
   // MediaPlayer implementations
   bool is_muted() const override { return this->muted_; }

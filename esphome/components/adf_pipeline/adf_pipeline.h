@@ -7,7 +7,7 @@
 #include "esphome/core/log.h"
 
 #ifdef USE_ESP_IDF
-
+#include "esphome/core/hal.h"
 #include <audio_element.h>
 #include <audio_pipeline.h>
 
@@ -37,8 +37,9 @@ State Explanations:
 - DESTROYING: Freeing all memory and hardware reservations.
 
 */
-enum PipelineState : uint8_t { UNINITIALIZED = 0, PREPARING, STARTING, RUNNING, STOPPING, STOPPED, PAUSING, PAUSED, RESUMING, DESTROYING };
+enum PipelineState : uint8_t { UNINITIALIZED = 0, INITIALIZING, PREPARE, PREPARING, STARTING, RUNNING, STOPPING, STOPPED, PAUSING, PAUSED, RESUMING, DESTROYING };
 
+enum class PipelineRequest : uint8_t { RUNNING, STOPPING, PAUSING, RESTARTING, DESTROYING };
 
 class ADFPipelineController;
 
@@ -50,11 +51,14 @@ class ADFPipeline {
   ADFPipeline(ADFPipelineController *parent) { parent_ = parent; }
   virtual ~ADFPipeline() {}
 
+  void prepare();
   void start();
+  void restart();
   void stop();
   void pause();
   void resume();
   void destroy();
+  void stop_on_error();
 
   PipelineState getState() { return state_; }
   void loop() { this->watch_(); }
@@ -74,7 +78,7 @@ class ADFPipeline {
   bool reset_();
   bool start_();
   bool stop_();
-  bool pause_();
+  //bool pause_();
   bool resume_();
   bool deinit_();
 
@@ -82,10 +86,27 @@ class ADFPipeline {
 
   void loop_();
   void watch_();
-  void check_all_started_();
-  void check_all_stopped_();
-  void prepare_elements_();
-  void check_if_components_are_ready_();
+  bool check_all_created_();
+  //void check_all_started_();
+  bool check_all_paused_();
+  bool check_all_stopped_();
+  bool check_all_resumed_();
+  bool check_all_prepared_();
+  bool check_all_destroyed_();
+
+
+  enum CheckState { CHECK_PREPARED, CHECK_PAUSED, CHECK_RESUMED, CHECK_STOPPED, NUM_STATE_CHECKS };
+  std::vector<std::string> check_state_name = {"PREPARING", "PAUSING", "RESUMING", "STOPPING","WRONG_IDX"};
+  uint32_t check_timeout_invoke_[NUM_STATE_CHECKS] = {0};
+  bool check_first_loop_[NUM_STATE_CHECKS] = {true};
+  bool check_all_ready_[NUM_STATE_CHECKS] = {true};
+  std::vector<ADFPipelineElement*>::iterator check_comp_it[NUM_STATE_CHECKS]{};
+
+  template <ADFPipeline::CheckState E>
+  bool call_and_check();
+
+
+  //void check_if_components_are_ready_();
   void check_for_pipeline_events_();
   void forward_event_to_pipeline_elements_(audio_event_iface_msg_t &msg);
 
@@ -94,13 +115,31 @@ class ADFPipeline {
 
   audio_pipeline_handle_t adf_pipeline_{};
   audio_event_iface_handle_t adf_pipeline_event_{};
+
   std::vector<ADFPipelineElement *> pipeline_elements_;
+  std::vector<ADFPipelineElement*>::iterator prepare_it_{};
+
   ADFPipelineController *parent_{nullptr};
 
   PipelineState state_{PipelineState::UNINITIALIZED};
+  PipelineRequest requested_{PipelineRequest::DESTROYING};
+
   bool destroy_on_stop_{false};
+  bool restart_on_stop_{false};
+
+  bool pausing_request_{false};
+  bool running_request_{false};
+  bool restarting_request_{false};
+  bool stopping_request_{false};
+  bool destroy_request_{false};
+
   uint32_t preparation_started_at_{0};
 };
+
+
+
+
+
 
 }  // namespace esp_adf
 }  // namespace esphome

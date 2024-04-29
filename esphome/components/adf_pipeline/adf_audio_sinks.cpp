@@ -40,6 +40,7 @@ int PCMSink::stream_read_bytes(char *buffer, int len) {
   int ret = audio_element_input(adf_raw_stream_reader_, buffer, len);
   if (ret < 0 && (ret != AEL_IO_TIMEOUT)) {
     audio_element_report_status(adf_raw_stream_reader_, AEL_STATUS_STATE_STOPPED);
+    ret = 0;
   } else if (ret < 0) {
     return 0;
   }
