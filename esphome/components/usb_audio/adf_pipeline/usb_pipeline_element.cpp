@@ -124,7 +124,7 @@ bool USBStreamWriter::preparing_step(){
 }
 
 bool USBStreamWriter::is_ready(){
-  return audio_element_get_state(this->usb_audio_stream_) == AEL_STATE_PAUSED;
+  return true; //audio_element_get_state(this->usb_audio_stream_) == AEL_STATE_PAUSED;
   if( !this->usb_stream_started_ )
   {
     //this->start_streaming();

@@ -37,9 +37,22 @@ State Explanations:
 - DESTROYING: Freeing all memory and hardware reservations.
 
 */
-enum PipelineState : uint8_t { UNINITIALIZED = 0, INITIALIZING, PREPARE, PREPARING, STARTING, RUNNING, STOPPING, STOPPED, PAUSING, PAUSED, RESUMING, DESTROYING };
+enum PipelineState : uint8_t {
+  UNINITIALIZED = 0,
+  INITIALIZING,
+  CREATED,
+  PREPARING,
+  STOPPED,
+  STARTING,
+  RUNNING,
+  FINISHING,
+  PAUSING,
+  PAUSED,
+  ABORTING,
+  DESTROYING
+};
 
-enum class PipelineRequest : uint8_t { RUNNING, STOPPING, PAUSING, RESTARTING, DESTROYING };
+enum class PipelineRequest : uint8_t { RUNNING, STOPPED, PAUSED, RESTARTING, DESTROYED };
 
 class ADFPipelineController;
 
@@ -89,7 +102,7 @@ class ADFPipeline {
   bool check_all_created_();
   //void check_all_started_();
   bool check_all_paused_();
-  bool check_all_stopped_();
+  bool check_all_finished_();
   bool check_all_resumed_();
   bool check_all_prepared_();
   bool check_all_destroyed_();
@@ -122,7 +135,7 @@ class ADFPipeline {
   ADFPipelineController *parent_{nullptr};
 
   PipelineState state_{PipelineState::UNINITIALIZED};
-  PipelineRequest requested_{PipelineRequest::DESTROYING};
+  PipelineRequest requested_{PipelineRequest::DESTROYED};
 
   bool destroy_on_stop_{false};
   bool restart_on_stop_{false};

@@ -61,7 +61,7 @@ void HTTPStreamReaderAndDecoder::set_stream_uri(const std::string& new_url) {
 
 bool HTTPStreamReaderAndDecoder::prepare_elements(bool initial_call){
   if (initial_call) {
-    esph_log_d(TAG, "Prepare elements called!");
+    esph_log_d(TAG, "Prepare elements called (initial_call)!");
     this->element_state_ = PipelineElementState::PREPARE;
     this->desired_state_ = PipelineElementState::READY;
     this->audio_settings_reported_ = false;
@@ -85,7 +85,7 @@ bool HTTPStreamReaderAndDecoder::pause_elements(bool initial_call){
 
 
 bool HTTPStreamReaderAndDecoder::preparing_step(){
-  //esph_log_d(TAG, "Called pre-step in state: %d", (int) this->element_state_);
+  esph_log_d(TAG, "Called pre-step in state: %d, desired: %d", (int) this->element_state_, (int) this->desired_state_);
   switch(this->element_state_){
     case PipelineElementState::READY:
       break;
@@ -149,8 +149,8 @@ bool HTTPStreamReaderAndDecoder::preparing_step(){
     case PipelineElementState::PAUSED:
       if( this->desired_state_ == PipelineElementState::READY )
       {
-        //audio_element_reset_input_ringbuf(this->decoder_);
-        //audio_element_reset_output_ringbuf(this->decoder_);
+        audio_element_reset_input_ringbuf(this->decoder_);
+        audio_element_reset_output_ringbuf(this->decoder_);
         if( !this->audio_settings_reported_ ){
           ADFPipelineElement::resume_elements(true);
           if( this->element_state_ != PipelineElementState::ERROR){
@@ -161,6 +161,7 @@ bool HTTPStreamReaderAndDecoder::preparing_step(){
           http_stream_restart(this->http_stream_reader_);
           audio_event_iface_discard(this->decoder_->iface_event);
           this->element_state_ = PipelineElementState::READY;
+          esph_log_d(TAG, "Preparation done!");
         }
       } else if (this->desired_state_ == PipelineElementState::STOPPED )
       {
@@ -177,6 +178,11 @@ bool HTTPStreamReaderAndDecoder::preparing_step(){
 
 
     case PipelineElementState::STOPPING:
+      if( ADFPipelineElement::stop_elements(false))
+      {
+        this->element_state_ = PipelineElementState::PAUSED;
+      }
+      break;
       /*
       esph_log_d(TAG, "Waiting for Stopping." );
       esph_log_d(TAG, "Streamer status: %d", audio_element_get_state(this->http_stream_reader_) );
@@ -345,9 +351,9 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
       else
       {
         this->audio_settings_reported_ = true;
-        ADFPipelineElement::pause_elements(true);
+        ADFPipelineElement::prepare_elements(true);
         if( this->element_state_ != PipelineElementState::ERROR ){
-          this->element_state_ = PipelineElementState::PAUSING;
+          this->element_state_ = PipelineElementState::PREPARING;
         }
       }
     }

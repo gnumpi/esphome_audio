@@ -113,13 +113,15 @@ bool ADFPipelineElement::prepare_elements(bool initial_call){
           this->element_state_ = PipelineElementState::ERROR;
         }
       }
-      else {
-       if( audio_element_reset_state(el) != ESP_OK )
-        {
-          esph_log_e(TAG, "Resetting [%s] failed.", el->tag );
-          this->element_state_ = PipelineElementState::ERROR;
-        }
+      else if( audio_element_get_state(el) == AEL_STATE_PAUSED || audio_element_get_state(el) == AEL_STATE_RUNNING){
+        audio_element_stop(el);
       }
+      if( audio_element_reset_state(el) != ESP_OK )
+      {
+        esph_log_e(TAG, "Resetting [%s] failed.", el->tag );
+        this->element_state_ = PipelineElementState::ERROR;
+      }
+
       /*
       audio_element_abort_output_ringbuf(el);
       audio_element_abort_input_ringbuf(el);
@@ -149,9 +151,16 @@ bool ADFPipelineElement::prepare_elements(bool initial_call){
   }
 
   for( auto el : this->sdk_audio_elements_ ){
-    EventBits_t uxBits = xEventGroupGetBits( el->state_event );
-    if ((uxBits & PAUSED_BIT) != PAUSED_BIT) {
-      esph_log_d(TAG, "[%s] Checking Pause State, got %d", el->tag, uxBits);
+    if( audio_element_get_state(el) == AEL_STATE_STOPPED){
+      if( audio_element_reset_state(el) != ESP_OK )
+      {
+        esph_log_e(TAG, "Resetting [%s] failed.", el->tag );
+        this->element_state_ = PipelineElementState::ERROR;
+      }
+      return false;
+    }
+    if( audio_element_get_state(el) != AEL_STATE_INIT){
+      esph_log_d(TAG, "[%s] Checking State, got %d", el->tag,audio_element_get_state(el) );
       return false;
     }
   }
@@ -325,8 +334,11 @@ bool ADFPipelineElement::stop_elements(bool initial_call){
   if( initial_call){
     all_stopped_ = true;
     for( auto el : this->sdk_audio_elements_ ){
-      if( audio_element_get_state(el) == AEL_STATE_STOPPED || audio_element_get_state(el) == AEL_STATE_FINISHED ){
+      if( audio_element_get_state(el) == AEL_STATE_STOPPED || audio_element_get_state(el) == AEL_STATE_FINISHED || audio_element_get_state(el) == AEL_STATE_INIT ){
         continue;
+      }
+      else {
+        esph_log_d(TAG, "[%s] Checking State for stopping, got %d", el->tag, audio_element_get_state(el) );
       }
       all_stopped_ = false;
       if( audio_element_stop(el) != ESP_OK){

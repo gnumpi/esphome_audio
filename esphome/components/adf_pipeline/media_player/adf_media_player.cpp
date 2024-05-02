@@ -36,7 +36,7 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
     }
     if( this->announcement_){
       set_announcement_uri( call.get_media_url().value()) ;
-      this->http_and_decoder_.set_fixed_settings(true);
+      //this->http_and_decoder_.set_fixed_settings(true);
     }
     else{
       set_stream_uri( call.get_media_url().value()) ;
@@ -46,12 +46,15 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
     switch(this->state){
       case media_player::MEDIA_PLAYER_STATE_IDLE:
       case media_player::MEDIA_PLAYER_STATE_PAUSED:
+        this->http_and_decoder_.set_fixed_settings(this->announcement_);
         pipeline.start();
         return;
       case media_player::MEDIA_PLAYER_STATE_PLAYING:
+        this->play_intent_ = true;
+        pipeline.stop();
+        return;
       case media_player::MEDIA_PLAYER_STATE_ANNOUNCING:
         this->play_intent_ = true;
-        pipeline.pause();
         return;
       default:
         break;
@@ -173,6 +176,7 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
         this->play_intent_ = false;
       } else if (this->play_intent_) {
         set_new_state(media_player::MEDIA_PLAYER_STATE_IDLE);
+        this->http_and_decoder_.set_fixed_settings(this->announcement_);
         pipeline.restart();
         this->play_intent_ = false;
       } else if (state == PipelineState::PAUSED)

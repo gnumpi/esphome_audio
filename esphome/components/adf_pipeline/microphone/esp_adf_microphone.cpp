@@ -73,7 +73,8 @@ void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
       this->state_ = microphone::STATE_RUNNING;
       break;
 
-    case PipelineState::STOPPING:
+    case PipelineState::ABORTING:
+    case PipelineState::FINISHING:
       this->state_ = microphone::STATE_STOPPING;
       break;
 
@@ -83,13 +84,12 @@ void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
       break;
 
     case PipelineState::UNINITIALIZED:
+    case PipelineState::CREATED:
     case PipelineState::STOPPED:
       this->state_ = microphone::STATE_STOPPED;
       break;
 
     case PipelineState::PAUSING:
-    case PipelineState::RESUMING:
-    case PipelineState::PREPARE:
     case PipelineState::DESTROYING:
       break;
     }
