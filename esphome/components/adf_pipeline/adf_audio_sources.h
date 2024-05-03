@@ -16,14 +16,10 @@ class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
  public:
   void set_stream_uri(const std::string&  new_url);
   const std::string get_name() override { return "HTTPStreamReader"; }
-  //bool is_ready() override;
 
   bool prepare_elements(bool initial_call) override;
   bool pause_elements(bool initial_call) override;
-  bool ready_to_stop() override;
-  bool preparing_step() override;
 
-  //bool stop_elements() override;
 
   void set_fixed_settings(bool value){ this->fixed_settings_ = value; }
 
@@ -31,13 +27,8 @@ class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
   bool init_adf_elements_() override;
   void clear_adf_elements_() override;
   void reset_() override;
+  bool preparing_step_();
 
-  void start_prepare_pipeline_();
-  //void start_sdk_tasks_();
-  void resume_sdk_elements_();
-  void pause_sdk_elements_();
-
-  bool set_ready_when_prepare_pipeline_paused_();
   void sdk_event_handler_(audio_event_iface_msg_t &msg);
   void cfg_event_handler_(audio_event_iface_msg_t &msg);
 

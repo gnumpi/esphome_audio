@@ -77,22 +77,17 @@ class ADFPipeline {
   void loop() { this->watch_(); }
 
   void set_destroy_on_stop(bool value){ this->destroy_on_stop_ = value; }
+
   void append_element(ADFPipelineElement *element);
   int get_number_of_elements() { return pipeline_elements_.size(); }
   std::vector<std::string> get_element_names();
   void dump_element_configs();
 
-  // Send a settings request to all pipeline elements
   bool request_settings(AudioPipelineSettingsRequest &request);
   void on_settings_request_failed(AudioPipelineSettingsRequest request) {}
 
  protected:
   bool init_();
-  bool reset_();
-  bool start_();
-  bool stop_();
-  //bool pause_();
-  bool resume_();
   bool deinit_();
 
   void set_state_(PipelineState state);
@@ -100,13 +95,8 @@ class ADFPipeline {
   void loop_();
   void watch_();
   bool check_all_created_();
-  //void check_all_started_();
-  bool check_all_paused_();
   bool check_all_finished_();
-  bool check_all_resumed_();
-  bool check_all_prepared_();
   bool check_all_destroyed_();
-
 
   enum CheckState { CHECK_PREPARED, CHECK_PAUSED, CHECK_RESUMED, CHECK_STOPPED, NUM_STATE_CHECKS };
   std::vector<std::string> check_state_name = {"PREPARING", "PAUSING", "RESUMING", "STOPPING","WRONG_IDX"};
@@ -118,8 +108,6 @@ class ADFPipeline {
   template <ADFPipeline::CheckState E>
   bool call_and_check();
 
-
-  //void check_if_components_are_ready_();
   void check_for_pipeline_events_();
   void forward_event_to_pipeline_elements_(audio_event_iface_msg_t &msg);
 
@@ -129,8 +117,7 @@ class ADFPipeline {
   audio_pipeline_handle_t adf_pipeline_{};
   audio_event_iface_handle_t adf_pipeline_event_{};
 
-  std::vector<ADFPipelineElement *> pipeline_elements_;
-  std::vector<ADFPipelineElement*>::iterator prepare_it_{};
+  std::vector<ADFPipelineElement*> pipeline_elements_;
 
   ADFPipelineController *parent_{nullptr};
 
@@ -138,20 +125,7 @@ class ADFPipeline {
   PipelineRequest requested_{PipelineRequest::DESTROYED};
 
   bool destroy_on_stop_{false};
-  bool restart_on_stop_{false};
-
-  bool pausing_request_{false};
-  bool running_request_{false};
-  bool restarting_request_{false};
-  bool stopping_request_{false};
-  bool destroy_request_{false};
-
-  uint32_t preparation_started_at_{0};
 };
-
-
-
-
 
 
 }  // namespace esp_adf

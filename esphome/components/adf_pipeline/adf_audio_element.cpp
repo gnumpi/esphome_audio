@@ -121,23 +121,6 @@ bool ADFPipelineElement::prepare_elements(bool initial_call){
         esph_log_e(TAG, "Resetting [%s] failed.", el->tag );
         this->element_state_ = PipelineElementState::ERROR;
       }
-
-      /*
-      audio_element_abort_output_ringbuf(el);
-      audio_element_abort_input_ringbuf(el);
-      xEventGroupClearBits(el->state_event, PAUSED_BIT);
-      if ( el->task_stack <= 0) {
-        el->is_running = false;
-        audio_element_force_set_state(el, AEL_STATE_PAUSED);
-        xEventGroupSetBits(el->state_event, PAUSED_BIT);
-      }
-      else {
-        if (audio_element_cmd_send(el, AEL_MSG_CMD_PAUSE) != ESP_OK) {
-          ESP_LOGE(TAG, "[%s] Element send cmd error when AUDIO_ELEMENT_PAUSE", el->tag);
-          this->element_state_ = PipelineElementState::ERROR;
-        }
-      }
-      */
     }
     return false;
   }

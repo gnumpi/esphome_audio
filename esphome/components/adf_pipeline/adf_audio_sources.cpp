@@ -14,9 +14,8 @@ namespace esp_adf {
 static const char *const TAG = "esp_audio_sources";
 
 /*
-HTTPStreamReaderAndDecoder
+=========== HTTPStreamReaderAndDecoder ==========
 */
-
 
 bool HTTPStreamReaderAndDecoder::init_adf_elements_() {
   if (sdk_audio_elements_.size() > 0)
@@ -69,7 +68,7 @@ bool HTTPStreamReaderAndDecoder::prepare_elements(bool initial_call){
   else if ( this->element_state_ == PipelineElementState::READY ){
     return true;
   }
-  this->preparing_step();
+  this->preparing_step_();
   return false;
 }
 
@@ -79,13 +78,13 @@ bool HTTPStreamReaderAndDecoder::pause_elements(bool initial_call){
   }
   this->desired_state_ = PipelineElementState::PAUSED;
   ADFPipelineElement::pause_elements(true);
-  this->preparing_step();
+  this->preparing_step_();
   return true;
 }
 
 
-bool HTTPStreamReaderAndDecoder::preparing_step(){
-  esph_log_d(TAG, "Called pre-step in state: %d, desired: %d", (int) this->element_state_, (int) this->desired_state_);
+bool HTTPStreamReaderAndDecoder::preparing_step_(){
+  //esph_log_d(TAG, "Called pre-step in state: %d, desired: %d", (int) this->element_state_, (int) this->desired_state_);
   switch(this->element_state_){
     case PipelineElementState::READY:
       break;
@@ -130,22 +129,13 @@ bool HTTPStreamReaderAndDecoder::preparing_step(){
       }
       break;
 
-
     case PipelineElementState::PAUSING:
       if( ADFPipelineElement::pause_elements(false))
       {
         this->element_state_ = PipelineElementState::PAUSED;
       }
       break;
-    /*
-      esph_log_d(TAG, "Waiting for Pausing." );
-      esph_log_d(TAG, "Streamer status: %d", audio_element_get_state(this->http_stream_reader_) );
-      esph_log_d(TAG, "decoder status: %d", audio_element_get_state(this->decoder_) );
-      if(    audio_element_get_state(this->http_stream_reader_) == AEL_STATE_PAUSED
-          && audio_element_get_state(this->decoder_) == AEL_STATE_PAUSED
-        ) this->element_state_ = PipelineElementState::PAUSED;
-      break;
-    */
+
     case PipelineElementState::PAUSED:
       if( this->desired_state_ == PipelineElementState::READY )
       {
@@ -176,22 +166,13 @@ bool HTTPStreamReaderAndDecoder::preparing_step(){
       }
       break;
 
-
     case PipelineElementState::STOPPING:
       if( ADFPipelineElement::stop_elements(false))
       {
         this->element_state_ = PipelineElementState::PAUSED;
       }
       break;
-      /*
-      esph_log_d(TAG, "Waiting for Stopping." );
-      esph_log_d(TAG, "Streamer status: %d", audio_element_get_state(this->http_stream_reader_) );
-      esph_log_d(TAG, "decoder status: %d", audio_element_get_state(this->decoder_) );
-      if(    audio_element_get_state(this->http_stream_reader_) == AEL_STATE_STOPPED
-          && audio_element_get_state(this->decoder_) == AEL_STATE_STOPPED
-        ) this->element_state_ = PipelineElementState::STOPPED;
-      */
-      break;
+
     case PipelineElementState::ERROR:
       return false;
       break;
@@ -199,130 +180,6 @@ bool HTTPStreamReaderAndDecoder::preparing_step(){
       break;
   }
   return true;
-}
-
-/*
-// called while pipeline is in PREPARING state
-bool HTTPStreamReaderAndDecoder::is_ready(){
-  return this->element_state_ == PipelineElementState::READY;
-}
-*/
-
-// called while pipeline is in STOPPING state
-bool HTTPStreamReaderAndDecoder::ready_to_stop(){
-  switch(this->element_state_){
-    case PipelineElementState::PREPARING:
-    case PipelineElementState::WAITING_FOR_SDK_EVENT:
-      this->pause_sdk_elements_();
-      this->element_state_ = PipelineElementState::PAUSING;
-      return false;
-
-    case PipelineElementState::PAUSING:
-    case PipelineElementState::STOPPING:
-      return this->set_ready_when_prepare_pipeline_paused_();
-
-    case PipelineElementState::ERROR:
-      return true;
-    default:
-      return true;
-  }
-}
-
-/*
-//Elements are in PAUSE state after calling audio_element_run
-void HTTPStreamReaderAndDecoder::start_sdk_tasks_(){
-  if( audio_element_run(this->http_stream_reader_) != ESP_OK )
-  {
-    esph_log_e(TAG, "Starting http streamer task failed");
-    this->element_state_ = PipelineElementState::ERROR;
-  }
-  audio_event_iface_discard(this->decoder_->iface_event);
-  if( audio_element_run(this->decoder_) != ESP_OK ){
-    esph_log_e(TAG, "Starting decoder streamer task failed");
-    this->element_state_ = PipelineElementState::ERROR;
-  }
-  if( audio_element_pause(this->http_stream_reader_) != ESP_OK )
-  {
-    esph_log_e(TAG, "Pausing http streamer failed");
-    this->element_state_ = PipelineElementState::ERROR;
-  }
-  if( audio_element_pause(this->decoder_) != ESP_OK ){
-    esph_log_e(TAG, "Pausing decoder streamer failed");
-    this->element_state_ = PipelineElementState::ERROR;
-  }
-}
-*/
-
-void HTTPStreamReaderAndDecoder::resume_sdk_elements_(){
-  audio_element_reset_input_ringbuf(this->decoder_);
-  audio_element_reset_output_ringbuf(this->decoder_);
-  if( audio_element_resume(this->http_stream_reader_, 0, 20 / portTICK_RATE_MS) != ESP_OK)
-  {
-    //esph_log_e(TAG, "Resuming http streamer failed");
-    //this->element_state_ = PipelineElementState::ERROR;
-  }
-  if( audio_element_resume(this->decoder_, 0, 20 / portTICK_RATE_MS) != ESP_OK ){
-    //esph_log_e(TAG, "Resuming decoder failed");
-    //this->element_state_ = PipelineElementState::ERROR;
-  }
-}
-
-
-void HTTPStreamReaderAndDecoder::pause_sdk_elements_(){
-  audio_element_abort_input_ringbuf(this->decoder_);
-  audio_element_abort_output_ringbuf(this->decoder_);
-  esp_err_t ret = audio_element_pause(this->http_stream_reader_);
-  if( ret != ESP_OK ){
-    esph_log_d(TAG, "Failed setting streamer to pause: %d", ret);
-    this->element_state_ = PipelineElementState::ERROR;
-  }
-  //audio_element_reset_state(this->decoder_);
-  ret = audio_element_pause(this->decoder_);
-  if( ret != ESP_OK ){
-    esph_log_d(TAG, "Failed setting decoder to pause: %d", ret);
-    this->element_state_ = PipelineElementState::ERROR;
-  }
-}
-
-
-// Start pipeline elements necessary for receiving audio settings from stream
-void HTTPStreamReaderAndDecoder::start_prepare_pipeline_(){
-  audio_element_reset_input_ringbuf(this->decoder_);
-  audio_element_reset_output_ringbuf(this->decoder_);
-  if( audio_element_run(this->http_stream_reader_) != ESP_OK )
-  {
-    esph_log_e(TAG, "Starting http streamer failed");
-    this->element_state_ = PipelineElementState::ERROR;
-  }
-  audio_event_iface_discard(this->decoder_->iface_event);
-  if( audio_element_run(this->decoder_) != ESP_OK ){
-    esph_log_e(TAG, "Starting decoder streamer failed");
-    this->element_state_ = PipelineElementState::ERROR;
-  }
-  if( audio_element_resume(this->http_stream_reader_, 0, 20 / portTICK_RATE_MS) != ESP_OK)
-  {
-    //esph_log_e(TAG, "Resuming http streamer failed");
-    //this->element_state_ = PipelineElementState::ERROR;
-  }
-  if( audio_element_resume(this->decoder_, 0, 20 / portTICK_RATE_MS) != ESP_OK ){
-    //esph_log_e(TAG, "Resuming decoder failed");
-    //this->element_state_ = PipelineElementState::ERROR;
-  }
-  esph_log_d(TAG, "Streamer status: %d", audio_element_get_state(this->http_stream_reader_) );
-  esph_log_d(TAG, "decoder status: %d", audio_element_get_state(this->decoder_) );
-}
-
-
-
-bool HTTPStreamReaderAndDecoder::set_ready_when_prepare_pipeline_paused_(){
-  bool paused = audio_element_get_state(this->http_stream_reader_) == AEL_STATE_PAUSED && audio_element_get_state(this->decoder_) == AEL_STATE_PAUSED;
-  if(paused){
-    audio_element_reset_input_ringbuf(this->decoder_);
-    audio_element_reset_output_ringbuf(this->decoder_);
-    http_stream_restart(this->http_stream_reader_);
-    this->element_state_ = PipelineElementState::READY;
-  }
-  return paused;
 }
 
 //wait for audio information in stream and send new audio settings to pipeline
@@ -361,7 +218,7 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
 }
 
 /*
-PCM SOURCE
+========== PCM SOURCE ==========
 */
 
 bool PCMSource::init_adf_elements_() {
@@ -377,9 +234,6 @@ bool PCMSource::init_adf_elements_() {
   return true;
 }
 
-//int PCMSource::stream_write(char *buffer, int len) { return len ? raw_stream_write(adf_raw_stream_writer_, buffer, len) : 0; }
-
-
 int PCMSource::stream_write(char *buffer, int len) {
   int ret = audio_element_output(this->adf_raw_stream_writer_, buffer, len);
   if (ret < 0 && (ret != AEL_IO_TIMEOUT)) {
@@ -389,7 +243,6 @@ int PCMSource::stream_write(char *buffer, int len) {
   }
   return ret;
 }
-
 
 bool PCMSource::has_buffered_data() const {
   ringbuf_handle_t rb = audio_element_get_output_ringbuf(adf_raw_stream_writer_);

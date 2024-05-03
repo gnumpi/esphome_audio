@@ -17,7 +17,7 @@ typedef struct {
 } pcm_format;
 
 
-enum class PipelineElementState : uint8_t { UNINITIALIZED = 0, INITIALIZED, PREPARE, PREPARING, WAITING_FOR_SDK_EVENT, READY, PAUSING, RESUME, RESUMING, RUNNING, PAUSED, STOPPING, STOPPED, ERROR };
+enum class PipelineElementState : uint8_t { UNINITIALIZED = 0, INITIALIZED, PREPARE, PREPARING, WAITING_FOR_SDK_EVENT, READY, PAUSING, RESUMING, RUNNING, PAUSED, STOPPING, STOPPED, ERROR };
 
 class ADFPipeline;
 class ADFPipelineElement;
@@ -64,9 +64,6 @@ class ADFPipelineElement {
   bool init_adf_elements() { return init_adf_elements_(); }
   void destroy_adf_elements() {clear_adf_elements_();}
 
-  void set_resume_state(){ this->element_state_ = PipelineElementState::RESUME; }
-  void set_prepare_state(){ this->element_state_ = PipelineElementState::PREPARE; }
-
   bool in_error_state(){ return this->element_state_ == PipelineElementState::ERROR; }
 
   bool all_prepared_{false};
@@ -85,9 +82,9 @@ class ADFPipelineElement {
   std::string get_adf_element_tag(int element_indx);
 
   virtual bool is_ready() { return true; }
-  virtual bool ready_to_stop(){ return true; }
+  //virtual bool ready_to_stop(){ return true; }
   virtual bool requires_destruction_on_stop(){ return false; }
-  virtual bool preparing_step(){ return true; }
+  //virtual bool preparing_step(){ return true; }
 
  protected:
   friend class ADFPipeline;
