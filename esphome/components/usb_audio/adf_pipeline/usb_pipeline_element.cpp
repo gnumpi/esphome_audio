@@ -15,7 +15,6 @@ static const uint16_t CHUNK_SIZE = 1024;
 
 static esp_err_t _usb_open(audio_element_handle_t self){
   USBStreamWriter *this_writer = (USBStreamWriter *) audio_element_getdata(self);
-  //usb_streaming_control(STREAM_UAC_SPK, CTRL_SUSPEND, NULL);
   esp_err_t ret = uac_frame_size_reset(STREAM_UAC_SPK, 2, 16, 48000);
   usb_streaming_control(STREAM_UAC_SPK, CTRL_RESUME, NULL);
   usb_streaming_control(STREAM_UAC_SPK, CTRL_UAC_MUTE, 0);
@@ -23,8 +22,6 @@ static esp_err_t _usb_open(audio_element_handle_t self){
 }
 
 static esp_err_t _usb_close(audio_element_handle_t self){
-  //USBStreamWriter *this_writer = (USBStreamWriter *) audio_element_getdata(self);
-  //this_writer->stop_streaming();
   esp_err_t ret = usb_streaming_control(STREAM_UAC_SPK, CTRL_SUSPEND, NULL);
   if( ret != ESP_OK ){
     esph_log_e(TAG, "Error USB streaming suspending failed." );
@@ -37,7 +34,7 @@ static audio_element_err_t _usb_write(audio_element_handle_t self, char *buffer,
     //USBStreamWriter *this_writer = (USBStreamWriter *) audio_element_getdata(self);
     int bytes_written = 0;
     if (len) {
-        esp_err_t ret = uac_spk_streaming_write( buffer, len, ticks_to_wait);//11 * portTICK_PERIOD_MS );
+        esp_err_t ret = uac_spk_streaming_write( buffer, len, ticks_to_wait);
         if (ret == ESP_OK) {
             //esph_log_d(TAG, "written: %d", len );
             bytes_written = len;
@@ -51,14 +48,6 @@ static audio_element_err_t _usb_write(audio_element_handle_t self, char *buffer,
 
 static audio_element_err_t _adf_process(audio_element_handle_t self, char *in_buffer, int in_len)
 {
-  /*
-    gets called as long el->is_running is set
-
-    return number of processed bytes,
-      if processed bytes == 0 (AEL_IO_OK) cmd_finish gets called
-        if not desired, return AEL_IO_TIMEOUT instead
-  */
-
   int r_size = audio_element_input(self, in_buffer, in_len);
   int w_size = 0;
 
@@ -73,7 +62,7 @@ bool USBStreamWriter::init_adf_elements_(){
   if( this->sdk_audio_elements_.size() > 0 )
     return true;
 
-  audio_element_cfg_t cfg{};// = DEFAULT_AUDIO_ELEMENT_CONFIG();
+  audio_element_cfg_t cfg{};
   cfg.open = _usb_open;
   cfg.seek = nullptr;
   cfg.process = _adf_process;
@@ -124,7 +113,7 @@ bool USBStreamWriter::preparing_step(){
 }
 
 bool USBStreamWriter::is_ready(){
-  return true; //audio_element_get_state(this->usb_audio_stream_) == AEL_STATE_PAUSED;
+  return true;
   if( !this->usb_stream_started_ )
   {
     //this->start_streaming();
@@ -133,34 +122,10 @@ bool USBStreamWriter::is_ready(){
   return true;//usb_streaming_connect_wait(10 / portTICK_RATE_MS) == ESP_OK;
 }
 
-/*
-bool USBStreamWriter::resume_elements(){
-   if( this->element_state_ == PipelineElementState::RESUME ){
-      audio_element_reset_input_ringbuf(this->usb_audio_stream_);
-   }
-   return ADFPipelineElement::resume_elements();
-}
-*/
-
-/*
-bool USBStreamWriter::pause_elements(bool initial_call){
-  if( this->element_state_ == PipelineElementState::RUNNING ){
-    esph_log_d(TAG, "Pausing USBElement!");
-    //audio_element_stop(this->usb_audio_stream_);
-    audio_element_abort_input_ringbuf(this->usb_audio_stream_);
-    audio_event_iface_discard(this->usb_audio_stream_->iface_event);
-  }
-  return ADFPipelineElement::pause_elements();
-  esph_log_d(TAG, "Element state bits: %d", xEventGroupGetBits(this->usb_audio_stream_->state_event));
-  return true;
-}
-*/
 
 void USBStreamWriter::reset_(){
-  //this->stop_streaming();
   this->usb_stream_started_ = false;
 }
-
 
 void USBStreamWriter::clear_adf_elements_(){
   this->usb_stream_started_ = false;

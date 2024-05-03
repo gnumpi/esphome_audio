@@ -102,23 +102,6 @@ void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
   }
 }
 
-/*
-bool ADFResampler::pause_elements(){
-  if( this->element_state_ == PipelineElementState::RUNNING ){
-    esph_log_d(TAG, "Pausing Reseampler!");
-    //audio_element_stop(this->sdk_resampler_);
-    audio_element_abort_input_ringbuf(this->sdk_resampler_);
-    //audio_event_iface_discard(this->sdk_resampler_->iface_event);
-  }
-  return ADFPipelineElement::pause_elements();
-  esph_log_d(TAG, "Element state bits: %d", xEventGroupGetBits(this->sdk_resampler_->state_event));
-  return true;
-}
-*/
-
-
-
-
 }  // namespace esp_adf
 }  // namespace esphome
 

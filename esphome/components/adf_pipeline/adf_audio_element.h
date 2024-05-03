@@ -82,9 +82,7 @@ class ADFPipelineElement {
   std::string get_adf_element_tag(int element_indx);
 
   virtual bool is_ready() { return true; }
-  //virtual bool ready_to_stop(){ return true; }
   virtual bool requires_destruction_on_stop(){ return false; }
-  //virtual bool preparing_step(){ return true; }
 
  protected:
   friend class ADFPipeline;

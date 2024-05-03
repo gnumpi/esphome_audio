@@ -183,10 +183,10 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
       {
         if( set_new_state(media_player::MEDIA_PLAYER_STATE_PAUSED))
         {
-          //publish_state();
+          publish_state();
         }
       } else if (set_new_state(media_player::MEDIA_PLAYER_STATE_IDLE) ){
-        //publish_state();
+        publish_state();
       }
       break;
 
@@ -199,7 +199,7 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
           : media_player::MEDIA_PLAYER_STATE_PLAYING );
         if( set_new_state(target) ){
           this->set_volume_( this->volume, false);
-          //publish_state();
+          publish_state();
         }
       }
       break;
