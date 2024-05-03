@@ -31,6 +31,7 @@ void ADFMediaPlayer::set_announcement_uri(const std::string& new_uri) {
 
 void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
   if (call.get_media_url().has_value()) {
+#ifdef MP_ANNOUNCE
     if (call.get_announcement().has_value()){
       this->announcement_ =  call.get_announcement().value();
     }
@@ -38,7 +39,9 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
       set_announcement_uri( call.get_media_url().value()) ;
       //this->http_and_decoder_.set_fixed_settings(true);
     }
-    else{
+    else
+#endif
+    {
       set_stream_uri( call.get_media_url().value()) ;
     }
 
@@ -46,16 +49,19 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
     switch(this->state){
       case media_player::MEDIA_PLAYER_STATE_IDLE:
       case media_player::MEDIA_PLAYER_STATE_PAUSED:
+#ifdef MP_ANNOUNCE
         this->http_and_decoder_.set_fixed_settings(this->announcement_);
+#endif
         pipeline.start();
         return;
-      case media_player::MEDIA_PLAYER_STATE_PLAYING:
         this->play_intent_ = true;
         pipeline.stop();
         return;
+#ifdef MP_ANNOUNCE
       case media_player::MEDIA_PLAYER_STATE_ANNOUNCING:
         this->play_intent_ = true;
         return;
+#endif
       default:
         break;
     }
@@ -163,6 +169,7 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
     case PipelineState::UNINITIALIZED:
     case PipelineState::STOPPED:
     case PipelineState::PAUSED:
+#ifdef MP_ANNOUNCE
       if( this->state == media_player::MEDIA_PLAYER_STATE_ANNOUNCING )
       {
         this->state = media_player::MEDIA_PLAYER_STATE_IDLE;
@@ -174,7 +181,9 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
           pipeline.restart();
         }
         this->play_intent_ = false;
-      } else if (this->play_intent_) {
+      } else
+#endif
+      if (this->play_intent_) {
         set_new_state(media_player::MEDIA_PLAYER_STATE_IDLE);
         this->http_and_decoder_.set_fixed_settings(this->announcement_);
         pipeline.restart();
@@ -194,9 +203,13 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
     case PipelineState::STARTING:
     case PipelineState::RUNNING:
       {
+#ifdef MP_ANNOUNCE
         media_player::MediaPlayerState target = (
           this->announcement_ ? media_player::MEDIA_PLAYER_STATE_ANNOUNCING
           : media_player::MEDIA_PLAYER_STATE_PLAYING );
+#else
+        media_player::MediaPlayerState target = media_player::MEDIA_PLAYER_STATE_PLAYING;
+#endif
         if( set_new_state(target) ){
           this->set_volume_( this->volume, false);
           publish_state();
@@ -206,11 +219,12 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
     default:
       break;
   }
+  /*
   esph_log_i(TAG, "current mp state: %s", media_player_state_to_string(this->state));
   esph_log_i(TAG, "anouncement: %s", this->announcement_ ? "yes" : "false");
   esph_log_i(TAG, "play_intent: %s", this->play_intent_ ? "yes" : "false");
   esph_log_i(TAG, "current_uri_: %s", this->current_uri_.has_value() ? "yes" : "false");
-
+  */
 }
 
 void ADFMediaPlayer::loop(){

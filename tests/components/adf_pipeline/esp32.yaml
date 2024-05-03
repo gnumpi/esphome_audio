@@ -4,13 +4,6 @@ external_components:
       path: ../../../esphome/components
     components: [ adf_pipeline, i2s_audio ]
 
-  - source:
-      type: git
-      url: https://github.com/gnumpi/esphome
-      ref: mp_announce
-
-    components: [ media_player, voice_assistant ]
-
 esphome:
   name: test_adf_pipeline
   min_version: 2023.12.7
