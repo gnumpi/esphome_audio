@@ -16,7 +16,7 @@ class ADFSpeaker : public speaker::Speaker, public ADFPipelineController {
  public:
   // Pipeline implementations
   void append_own_elements(){ add_element_to_pipeline( (ADFPipelineElement*) &(this->pcm_stream_) ); }
-  const std::string get_name() {return "ADFSPeaker";}
+  const std::string get_name() {return "ADF-Speaker";}
 
   // ESPHome-Component implementations
   float get_setup_priority() const override { return esphome::setup_priority::LATE; }
