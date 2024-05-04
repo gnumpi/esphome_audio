@@ -139,8 +139,6 @@ bool HTTPStreamReaderAndDecoder::preparing_step_(){
     case PipelineElementState::PAUSED:
       if( this->desired_state_ == PipelineElementState::READY )
       {
-        audio_element_reset_input_ringbuf(this->decoder_);
-        audio_element_reset_output_ringbuf(this->decoder_);
         if( !this->audio_settings_reported_ ){
           ADFPipelineElement::resume_elements(true);
           if( this->element_state_ != PipelineElementState::ERROR){

@@ -54,6 +54,7 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
 #endif
         pipeline.start();
         return;
+      case media_player::MEDIA_PLAYER_STATE_PLAYING:
         this->play_intent_ = true;
         pipeline.stop();
         return;
@@ -219,12 +220,12 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
     default:
       break;
   }
-  /*
+
   esph_log_i(TAG, "current mp state: %s", media_player_state_to_string(this->state));
   esph_log_i(TAG, "anouncement: %s", this->announcement_ ? "yes" : "false");
   esph_log_i(TAG, "play_intent: %s", this->play_intent_ ? "yes" : "false");
   esph_log_i(TAG, "current_uri_: %s", this->current_uri_.has_value() ? "yes" : "false");
-  */
+
 }
 
 void ADFMediaPlayer::loop(){
