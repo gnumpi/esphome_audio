@@ -10,6 +10,12 @@
 namespace esphome {
 namespace esp_adf {
 
+class ADFPlaylistTrack {
+  public:
+    std::string uri{""};
+    bool is_played{false};
+};
+
 class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineController {
  public:
   // Pipeline implementations
@@ -42,9 +48,18 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
 
   bool muted_{false};
   bool play_intent_{false};
-  optional<std::string> current_uri_{};
+  //optional<std::string> current_uri_{};
 
   HTTPStreamReaderAndDecoder http_and_decoder_;
+
+  std::vector<ADFPlaylistTrack > playlist_;
+  bool playlist_found_{false};
+  
+  void play_next_song_on_playlist_();
+  void clean_playlist_track_();
+  int next_playlist_track_id_();
+  void set_playlist_track_as_played_();
+  int parse_m3u_into_playlist_(const char *url);
 };
 
 }  // namespace esp_adf

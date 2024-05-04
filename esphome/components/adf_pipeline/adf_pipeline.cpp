@@ -215,7 +215,7 @@ void ADFPipeline::check_for_pipeline_events_(){
         switch (status) {
           case AEL_STATUS_STATE_STOPPED:
           case AEL_STATUS_STATE_FINISHED:
-            if( this->state_ == PipelineState::RUNNING){
+            if( strcmp(audio_element_get_tag(el), "i2s_out") == 0 && this->state_ == PipelineState::RUNNING){
               this->set_state_(PipelineState::STOPPING);
               check_all_stopped_();
             }

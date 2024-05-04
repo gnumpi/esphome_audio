@@ -7,6 +7,8 @@
 namespace esphome {
 namespace esp_adf {
 
+enum class ADFEncoding : uint8_t { AAC = 0, AMR, FLAC, MP3, OGG, OPUS, WAV};
+
 class ADFPipelineSourceElement : public ADFPipelineElement {
  public:
   AudioPipelineElementType get_element_type() const { return AudioPipelineElementType::AUDIO_PIPELINE_SOURCE; }
@@ -18,6 +20,7 @@ class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
   const std::string get_name() override { return "HTTPStreamReader"; }
   bool is_ready() override;
   void prepare_elements() override;
+  ADFEncoding decoder_type{ADFEncoding::MP3};
 
  protected:
   bool init_adf_elements_() override;

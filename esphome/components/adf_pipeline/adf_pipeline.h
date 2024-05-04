@@ -60,6 +60,7 @@ class ADFPipeline {
   void loop() { this->watch_(); }
 
   void set_destroy_on_stop(bool value){ this->destroy_on_stop_ = value; }
+  bool is_destroy_on_stop(){ return this->destroy_on_stop_; }
   void append_element(ADFPipelineElement *element);
   int get_number_of_elements() { return pipeline_elements_.size(); }
   std::vector<std::string> get_element_names();

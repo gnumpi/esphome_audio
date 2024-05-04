@@ -3,7 +3,14 @@
 #ifdef USE_ESP_IDF
 
 #include <http_stream.h>
+#include <aac_decoder.h>
+#include <amr_decoder.h>
+#include <flac_decoder.h>
 #include <mp3_decoder.h>
+#include <ogg_decoder.h>
+#include <opus_decoder.h>
+#include <wav_decoder.h>
+
 #include <raw_stream.h>
 
 #include "sdk_ext.h"
@@ -23,18 +30,57 @@ bool HTTPStreamReaderAndDecoder::init_adf_elements_() {
     return true;
 
   http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
-  http_cfg.task_core = 0;
-  http_cfg.out_rb_size = 4 * 1024;
+  //http_cfg.task_core = 0;
+  http_cfg.out_rb_size = 1024 * 1024;
   http_stream_reader_ = http_stream_init(&http_cfg);
-  http_stream_reader_->buf_size =  1024;
+  //http_stream_reader_->buf_size =  1024;
   audio_element_set_uri(this->http_stream_reader_, this->current_url_.c_str());
 
   sdk_audio_elements_.push_back(this->http_stream_reader_);
   sdk_element_tags_.push_back("http");
 
-  mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
-  mp3_cfg.out_rb_size = 4 * 1024;
-  decoder_ = mp3_decoder_init(&mp3_cfg);
+  if (this->decoder_type == ADFEncoding::AAC) {
+    esph_log_d(TAG, "decoder type: AAC" );
+    aac_decoder_cfg_t aac_cfg = DEFAULT_AAC_DECODER_CONFIG();
+    aac_cfg.out_rb_size = 4 * 1024;
+    decoder_ = aac_decoder_init(&aac_cfg);
+  }
+  else if (this->decoder_type == ADFEncoding::AMR) {
+    esph_log_d(TAG, "decoder type: AMR" );
+    amr_decoder_cfg_t amr_cfg = DEFAULT_AMR_DECODER_CONFIG();
+    amr_cfg.out_rb_size = 4 * 1024;
+    decoder_ = amr_decoder_init(&amr_cfg);
+  }
+  else if (this->decoder_type == ADFEncoding::FLAC) {
+    esph_log_d(TAG, "decoder type: FLAC" );
+    flac_decoder_cfg_t flac_cfg = DEFAULT_FLAC_DECODER_CONFIG();
+    flac_cfg.out_rb_size = 500 * 1024;
+    decoder_ = flac_decoder_init(&flac_cfg);
+  }
+  else if (this->decoder_type == ADFEncoding::MP3) {
+    esph_log_d(TAG, "decoder type: MP3" );
+    mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
+    mp3_cfg.out_rb_size = 4 * 1024;
+    decoder_ = mp3_decoder_init(&mp3_cfg);
+  }
+  else if (this->decoder_type == ADFEncoding::OGG) {
+    esph_log_d(TAG, "decoder type: OGG" );
+    ogg_decoder_cfg_t ogg_cfg = DEFAULT_OGG_DECODER_CONFIG();
+    ogg_cfg.out_rb_size = 4 * 1024;
+    decoder_ = ogg_decoder_init(&ogg_cfg);
+  }
+  else if (this->decoder_type == ADFEncoding::OPUS) {
+    esph_log_d(TAG, "decoder type: OPUS" );
+    opus_decoder_cfg_t opus_cfg = DEFAULT_OPUS_DECODER_CONFIG();
+    opus_cfg.out_rb_size = 4 * 1024;
+    decoder_ = decoder_opus_init(&opus_cfg);
+  }
+  else {
+    esph_log_d(TAG, "decoder type: WAV" );
+    wav_decoder_cfg_t wav_cfg = DEFAULT_WAV_DECODER_CONFIG();
+    wav_cfg.out_rb_size = 4 * 1024;
+    decoder_ = wav_decoder_init(&wav_cfg);
+  }
 
   sdk_audio_elements_.push_back(this->decoder_);
   sdk_element_tags_.push_back("decoder");
@@ -54,6 +100,7 @@ void HTTPStreamReaderAndDecoder::reset_() {
 }
 
 void HTTPStreamReaderAndDecoder::set_stream_uri(const std::string& new_url) {
+  esph_log_v(TAG, "Set URI: %s", new_url.c_str());
   this->current_url_ = new_url;
 }
 
@@ -119,13 +166,13 @@ bool HTTPStreamReaderAndDecoder::set_ready_when_prepare_pipeline_stopped_(){
 
 //wait for audio information in stream and send new audio settings to pipeline
 void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg) {
-  audio_element_handle_t mp3_decoder = this->decoder_;
-  if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) mp3_decoder &&
+  audio_element_handle_t decoder = this->decoder_;
+  if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) decoder &&
       msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
     audio_element_info_t music_info{};
-    audio_element_getinfo(mp3_decoder, &music_info);
+    audio_element_getinfo(decoder, &music_info);
 
-    esph_log_i(get_name().c_str(), "[ * ] Receive music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
+    esph_log_i(get_name().c_str(), "[ * ] Receive music info from decoder, sample_rates=%d, bits=%d, ch=%d",
                music_info.sample_rates, music_info.bits, music_info.channels);
 
     AudioPipelineSettingsRequest request{this};
