@@ -159,7 +159,7 @@ void ADFMediaPlayer::set_volume_(float volume, bool publish) {
   }
   if (pipeline.request_settings(request)) {
     this->volume = volume;
-    if (publish && false)
+    if (publish)
       publish_state();
   }
 }
