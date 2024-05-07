@@ -1,6 +1,11 @@
 #pragma once
 
+#include "esphome/core/defines.h"
+
 #ifdef USE_ESP_IDF
+
+#include "esphome/core/component.h"
+#include "esphome/core/helpers.h"
 
 #include "esphome/components/speaker/speaker.h"
 
