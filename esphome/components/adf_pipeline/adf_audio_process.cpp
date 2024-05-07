@@ -5,6 +5,7 @@
 #include "adf_pipeline.h"
 
 #include <filter_resample.h>
+#include "sdk_ext.h"
 
 namespace esphome {
 namespace esp_adf {
@@ -76,7 +77,6 @@ void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
       settings_changed = true;
     }
   }
-  esph_log_d(TAG, "New settings: SRC: rate: %d, ch: %d DST: rate: %d, ch: %d ", this->src_rate_,this->src_num_channels_, this->dst_rate_, this->dst_num_channels_);
 
   if( this->sdk_resampler_ && settings_changed)
   {
@@ -84,6 +84,13 @@ void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
     {
       audio_element_stop(this->sdk_resampler_);
       audio_element_wait_for_stop(this->sdk_resampler_);
+    }
+    ADFPipelineElement* el = request.requested_by;
+    if( el != nullptr ){
+     esph_log_d(TAG, "Received request from: %s", el->get_name().c_str());
+    }
+    else {
+    esph_log_d(TAG, "Called from invalid caller");
     }
     esph_log_d(TAG, "New settings: SRC: rate: %d, ch: %d DST: rate: %d, ch: %d ", this->src_rate_, this->src_num_channels_, this->dst_rate_, this->dst_num_channels_);
     rsp_filter_t *filter = (rsp_filter_t *)audio_element_getdata(this->sdk_resampler_);

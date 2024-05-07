@@ -63,28 +63,33 @@ size_t ADFMicrophone::read(int16_t *buf, size_t len) {
 
 void ADFMicrophone::on_pipeline_state_change(PipelineState state) {
   switch (state) {
+
+    case PipelineState::INITIALIZING:
+    case PipelineState::PREPARING:
     case PipelineState::STARTING:
       this->state_ = microphone::STATE_STARTING;
       break;
     case PipelineState::RUNNING:
       this->state_ = microphone::STATE_RUNNING;
       break;
-    case PipelineState::STOPPING:
+
+    case PipelineState::ABORTING:
+    case PipelineState::FINISHING:
       this->state_ = microphone::STATE_STOPPING;
       break;
-    case PipelineState::UNINITIALIZED:
-      this->state_ = microphone::STATE_STOPPED;
-      break;
+
     case PipelineState::PAUSED:
       ESP_LOGI(TAG, "pipeline paused");
       this->state_ = microphone::STATE_STOPPED;
       break;
+
+    case PipelineState::UNINITIALIZED:
+    case PipelineState::CREATED:
     case PipelineState::STOPPED:
       this->state_ = microphone::STATE_STOPPED;
       break;
+
     case PipelineState::PAUSING:
-    case PipelineState::RESUMING:
-    case PipelineState::PREPARING:
     case PipelineState::DESTROYING:
       break;
     }

@@ -62,6 +62,7 @@ packages:
   wifi: !include common/wifi.yaml
 
 api:
+ota:
 
 i2c:
   - id: bus_a

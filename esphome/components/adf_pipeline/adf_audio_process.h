@@ -18,7 +18,6 @@ class ADFResampler : public ADFPipelineProcessElement {
 
  protected:
   bool init_adf_elements_() override;
-  //void clear_adf_elements_() override;
   void on_settings_request(AudioPipelineSettingsRequest &request) override;
 
   int src_rate_{16000};

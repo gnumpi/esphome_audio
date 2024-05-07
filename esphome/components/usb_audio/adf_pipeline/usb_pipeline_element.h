@@ -14,12 +14,20 @@ namespace usb_audio {
 class USBStreamWriter : public USBAudioComponent, public ADFPipelineSinkElement, public Component {
 public:
 const std::string get_name() override {return "USB-Audio-Out";}
+bool is_ready() override;
+bool preparing_step();
+//bool pause_elements(bool initial_call) override;
+//bool resume_elements() override;
 
 protected:
 bool init_adf_elements_() override;
-void on_settings_request(AudioPipelineSettingsRequest &request) override;
-audio_element_handle_t usb_audio_stream_{nullptr};
+void clear_adf_elements_() override;
+void reset_() override;
 
+void on_settings_request(AudioPipelineSettingsRequest &request) override;
+
+audio_element_handle_t usb_audio_stream_{nullptr};
+bool usb_stream_started_{false};
 };
 
 

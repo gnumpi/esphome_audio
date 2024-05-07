@@ -29,8 +29,8 @@ esp32:
       CONFIG_ESP32S3_DATA_CACHE_64KB:      "y"
       CONFIG_ESP32S3_DATA_CACHE_LINE_64B:  "y"
 
-      #CONFIG_LOG_DEFAULT_LEVEL_DEBUG: "y"
-      #CONFIG_LOG_DEFAULT_LEVEL: "4"
+      CONFIG_LOG_DEFAULT_LEVEL_DEBUG: "y"
+      CONFIG_LOG_DEFAULT_LEVEL: "4"
 
 psram:
   mode: quad
@@ -50,13 +50,17 @@ external_components:
       type: local
       path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
 
-    components: [ adf_pipeline, i2s_audio ]
+    components: [ adf_pipeline, i2s_audio, usb_audio ]
 
 
 # Enable logging
 logger:
   deassert_rts_dtr: true
-  level: DEBUG
+  level: VERBOSE
+  logs:
+    micro_wake_word: DEBUG
+    touchscreen: WARN
+    FT63X6: WARN
 
 packages:
   wifi: !include common/wifi.yaml
@@ -75,7 +79,7 @@ i2s_audio:
     i2s_lrclk_pin: GPIO33
     i2s_bclk_pin: GPIO34
     i2s_mclk_pin: GPIO0
-    access_mode: duplex
+    access_mode: exclusive
 
 aw9523:
   id: aw9523_1
@@ -83,30 +87,12 @@ aw9523:
 
 esp32_m5stack_core_s3:
   aw9523:
-  usb_otg_en: false
+  usb_otg_en: true
+
+usb_audio:
 
 # expose the i2s components as pipeline elements
 adf_pipeline:
-  - platform: i2s_audio
-    type: audio_out
-    id: adf_i2s_out
-    i2s_audio_id: i2s_shared
-    i2s_dout_pin: GPIO13
-    adf_alc: false
-    dac:
-      model: aw88298
-      address: 0x36
-      enable_pin:
-        aw9523: aw9523_1
-        port: 0
-        pin: 2
-        mode:
-          output: true
-    sample_rate: 16000
-    bits_per_sample: 16bit
-    fixed_settings: true
-
-
   - platform: i2s_audio
     type: audio_in
     id: adf_i2s_in
@@ -117,7 +103,11 @@ adf_pipeline:
       model: es7210
       address: 0x40
     bits_per_sample: 16bit
+    channel: right
     fixed_settings: true
+
+  - platform: usb_audio
+    id: adf_usb_out
 
 globals:
   - id: init_in_progress
@@ -145,7 +135,7 @@ media_player:
     pipeline:
       - self
       - resampler
-      - adf_i2s_out
+      - adf_usb_out
 
     on_idle:
       - lambda: id(mp_state) = 0;
@@ -162,15 +152,28 @@ media_player:
       - display.page.show: announcing
       - component.update: m5cores3_lcd
 
-
 microphone:
+  #- platform: adf_pipeline
+  #  id: i2s_microphone
+  #  i2s_audio: adf_i2s_in
+    #i2s_din_pin: GPIO14
+    #pdm: false
+    #adc_type: external
+    #adc:
+    #  model: es7210
+    #  address: 0x40
+    #sample_rate: 16000
+    #bits_per_sample: 16bit
+    #channel: right
+    #fixed_settings: true
   - platform: adf_pipeline
-    id: adf_microphone
+    id: i2s_microphone
     keep_pipeline_alive: true
     pipeline:
       - adf_i2s_in
-      - resampler
+      #- resampler
       - self
+
 
 
 micro_wake_word:
@@ -184,7 +187,7 @@ micro_wake_word:
 
 
 voice_assistant:
-  microphone: adf_microphone
+  microphone: i2s_microphone
   media_player: adf_media_player
 
   use_wake_word: false

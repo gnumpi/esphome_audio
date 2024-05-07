@@ -40,7 +40,7 @@ void ADFSpeaker::on_pipeline_state_change(PipelineState state) {
         break;
       case PipelineState::STARTING:
         break;
-      case PipelineState::STOPPING:
+      case PipelineState::ABORTING:
         this->state_ = speaker::STATE_STOPPING;
         break;
       case PipelineState::RUNNING:
@@ -53,9 +53,7 @@ void ADFSpeaker::on_pipeline_state_change(PipelineState state) {
       case PipelineState::PAUSED:
         ESP_LOGI(TAG, "pipeline paused");
         break;
-      case PipelineState::PAUSING:
-      case PipelineState::RESUMING:
-      case PipelineState::DESTROYING:
+      default:
         break;
    }
 }
