@@ -44,16 +44,15 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
     {
       set_stream_uri( call.get_media_url().value()) ;
     }
-
     esph_log_d(TAG, "Got control call in state %s", media_player_state_to_string(this->state) );
     switch(this->state){
       case media_player::MEDIA_PLAYER_STATE_IDLE:
-      case media_player::MEDIA_PLAYER_STATE_PAUSED:
 #ifdef MP_ANNOUNCE
         this->http_and_decoder_.set_fixed_settings(this->announcement_);
 #endif
         pipeline.start();
         return;
+      case media_player::MEDIA_PLAYER_STATE_PAUSED:
       case media_player::MEDIA_PLAYER_STATE_PLAYING:
         this->play_intent_ = true;
         pipeline.stop();
@@ -180,6 +179,9 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
           this->http_and_decoder_.set_stream_uri(this->current_uri_.value());
           this->http_and_decoder_.set_fixed_settings(false);
           pipeline.restart();
+        }
+        else {
+          publish_state();
         }
         this->play_intent_ = false;
       } else

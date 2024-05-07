@@ -15,7 +15,7 @@ class USBStreamWriter : public USBAudioComponent, public ADFPipelineSinkElement,
 public:
 const std::string get_name() override {return "USB-Audio-Out";}
 bool is_ready() override;
-bool preparing_step() override;
+bool preparing_step();
 //bool pause_elements(bool initial_call) override;
 //bool resume_elements() override;
 

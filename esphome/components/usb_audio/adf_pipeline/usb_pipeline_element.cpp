@@ -15,7 +15,7 @@ static const uint16_t CHUNK_SIZE = 1024;
 
 static esp_err_t _usb_open(audio_element_handle_t self){
   USBStreamWriter *this_writer = (USBStreamWriter *) audio_element_getdata(self);
-  esp_err_t ret = uac_frame_size_reset(STREAM_UAC_SPK, 2, 16, 48000);
+
   usb_streaming_control(STREAM_UAC_SPK, CTRL_RESUME, NULL);
   usb_streaming_control(STREAM_UAC_SPK, CTRL_UAC_MUTE, 0);
   return ESP_OK;
@@ -91,7 +91,7 @@ bool USBStreamWriter::init_adf_elements_(){
   this->start_streaming();
   ESP_ERROR_CHECK(usb_streaming_connect_wait(portMAX_DELAY));
   usb_streaming_control(STREAM_UAC_SPK, CTRL_SUSPEND, NULL);
-
+  esp_err_t ret = uac_frame_size_reset(STREAM_UAC_SPK, 2, 16, 48000);
   return true;
 }
 

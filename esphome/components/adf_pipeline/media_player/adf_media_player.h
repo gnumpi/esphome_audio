@@ -1,6 +1,7 @@
 #pragma once
 
 #ifdef USE_ESP_IDF
+#define MP_ANNOUNCE
 
 #include "esphome/components/media_player/media_player.h"
 
