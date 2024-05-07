@@ -158,8 +158,18 @@ void ADFPipeline::check_for_pipeline_events_(){
         case AEL_STATUS_STATE_RUNNING:
           break;
 
-        default:
-          break;
+      case AEL_STATUS_ERROR_OPEN:
+      case AEL_STATUS_ERROR_INPUT:
+      case AEL_STATUS_ERROR_PROCESS:
+      case AEL_STATUS_ERROR_OUTPUT:
+      case AEL_STATUS_ERROR_CLOSE:
+      case AEL_STATUS_ERROR_TIMEOUT:
+      case AEL_STATUS_ERROR_UNKNOWN:
+        this->stop_on_error();
+        break;
+
+      default:
+        break;
       }
     }
   }
@@ -215,7 +225,11 @@ bool ADFPipeline::call_and_check() {
   {
     esph_log_e(TAG, "%s got in error state while %s. Stopping pipeline!", (*check_it)->get_name().c_str(),check_state_name[E].c_str() );
     timeout_invoke = 0;
-    this->stop_on_error();
+    if( !(E == CHECK_STOPPED) ){
+      this->stop_on_error();
+    } else {
+      this->force_destroy();
+    }
   }
 
   check_it++;
@@ -234,7 +248,11 @@ bool ADFPipeline::call_and_check() {
   {
     esph_log_e(TAG, "Timeout while %s. Stopping pipeline!", check_state_name[E].c_str() );
     timeout_invoke = 0;
-    this->stop_on_error();
+    if( !(E == CHECK_STOPPED) ){
+      this->stop_on_error();
+    } else {
+      this->force_destroy();
+    }
   }
 
   return false;
@@ -250,6 +268,12 @@ void ADFPipeline::stop_on_error(){
   this->requested_ = PipelineRequest::STOPPED;
   this->set_state_(PipelineState::ABORTING);
 }
+
+void ADFPipeline::force_destroy(){
+  this->requested_ = PipelineRequest::DESTROYED;
+  this->set_state_(PipelineState::DESTROYING);
+}
+
 
 void ADFPipeline::watch_() {
   switch(this->state_){

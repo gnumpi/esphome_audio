@@ -213,6 +213,24 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
       }
     }
   }
+  else if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.cmd == AEL_MSG_CMD_REPORT_STATUS){
+    audio_element_status_t status;
+    std::memcpy(&status, &msg.data, sizeof(audio_element_status_t));
+    audio_element_handle_t el = (audio_element_handle_t) msg.source;
+    switch(status){
+      case AEL_STATUS_ERROR_OPEN:
+      case AEL_STATUS_ERROR_INPUT:
+      case AEL_STATUS_ERROR_PROCESS:
+      case AEL_STATUS_ERROR_OUTPUT:
+      case AEL_STATUS_ERROR_CLOSE:
+      case AEL_STATUS_ERROR_TIMEOUT:
+      case AEL_STATUS_ERROR_UNKNOWN:
+        this->element_state_ = PipelineElementState::ERROR;
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 /*

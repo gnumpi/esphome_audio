@@ -72,6 +72,7 @@ class ADFPipeline {
   void resume();
   void destroy();
   void stop_on_error();
+  void force_destroy();
 
   PipelineState getState() { return state_; }
   void loop() { this->watch_(); }
