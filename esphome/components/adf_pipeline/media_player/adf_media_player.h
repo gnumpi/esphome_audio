@@ -54,11 +54,14 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
 
   std::vector<ADFPlaylistTrack > playlist_;
   bool playlist_found_{false};
+  int play_track_id_{-1};
   
-  void play_next_song_on_playlist_();
+  void play_next_track_on_playlist_(int track_id);
+  void set_decoder_type_(const std::string& uri);
   void clean_playlist_track_();
   int next_playlist_track_id_();
-  void set_playlist_track_as_played_();
+  int previous_playlist_track_id_();
+  void set_playlist_track_as_played_(int track_id);
   int parse_m3u_into_playlist_(const char *url);
 };
 
