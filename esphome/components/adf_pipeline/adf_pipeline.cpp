@@ -90,26 +90,15 @@ void ADFPipeline::destroy() {
 
 
 bool ADFPipeline::check_all_finished_(){
-  static uint32_t timeout_invoke = 0;
-  if(timeout_invoke == 0){
-    timeout_invoke = millis();
-  }
-
+  this->finish_timeout_invoke_ = millis();
   bool stopped = true;
   for (auto &comp : pipeline_elements_) {
     stopped &= comp->elements_have_stopped();
-    if( (millis() - timeout_invoke < 3000 ) && !stopped ){
+    if( !stopped ){
       return false;
     }
   }
-
-  timeout_invoke = 0;
-  if( stopped ){
-    return true;
-  }
-
-  this->stop_on_error();
-  return false;
+  return true;
 }
 
 
@@ -373,6 +362,10 @@ void ADFPipeline::watch_() {
       check_for_pipeline_events_();
       if(this->requested_ == PipelineRequest::STOPPED){
         set_state_(PipelineState::STOPPED);
+      }
+      else if ( millis() - this->finish_timeout_invoke_ > 1000){
+        this->requested_ = PipelineRequest::STOPPED;
+        set_state_(PipelineState::ABORTING);
       }
       break;
 

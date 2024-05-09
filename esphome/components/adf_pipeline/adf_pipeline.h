@@ -98,6 +98,7 @@ class ADFPipeline {
   bool check_all_created_();
   bool check_all_finished_();
   bool check_all_destroyed_();
+  uint32_t finish_timeout_invoke_{0};
 
   enum CheckState { CHECK_PREPARED, CHECK_PAUSED, CHECK_RESUMED, CHECK_STOPPED, NUM_STATE_CHECKS };
   std::vector<std::string> check_state_name = {"PREPARING", "PAUSING", "RESUMING", "STOPPING","WRONG_IDX"};
