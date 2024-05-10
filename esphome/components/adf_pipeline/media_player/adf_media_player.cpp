@@ -97,8 +97,9 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
   if (call.get_command().has_value()) {
     switch (call.get_command().value()) {
       case media_player::MEDIA_PLAYER_COMMAND_PLAY:
+        this->play_intent_ = true;
+        this->play_track_id_ = -1;
         if (state == media_player::MEDIA_PLAYER_STATE_PLAYING) {
-          this->play_intent_ = true;
           pipeline.stop();
         }
         if (state == media_player::MEDIA_PLAYER_STATE_PAUSED) {
