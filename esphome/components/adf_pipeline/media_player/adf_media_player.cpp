@@ -63,8 +63,11 @@ void ADFMediaPlayer::set_decoder_type_(const std::string& uri) {
   else if (uri.find(".opus") != std::string::npos) {
     http_and_decoder_.decoder_type = ADFEncoding::OPUS;
   }
-  else {
+  else if (uri.find(".wav") != std::string::npos) {
     http_and_decoder_.decoder_type = ADFEncoding::WAV;
+  }
+  else {
+    http_and_decoder_.decoder_type = ADFEncoding::MP3;
   }
 }
 
@@ -155,13 +158,16 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
         break;
       }
       case media_player::MEDIA_PLAYER_COMMAND_TOGGLE: {
-        if (state == media_player::MEDIA_PLAYER_STATE_PLAYING || state == media_player::MEDIA_PLAYER_STATE_PAUSED) {
-          pipeline.stop();
-        }
-        if (state == media_player::MEDIA_PLAYER_STATE_NONE || state == media_player::MEDIA_PLAYER_STATE_IDLE) {
-          pipeline.start();
-        }
+        toggle_();
         break;
+      case media_player::MEDIA_PLAYER_COMMAND_TURN_ON: {
+        toggle_();
+        break;
+      }
+      case media_player::MEDIA_PLAYER_COMMAND_TURN_OFF: {
+        toggle_();
+        break;
+      }
       default:
         break;
       }
@@ -252,6 +258,7 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
     default:
       break;
   }
+  this->prior_state = this->state;
 }
 
 void ADFMediaPlayer::play_next_track_on_playlist_(int track_id) {
@@ -425,6 +432,16 @@ int ADFMediaPlayer::parse_m3u_into_playlist_(const char *url)
     esp_http_client_close(client);
     esp_http_client_cleanup(client);
     return rc;
+}
+
+void ADFMediaPlayer::toggle_() {
+  if (button_state) {
+    button_state = false;
+  }
+  else {
+    button_state = true;
+  }
+  publish_button_state();
 }
 
 }  // namespace esp_adf

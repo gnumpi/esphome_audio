@@ -63,6 +63,7 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   int previous_playlist_track_id_();
   void set_playlist_track_as_played_(int track_id);
   int parse_m3u_into_playlist_(const char *url);
+  void toggle_();
 };
 
 }  // namespace esp_adf
