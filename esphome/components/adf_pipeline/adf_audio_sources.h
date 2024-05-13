@@ -4,8 +4,22 @@
 
 #include "adf_audio_element.h"
 #include <raw_stream.h>
+#include "esphome/core/helpers.h"
+
 namespace esphome {
 namespace esp_adf {
+
+enum class ADFCodec : uint8_t {AAC = 0, AMR, FLAC, MP3, OGG, OPUS, WAV};
+
+class Track {
+public:
+  std::string uri{""};
+  optional<ADFCodec> codec;
+  optional<int> sampling_rate;
+  optional<int> bit_depth;
+  optional<int> channels;
+};
+
 
 class ADFPipelineSourceElement : public ADFPipelineElement {
  public:
@@ -20,6 +34,8 @@ class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
   bool prepare_elements(bool initial_call) override;
   bool pause_elements(bool initial_call) override;
 
+  void set_track(Track track){}
+  void prepare_track(Track track){}
 
   void set_fixed_settings(bool value){ this->fixed_settings_ = value; }
 

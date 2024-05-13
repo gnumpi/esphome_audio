@@ -356,6 +356,48 @@ bool ADFPipelineElement::elements_have_stopped(){
   return true;
 }
 
+void ADFPipelineElement::replace(ADFPipelineElement* replacement){
+  switch( replacement->get_state() ){
+    case PipelineElementState::UNINITIALIZED:
+      replacement->init_adf_elements();
+      break;
+    case PipelineElementState::STOPPED:
+    case PipelineElementState::INITIALIZED:
+      replacement->prepare_elements(true);
+      replacement->set_state(PipelineElementState::PREPARING);
+      break;
+    case PipelineElementState::PREPARING:
+      if( replacement->prepare_elements(false) ){
+        replacement->set_state(PipelineElementState::READY);
+      }
+      break;
+    case PipelineElementState::PAUSED:
+    case PipelineElementState::READY:
+      if( this->get_state() == RESUMING || this->get_state() == RUNNING ){
+        this->pause_elements(true);
+        this->set_state(PipelineElementState::PAUSING)
+      } else if( this->get_state() == PAUSING ){
+        if (this->pause_elements(false) ){
+          this->set_state(PipelineElementState::PAUSED);
+        }
+      else if( this->get_state() == STOPPING ){
+        if (this->stop_elements(false) ){
+          this->set_state(PipelineElementState::STOPPED);
+        }
+      }
+      } else if( this->get_state() == PipelineElementState::PAUSED || this->get_state() == PipelineElementState::STOPPED ) {
+        //replace
+      }
+      else {
+        this->stop_elements(true);
+        this->set_state(PipelineElementState::STOPPING)
+      }
+      break;
+    default:
+      break
+  }
+
+}
 
 
 
