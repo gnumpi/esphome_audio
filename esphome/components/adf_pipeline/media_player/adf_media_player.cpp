@@ -35,9 +35,9 @@ void ADFMediaPlayer::set_announcement_uri(const std::string& new_uri) {
 void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
   if (call.get_media_url().has_value()) {
     bool enqueue = false;
-#ifdef MP_ANNOUNCE
     Track req_track;
-    if (call.get_announcement().has_value()){
+#ifdef MP_ANNOUNCE
+  if (call.get_announcement().has_value()){
       this->announcement_ = call.get_announcement().value();
     }
     if (this->announcement_){
