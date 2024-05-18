@@ -73,7 +73,6 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   HTTPStreamReaderAndDecoder* next_player_{};
 
   HTTPStreamReaderAndDecoder http_and_decoder_;
-  HTTPStreamReaderAndDecoder http_and_decoder_B_;
 };
 
 }  // namespace esp_adf
