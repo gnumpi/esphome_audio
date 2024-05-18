@@ -373,14 +373,14 @@ void ADFPipelineElement::replace(ADFPipelineElement* replacement){
       break;
     case PipelineElementState::PAUSED:
     case PipelineElementState::READY:
-      if( this->get_state() == RESUMING || this->get_state() == RUNNING ){
+      if( this->get_state() == PipelineElementState::RESUMING || this->get_state() == PipelineElementState::RUNNING ){
         this->pause_elements(true);
-        this->set_state(PipelineElementState::PAUSING)
-      } else if( this->get_state() == PAUSING ){
+        this->set_state(PipelineElementState::PAUSING);
+      } else if( this->get_state() == PipelineElementState::PAUSING ){
         if (this->pause_elements(false) ){
           this->set_state(PipelineElementState::PAUSED);
         }
-      else if( this->get_state() == STOPPING ){
+      else if( this->get_state() == PipelineElementState::STOPPING ){
         if (this->stop_elements(false) ){
           this->set_state(PipelineElementState::STOPPED);
         }
@@ -390,11 +390,11 @@ void ADFPipelineElement::replace(ADFPipelineElement* replacement){
       }
       else {
         this->stop_elements(true);
-        this->set_state(PipelineElementState::STOPPING)
+        this->set_state(PipelineElementState::STOPPING);
       }
       break;
     default:
-      break
+      break;
   }
 
 }

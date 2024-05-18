@@ -31,6 +31,9 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   void set_stream_uri(const std::string& new_uri);
   void set_announcement_uri(const std::string& new_uri);
 
+  void set_announce_base_track(ADFCodec codec, int rate, int bits, int channels){
+    this->announce_base_track_ = Track(codec, rate, bits, channels);
+  }
   void set_current_track(const Track track){}
   void set_next_track(const Track track){}
 
@@ -61,6 +64,8 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   optional<std::string> current_uri_{};
   optional<std::string> announcement_uri_{};
 
+  Track announce_base_track_{};
+  optional<Track> announce_track_{};
   optional<Track> current_track_{};
   optional<Track> next_track_{};
 

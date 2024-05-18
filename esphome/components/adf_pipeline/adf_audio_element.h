@@ -87,7 +87,7 @@ class ADFPipelineElement {
   virtual bool requires_destruction_on_stop(){ return false; }
 
   PipelineElementState get_state(){ return this->element_state_; }
-  void set_state(PipelineElementState new_sate){ this->element_state_ = new_state; }
+  void set_state(PipelineElementState new_state){ this->element_state_ = new_state; }
 
  protected:
   friend class ADFPipeline;
