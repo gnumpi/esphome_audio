@@ -25,6 +25,8 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   float get_setup_priority() const override { return esphome::setup_priority::LATE; }
   void setup() override;
   void dump_config() override;
+  void publish_state();
+  media_player::MediaPlayerState prior_state{media_player::MEDIA_PLAYER_STATE_NONE};
 
   // MediaPlayer implementations
   bool is_muted() const override { return this->muted_; }
@@ -48,6 +50,7 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
 
   bool muted_{false};
   bool play_intent_{false};
+  bool turning_off_{false};
   //optional<std::string> current_uri_{};
 
   HTTPStreamReaderAndDecoder http_and_decoder_;
@@ -63,7 +66,6 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   int previous_playlist_track_id_();
   void set_playlist_track_as_played_(int track_id);
   int parse_m3u_into_playlist_(const char *url);
-  void toggle_();
 };
 
 }  // namespace esp_adf

@@ -11,7 +11,7 @@ namespace esp_adf {
 static const char *const TAG = "adf_media_player";
 
 void ADFMediaPlayer::setup() {
-  state = media_player::MEDIA_PLAYER_STATE_IDLE;
+  state = media_player::MEDIA_PLAYER_STATE_OFF;
 }
 
 void ADFMediaPlayer::dump_config() {
@@ -19,6 +19,15 @@ void ADFMediaPlayer::dump_config() {
   int components = pipeline.get_number_of_elements();
   esph_log_config(TAG, "  Number of ASPComponents: %d", components);  
   set_volume_(.2);
+}
+
+void ADFMediaPlayer::publish_state() {
+  esph_log_d(TAG, "MP State = %s, MP Prior State = %s", media_player_state_to_string(state), media_player_state_to_string(prior_state));
+  if (state != prior_state) {
+  esph_log_d(TAG, "Publish State");
+    this->state_callback_.call();
+    this->prior_state = this->state;
+  }
 }
 
 void ADFMediaPlayer::set_stream_uri(const std::string& new_uri) {
@@ -158,14 +167,45 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
         break;
       }
       case media_player::MEDIA_PLAYER_COMMAND_TOGGLE: {
-        toggle_();
+        if (state == media_player::MEDIA_PLAYER_STATE_OFF) {
+            state = media_player::MEDIA_PLAYER_STATE_ON;
+            publish_state();
+        }
+        else {
+          if (state == media_player::MEDIA_PLAYER_STATE_PLAYING 
+          || state == media_player::MEDIA_PLAYER_STATE_PAUSED 
+          || state == media_player::MEDIA_PLAYER_STATE_ANNOUNCING ) {
+            turning_off_ = true;
+            this->play_intent_ = false;
+            pipeline.stop();
+          }
+          else {
+            state = media_player::MEDIA_PLAYER_STATE_OFF;
+            publish_state();
+          }
+        }
         break;
       case media_player::MEDIA_PLAYER_COMMAND_TURN_ON: {
-        toggle_();
+        if (state == media_player::MEDIA_PLAYER_STATE_OFF) {
+            state = media_player::MEDIA_PLAYER_STATE_ON;
+            publish_state();
+        }
         break;
       }
       case media_player::MEDIA_PLAYER_COMMAND_TURN_OFF: {
-        toggle_();
+        if (state != media_player::MEDIA_PLAYER_STATE_OFF) {
+          if (state == media_player::MEDIA_PLAYER_STATE_PLAYING 
+          || state == media_player::MEDIA_PLAYER_STATE_PAUSED 
+          || state == media_player::MEDIA_PLAYER_STATE_ANNOUNCING ) {
+            turning_off_ = true;
+            this->play_intent_ = false;
+            pipeline.stop();
+          }
+          else {
+            state = media_player::MEDIA_PLAYER_STATE_OFF;
+            publish_state();
+          }
+        }
         break;
       }
       default:
@@ -178,6 +218,8 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
 media_player::MediaPlayerTraits ADFMediaPlayer::get_traits() {
   auto traits = media_player::MediaPlayerTraits();
   traits.set_supports_pause( true );
+  traits.set_supports_next_previous_track( true );
+  traits.set_supports_turn_off_on( true );
   return traits;
 };
 
@@ -234,6 +276,11 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
       if (this->play_intent_ && !pipeline.is_destroy_on_stop()) {
         pipeline.start();
       }
+      if (this->turning_off_ && !pipeline.is_destroy_on_stop()) {
+        this->state = media_player::MEDIA_PLAYER_STATE_OFF;
+        publish_state();
+        turning_off_ = false;
+      }
       break;
     case PipelineState::DESTROYING:
       this->state = media_player::MEDIA_PLAYER_STATE_IDLE;
@@ -249,6 +296,11 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
       if (this->play_intent_ && pipeline.is_destroy_on_stop()) {
         pipeline.start();
       }
+      if (this->turning_off_ && pipeline.is_destroy_on_stop()) {
+        this->state = media_player::MEDIA_PLAYER_STATE_OFF;
+        publish_state();
+        turning_off_ = false;
+      }
       break;
     case PipelineState::PAUSING:
     case PipelineState::PAUSED:
@@ -258,7 +310,6 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
     default:
       break;
   }
-  this->prior_state = this->state;
 }
 
 void ADFMediaPlayer::play_next_track_on_playlist_(int track_id) {
@@ -432,16 +483,6 @@ int ADFMediaPlayer::parse_m3u_into_playlist_(const char *url)
     esp_http_client_close(client);
     esp_http_client_cleanup(client);
     return rc;
-}
-
-void ADFMediaPlayer::toggle_() {
-  if (button_state) {
-    button_state = false;
-  }
-  else {
-    button_state = true;
-  }
-  publish_button_state();
 }
 
 }  // namespace esp_adf
