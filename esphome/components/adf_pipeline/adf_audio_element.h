@@ -64,7 +64,6 @@ class ADFPipelineElement {
 
   bool init_adf_elements() { return init_adf_elements_(); }
   void destroy_adf_elements() {clear_adf_elements_();}
-  void replace( ADFPipelineElement* replacement );
 
   bool in_error_state(){ return this->element_state_ == PipelineElementState::ERROR; }
 
