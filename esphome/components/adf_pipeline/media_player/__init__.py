@@ -50,7 +50,7 @@ CONFIG_SCHEMA = media_player.MEDIA_PLAYER_SCHEMA.extend(
 def check_version() -> bool:
     version_parts = ESPHOME_VERSION.split(".")
     if int(version_parts[0]) > 2024 or (
-        int(version_parts[0]) == 2024 and int(version_parts[1]) > 5
+        int(version_parts[0]) == 2024 and int(version_parts[1]) >= 5
     ):
         return True
     return False
