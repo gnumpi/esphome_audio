@@ -55,10 +55,13 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
     esph_log_d(TAG, "req_track stream uri: %s", req_track.uri.c_str() );
     switch(this->state){
       case media_player::MEDIA_PLAYER_STATE_IDLE:
-#ifdef MP_ANNOUNCE
         this->http_and_decoder_.set_track(req_track);
-        this->set_current_track(req_track);
-#endif
+        if ( this->announcement_){
+          this->set_announce_track(req_track);
+        }
+        else {
+          this->set_current_track(req_track);
+        }
         pipeline.start();
         return;
 
@@ -205,12 +208,15 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
       } else if (this->announce_track_.has_value()){
         set_new_state(media_player::MEDIA_PLAYER_STATE_IDLE);
         this->http_and_decoder_.set_track(this->announce_track_.value());
+        this->announce_track_.reset();
         pipeline.restart();
       } else
 #endif
       if (this->next_track_.has_value()){
         set_new_state(media_player::MEDIA_PLAYER_STATE_IDLE);
+        this->set_current_track( this->next_track_.value() );
         this->http_and_decoder_.set_track( this->next_track_.value() );
+        this->next_track_.reset();
         pipeline.restart();
       } else if (state == PipelineState::PAUSED){
         if( set_new_state(media_player::MEDIA_PLAYER_STATE_PAUSED))

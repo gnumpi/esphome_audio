@@ -34,8 +34,10 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   void set_announce_base_track(ADFCodec codec, int rate, int bits, int channels){
     this->announce_base_track_ = Track(codec, rate, bits, channels);
   }
-  void set_current_track(const Track track){}
-  void set_next_track(const Track track){}
+
+  void set_announce_track(const Track track){ this->announce_track_ = track; }
+  void set_current_track(const Track track){ this->current_track_ = track; }
+  void set_next_track(const Track track){ this->next_track_ = track; }
 
   void start() {pipeline.start();}
   void stop()  {pipeline.stop();}
