@@ -10,6 +10,7 @@
 namespace esphome {
 namespace esp_adf {
 
+
 class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineController {
  public:
   // Pipeline implementations
@@ -29,6 +30,14 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   //
   void set_stream_uri(const std::string& new_uri);
   void set_announcement_uri(const std::string& new_uri);
+
+  void set_announce_base_track(ADFCodec codec, int rate, int bits, int channels){
+    this->announce_base_track_ = Track(codec, rate, bits, channels);
+  }
+
+  void set_announce_track(const Track track){ this->announce_track_ = track; }
+  void set_current_track(const Track track){ this->current_track_ = track; }
+  void set_next_track(const Track track){ this->next_track_ = track; }
 
   void start() {pipeline.start();}
   void stop()  {pipeline.stop();}
@@ -56,6 +65,14 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   bool announcement_{false};
   optional<std::string> current_uri_{};
   optional<std::string> announcement_uri_{};
+
+  Track announce_base_track_{};
+  optional<Track> announce_track_{};
+  optional<Track> current_track_{};
+  optional<Track> next_track_{};
+
+  HTTPStreamReaderAndDecoder* curr_player_{};
+  HTTPStreamReaderAndDecoder* next_player_{};
 
   HTTPStreamReaderAndDecoder http_and_decoder_;
 };

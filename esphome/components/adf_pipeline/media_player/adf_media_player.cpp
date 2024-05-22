@@ -14,8 +14,11 @@ void ADFMediaPlayer::setup() {
 
 void ADFMediaPlayer::dump_config() {
   esph_log_config(TAG, "ESP-ADF-MediaPlayer:");
+#ifdef MP_ANNOUNCE
+  esph_log_config(TAG, "  MP_ANNOUNCE enabled");
+#endif
   int components = pipeline.get_number_of_elements();
-  esph_log_config(TAG, "  Number of ASPComponents: %d", components);
+  esph_log_config(TAG, "  Number of ADFComponents: %d", components);
 }
 
 void ADFMediaPlayer::set_stream_uri(const std::string& new_uri) {
@@ -31,37 +34,55 @@ void ADFMediaPlayer::set_announcement_uri(const std::string& new_uri) {
 
 void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
   if (call.get_media_url().has_value()) {
+    bool enqueue = false;
+    Track req_track;
 #ifdef MP_ANNOUNCE
-    if (call.get_announcement().has_value()){
-      this->announcement_ =  call.get_announcement().value();
+  if (call.get_announcement().has_value()){
+      this->announcement_ = call.get_announcement().value();
     }
-    if( this->announcement_){
-      set_announcement_uri( call.get_media_url().value()) ;
-      //this->http_and_decoder_.set_fixed_settings(true);
+    if (this->announcement_){
+      req_track = this->announce_base_track_;
+      this->announce_track_ = req_track;
     }
     else
 #endif
     {
-      set_stream_uri( call.get_media_url().value()) ;
+      set_stream_uri(call.get_media_url().value()) ;
     }
-    esph_log_d(TAG, "Got control call in state %s", media_player_state_to_string(this->state) );
+    req_track.set_uri(call.get_media_url().value());
+
+    esph_log_d(TAG, "Got control call in state %s", media_player_state_to_string(this->state));
+    esph_log_d(TAG, "req_track stream uri: %s", req_track.uri.c_str() );
     switch(this->state){
       case media_player::MEDIA_PLAYER_STATE_IDLE:
-#ifdef MP_ANNOUNCE
-        this->http_and_decoder_.set_fixed_settings(this->announcement_);
-#endif
+        this->http_and_decoder_.set_track(req_track);
+        if ( this->announcement_){
+          this->set_announce_track(req_track);
+        }
+        else {
+          this->set_current_track(req_track);
+        }
         pipeline.start();
         return;
+
       case media_player::MEDIA_PLAYER_STATE_PAUSED:
       case media_player::MEDIA_PLAYER_STATE_PLAYING:
-        this->play_intent_ = true;
+        if (this->announcement_){
+          this->announce_track_ = req_track;
+        }
+        else{
+          this->set_next_track(req_track);
+        }
         pipeline.stop();
         return;
+
 #ifdef MP_ANNOUNCE
       case media_player::MEDIA_PLAYER_STATE_ANNOUNCING:
+        this->set_current_track(req_track);
         this->play_intent_ = true;
         return;
 #endif
+
       default:
         break;
     }
@@ -90,6 +111,7 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
         }
         break;
       case media_player::MEDIA_PLAYER_COMMAND_STOP:
+        this->current_track_.reset();
         this->current_uri_.reset();
         pipeline.stop();
         this->http_and_decoder_.set_fixed_settings(false);
@@ -174,25 +196,29 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
       {
         this->state = media_player::MEDIA_PLAYER_STATE_IDLE;
         this->announcement_ = false;
-        if( this->current_uri_.has_value() )
+        this->announce_track_.reset();
+        if( this->current_track_.has_value() )
         {
-          this->http_and_decoder_.set_stream_uri(this->current_uri_.value());
-          this->http_and_decoder_.set_fixed_settings(false);
+          this->http_and_decoder_.set_track(this->current_track_.value());
           pipeline.restart();
         }
         else {
           publish_state();
         }
-        this->play_intent_ = false;
+      } else if (this->announce_track_.has_value()){
+        set_new_state(media_player::MEDIA_PLAYER_STATE_IDLE);
+        this->http_and_decoder_.set_track(this->announce_track_.value());
+        this->announce_track_.reset();
+        pipeline.restart();
       } else
 #endif
-      if (this->play_intent_) {
+      if (this->next_track_.has_value()){
         set_new_state(media_player::MEDIA_PLAYER_STATE_IDLE);
-        this->http_and_decoder_.set_fixed_settings(this->announcement_);
+        this->set_current_track( this->next_track_.value() );
+        this->http_and_decoder_.set_track( this->next_track_.value() );
+        this->next_track_.reset();
         pipeline.restart();
-        this->play_intent_ = false;
-      } else if (state == PipelineState::PAUSED)
-      {
+      } else if (state == PipelineState::PAUSED){
         if( set_new_state(media_player::MEDIA_PLAYER_STATE_PAUSED))
         {
           publish_state();

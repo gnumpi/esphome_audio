@@ -24,6 +24,7 @@ class ADFPipelineElement;
 
 enum AudioPipelineElementType : uint8_t { AUDIO_PIPELINE_SOURCE = 0, AUDIO_PIPELINE_SINK, AUDIO_PIPELINE_PROCESS };
 
+
 class AudioPipelineSettingsRequest {
  public:
   AudioPipelineSettingsRequest() = default;
@@ -83,6 +84,9 @@ class ADFPipelineElement {
 
   virtual bool is_ready() { return true; }
   virtual bool requires_destruction_on_stop(){ return false; }
+
+  PipelineElementState get_state(){ return this->element_state_; }
+  void set_state(PipelineElementState new_state){ this->element_state_ = new_state; }
 
  protected:
   friend class ADFPipeline;

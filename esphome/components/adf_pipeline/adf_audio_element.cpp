@@ -357,8 +357,6 @@ bool ADFPipelineElement::elements_have_stopped(){
 }
 
 
-
-
 }  // namespace esp_adf
 }  // namespace esphome
 

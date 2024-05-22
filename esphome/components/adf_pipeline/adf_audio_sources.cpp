@@ -94,17 +94,18 @@ bool HTTPStreamReaderAndDecoder::preparing_step_(){
       break;
 
     case PipelineElementState::PREPARE:
-      esph_log_d(TAG, "Use fixed settings: %s", this->fixed_settings_ ? "yes" : "no");
+      esph_log_d(TAG, "Use fixed settings: %s", this->track_.all_set() ? "yes" : "no");
       esph_log_d(TAG, "Streamer status: %d", audio_element_get_state(this->http_stream_reader_) );
       esph_log_d(TAG, "decoder status: %d", audio_element_get_state(this->decoder_) );
+      esph_log_d(TAG, "stream uri: %s", this->track_.uri.c_str() );
 
-      audio_element_set_uri(this->http_stream_reader_, this->current_url_.c_str());
+      audio_element_set_uri(this->http_stream_reader_, this->track_.uri.c_str());
 
-      if( this->fixed_settings_ ){
+      if( this->track_.all_set() ){
         AudioPipelineSettingsRequest request{this};
-        request.sampling_rate = 16000;
-        request.bit_depth = 16;
-        request.number_of_channels = 1;
+        request.sampling_rate = this->track_.sampling_rate.value();
+        request.bit_depth = this->track_.bit_depth.value();
+        request.number_of_channels = this->track_.channels.value();
         if (!pipeline_->request_settings(request)) {
           esph_log_e(TAG, "Requested audio settings, didn't get accepted");
           pipeline_->on_settings_request_failed(request);
@@ -198,6 +199,10 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
       request.sampling_rate = music_info.sample_rates;
       request.bit_depth = music_info.bits;
       request.number_of_channels = music_info.channels;
+      this->track_.sampling_rate = music_info.sample_rates;
+      this->track_.bit_depth = music_info.bits;
+      this->track_.channels = music_info.channels;
+
       if (!pipeline_->request_settings(request)) {
         esph_log_e(TAG, "Requested audio settings, didn't get accepted");
         pipeline_->on_settings_request_failed(request);

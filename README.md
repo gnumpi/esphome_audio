@@ -64,6 +64,27 @@ For configuration examples not utilizing the *adf_pipeline*, please refer to the
 - **m5stack-atom-echo-spk.yaml**: Shared I2S port with exclusive access.
 - **m5stack-core-s3-spk.yaml**: includes the use of external DACs and ADCs
 
+#### ADF-MediaPlayer announcement configurations:
+When playing an audio stream the stream is additionally started once silently in the preparation phase in order to detect the audio format and set the pipeline components accordingly. In order to safe some time this detection phase can be skipped for announcements which always have the same audio settings:
+
+```yaml
+media_player:
+  - platform: adf_pipeline
+    id: adf_media_player
+    name: s3-dev_media_player
+    internal: false
+    keep_pipeline_alive: false
+    announcement_audio:
+      sample_rate: 16000
+      bits_per_sample: 16
+      num_channels: 1
+    pipeline:
+      - self
+      - resampler
+      - adf_i2s_out
+
+```
+
 #### ADF-Pipeline configurations:
 
 **Dedicated I2S-Port for Microphone and Speaker/Media Player:**
