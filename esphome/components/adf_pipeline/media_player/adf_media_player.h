@@ -60,7 +60,6 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   int play_track_id_{-1};
   
   void play_next_track_on_playlist_(int track_id);
-  void set_decoder_type_(const std::string& uri);
   void clean_playlist_track_();
   int next_playlist_track_id_();
   int previous_playlist_track_id_();

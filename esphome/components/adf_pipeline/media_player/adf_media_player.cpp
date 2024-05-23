@@ -48,36 +48,7 @@ void ADFMediaPlayer::set_stream_uri(const std::string& new_uri) {
 
     uri = playlist_[id].uri;
   }
-  set_decoder_type_(uri);
   http_and_decoder_.set_stream_uri(uri);
-}
-
-void ADFMediaPlayer::set_decoder_type_(const std::string& uri) {
-  
-  if (uri.find(".aac") != std::string::npos) {
-    http_and_decoder_.decoder_type = ADFEncoding::AAC;
-  }
-  else if (uri.find(".amr") != std::string::npos) {
-    http_and_decoder_.decoder_type = ADFEncoding::AMR;
-  }
-  else if (uri.find(".flac") != std::string::npos) {
-    http_and_decoder_.decoder_type = ADFEncoding::FLAC;
-  }
-  else if (uri.find(".mp3") != std::string::npos) {
-    http_and_decoder_.decoder_type = ADFEncoding::MP3;
-  }
-  else if (uri.find(".ogg") != std::string::npos) {
-    http_and_decoder_.decoder_type = ADFEncoding::OGG;
-  }
-  else if (uri.find(".opus") != std::string::npos) {
-    http_and_decoder_.decoder_type = ADFEncoding::OPUS;
-  }
-  else if (uri.find(".wav") != std::string::npos) {
-    http_and_decoder_.decoder_type = ADFEncoding::WAV;
-  }
-  else {
-    http_and_decoder_.decoder_type = ADFEncoding::MP3;
-  }
 }
 
 void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
@@ -318,7 +289,6 @@ void ADFMediaPlayer::play_next_track_on_playlist_(int track_id) {
     int id = next_playlist_track_id_();
     if (id > -1) {
       std::string uri = playlist_[id].uri;
-      set_decoder_type_(uri);
       http_and_decoder_.set_stream_uri(uri);
     }
     else {
