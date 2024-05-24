@@ -64,6 +64,7 @@ bool I2SAudioComponent::release_access_(uint8_t access){
 bool I2SAudioComponent::install_i2s_driver_(i2s_driver_config_t i2s_cfg, uint8_t access){
   bool success = false;
   this->lock();
+  esph_log_d(TAG, "Install driver requested by %s", access == I2SAccess::RX ? "Reader" : "Writer");
   if( this->access_state_ == I2SAccess::FREE || this->access_state_ == access ){
     if(this->access_mode_ == I2SAccessMode::DUPLEX){
       i2s_cfg.mode = (i2s_mode_t) (i2s_cfg.mode | I2S_MODE_TX | I2S_MODE_RX);

@@ -75,7 +75,7 @@ bool ADFElementI2SIn::is_ready(){
     AudioPipelineSettingsRequest request{this};
     request.sampling_rate = this->sample_rate_;
     request.bit_depth = this->bits_per_sample_;
-    request.number_of_channels = 2;
+    request.number_of_channels = this->num_of_channels();
     this->valid_settings_ = pipeline_->request_settings(request);
   }
   return this->valid_settings_;
