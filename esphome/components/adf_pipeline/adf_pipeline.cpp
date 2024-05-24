@@ -116,6 +116,14 @@ void ADFPipeline::check_for_pipeline_events_(){
 
     assert( this->state_ != PipelineState::PREPARING );
 
+    if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.cmd == AEL_MSG_CMD_REPORT_POSITION){
+     audio_element_info_t music_info{};
+     audio_element_handle_t el = (audio_element_handle_t) msg.source;
+     audio_element_getinfo(el, &music_info);
+     esph_log_i(TAG, "[ %s ] byte_pos: %lld, total: %lld", audio_element_get_tag(el), music_info.byte_pos, music_info.total_bytes);
+    }
+
+
     //trigger state changes on events received from pipeline
     if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.cmd == AEL_MSG_CMD_REPORT_STATUS){
       audio_element_status_t status;
@@ -363,7 +371,7 @@ void ADFPipeline::watch_() {
       if(this->requested_ == PipelineRequest::STOPPED){
         set_state_(PipelineState::STOPPED);
       }
-      else if ( millis() - this->finish_timeout_invoke_ > 1000){
+      else if ( millis() - this->finish_timeout_invoke_ > 16000){
         this->requested_ = PipelineRequest::STOPPED;
         set_state_(PipelineState::ABORTING);
       }
@@ -524,7 +532,6 @@ void ADFPipeline::deinit_all_() {
   }
   this->adf_pipeline_ = nullptr;
   this->adf_pipeline_event_ = nullptr;
-  this->set_state_(PipelineState::UNINITIALIZED);
 }
 
 }  // namespace esp_adf

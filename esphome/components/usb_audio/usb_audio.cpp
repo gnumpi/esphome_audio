@@ -21,7 +21,7 @@ void USBAudioComponent::setup_usb(){
         .spk_ch_num = UAC_CH_ANY,
         .spk_bit_resolution = UAC_BITS_ANY,
         .spk_samples_frequence = UAC_FREQUENCY_ANY,
-        .spk_buf_size = 19200,// 96000,
+        .spk_buf_size = 192000,// 96000,
         .flags = 0 //FLAG_UAC_SPK_SUSPEND_AFTER_START
     };
     ESP_ERROR_CHECK(uac_streaming_config(&uac_config));
