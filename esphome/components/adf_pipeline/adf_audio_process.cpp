@@ -78,6 +78,14 @@ void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
     }
   }
 
+  if( request.bit_depth > -1 ){
+    if( request.bit_depth != this->src_bit_depth_ )
+    {
+      this->src_bit_depth_ = request.bit_depth;
+      settings_changed = true;
+    }
+  }
+
   if( this->sdk_resampler_ && settings_changed)
   {
     if( audio_element_get_state(this->sdk_resampler_) == AEL_STATE_RUNNING)
@@ -92,13 +100,15 @@ void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
     else {
     esph_log_d(TAG, "Called from invalid caller");
     }
-    esph_log_d(TAG, "New settings: SRC: rate: %d, ch: %d DST: rate: %d, ch: %d ", this->src_rate_, this->src_num_channels_, this->dst_rate_, this->dst_num_channels_);
+    esph_log_d(TAG, "New settings: SRC: rate: %d, ch: %d bits: %d, DST: rate: %d, ch: %d, bits %d", this->src_rate_, this->src_num_channels_, this->src_bit_depth_, this->dst_rate_, this->dst_num_channels_, this->dst_bit_depth_);
     rsp_filter_t *filter = (rsp_filter_t *)audio_element_getdata(this->sdk_resampler_);
     resample_info_t &resample_info = *(filter->resample_info);
     resample_info.src_rate = this->src_rate_;
     resample_info.dest_rate = this->dst_rate_;
     resample_info.src_ch = this->src_num_channels_;
     resample_info.dest_ch = this->dst_num_channels_;
+    resample_info.src_bits = this->src_bit_depth_;
+    resample_info.dest_bits = this->dst_bit_depth_;
   }
 }
 

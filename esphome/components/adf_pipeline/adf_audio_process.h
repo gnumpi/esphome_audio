@@ -24,6 +24,8 @@ class ADFResampler : public ADFPipelineProcessElement {
   int dst_rate_{16000};
   int src_num_channels_{2};
   int dst_num_channels_{2};
+  int src_bit_depth_{16};
+  int dst_bit_depth_{16};
 
   audio_element_handle_t sdk_resampler_;
 };
