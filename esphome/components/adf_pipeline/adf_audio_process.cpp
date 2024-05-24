@@ -84,6 +84,12 @@ void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
       this->src_bit_depth_ = request.bit_depth;
       settings_changed = true;
     }
+    uint32_t dst_bit_depth = request.final_bit_depth > -1 ? request.final_bit_depth : this->src_bit_depth_;
+    if( dst_bit_depth != this->dst_bit_depth_ )
+    {
+      this->dst_bit_depth_ = dst_bit_depth;
+      settings_changed = true;
+    }
   }
 
   if( this->sdk_resampler_ && settings_changed)
