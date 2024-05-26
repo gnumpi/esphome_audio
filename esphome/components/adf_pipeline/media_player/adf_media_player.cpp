@@ -2,6 +2,8 @@
 #include "esphome/core/log.h"
 
 #include <esp_http_client.h>
+#include <algorithm>
+#include <random>
 
 #ifdef USE_ESP_IDF
 
@@ -17,21 +19,22 @@ void ADFMediaPlayer::setup() {
 void ADFMediaPlayer::dump_config() {
   esph_log_config(TAG, "ESP-ADF-MediaPlayer:");
   int components = pipeline.get_number_of_elements();
-  esph_log_config(TAG, "  Number of ASPComponents: %d", components);  
-  set_volume_(.2);
+  esph_log_config(TAG, "  Number of ASPComponents: %d", components);
 }
 
 void ADFMediaPlayer::publish_state() {
   esph_log_d(TAG, "MP State = %s, MP Prior State = %s", media_player_state_to_string(state), media_player_state_to_string(prior_state));
-  if (state != prior_state) {
+  if (state != prior_state || force_publish_) {
   esph_log_d(TAG, "Publish State");
     this->state_callback_.call();
     this->prior_state = this->state;
+    this->force_publish_ = false;
   }
 }
 
 void ADFMediaPlayer::set_stream_uri(const std::string& new_uri) {
   std::string uri = new_uri;
+  current_uri_ = new_uri;
   playlist_found_ = false;
   clean_playlist_track_();
   if (new_uri.find("m3u") != std::string::npos) {
@@ -56,17 +59,32 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
     esph_log_d(TAG, "Got control call in state %d", state);
     
   //Media File is sent (no command)
-  if (call.get_media_url().has_value()) {
-    this->play_track_id_ = -1;
-    set_stream_uri( call.get_media_url().value()) ;
-    this->play_intent_ = true;
+  if (call.get_media_url().has_value())
+  {
+    //TBD announcing integration into pipeline
+    bool announcing = false;
+    if (call.get_announcement().has_value()) {
+      announcing = call.get_announcement().value();
+    }
 
-    if (state == media_player::MEDIA_PLAYER_STATE_PLAYING || state == media_player::MEDIA_PLAYER_STATE_PAUSED) {
-      this->play_track_id_ = 0;
-      pipeline.stop();
-      return;
-    } else {
-      pipeline.start();
+    std::string enqueue = media_player_enqueue_to_string(media_player::MEDIA_PLAYER_ENQUEUE_PLAY);
+    if (call.get_enqueue().has_value()) {
+      enqueue = call.get_enqueue().value();
+    }
+    if (enqueue == media_player_enqueue_to_string(media_player::MEDIA_PLAYER_ENQUEUE_PLAY)) {
+      this->play_track_id_ = -1;
+      set_stream_uri(call.get_media_url().value());
+      this->play_intent_ = true;
+      if (state == media_player::MEDIA_PLAYER_STATE_PLAYING || state == media_player::MEDIA_PLAYER_STATE_PAUSED) {
+        this->play_track_id_ = 0;
+        pipeline.stop();
+        return;
+      } else {
+        pipeline.start();
+      }
+    }
+    else if (enqueue == media_player_enqueue_to_string(media_player::MEDIA_PLAYER_ENQUEUE_ADD)) {
+      playlist_add_(call.get_media_url().value());
     }
   }
 
@@ -88,7 +106,16 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
         if (state == media_player::MEDIA_PLAYER_STATE_PAUSED) {
           pipeline.resume();
         }
-        if (state == media_player::MEDIA_PLAYER_STATE_NONE || state == media_player::MEDIA_PLAYER_STATE_IDLE) {
+        if (state == media_player::MEDIA_PLAYER_STATE_OFF 
+        || state == media_player::MEDIA_PLAYER_STATE_ON 
+        || state == media_player::MEDIA_PLAYER_STATE_NONE
+        || state == media_player::MEDIA_PLAYER_STATE_IDLE) {
+        
+          int id = next_playlist_track_id_();
+          if (id > -1) {
+            std::string uri = playlist_[id].uri;
+            http_and_decoder_.set_stream_uri(uri);
+          }
           pipeline.start();
         }
         break;
@@ -126,15 +153,19 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
         break;
       }
       case media_player::MEDIA_PLAYER_COMMAND_NEXT_TRACK: {
-        this->play_intent_ = true;
-        this->play_track_id_ = -1;
-        pipeline.stop();
+        if ( this->playlist_.size() > 0 ) {
+          this->play_intent_ = true;
+          this->play_track_id_ = -1;
+          pipeline.stop();
+        }
         break;
       }
       case media_player::MEDIA_PLAYER_COMMAND_PREVIOUS_TRACK: {
-        this->play_intent_ = true;
-        this->play_track_id_ = previous_playlist_track_id_();
-        pipeline.stop();
+        if ( this->playlist_.size() > 0 ) {
+          this->play_intent_ = true;
+          this->play_track_id_ = previous_playlist_track_id_();
+          pipeline.stop();
+        }
         break;
       }
       case media_player::MEDIA_PLAYER_COMMAND_TOGGLE: {
@@ -179,6 +210,30 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
         }
         break;
       }
+      case media_player::MEDIA_PLAYER_COMMAND_CLEAR_PLAYLIST: {
+        clean_playlist_track_();
+        break;
+      }
+      case media_player::MEDIA_PLAYER_COMMAND_SHUFFLE: {
+        set_shuffle_(true);
+        break;
+      }
+      case media_player::MEDIA_PLAYER_COMMAND_UNSHUFFLE: {
+        set_shuffle_(false);
+        break;
+      }
+      case media_player::MEDIA_PLAYER_COMMAND_REPEAT_OFF: {
+        set_repeat_(media_player_repeat_mode_to_string(media_player::MEDIA_PLAYER_REPEAT_OFF));
+        break;
+      }
+      case media_player::MEDIA_PLAYER_COMMAND_REPEAT_ONE: {
+        set_repeat_(media_player_repeat_mode_to_string(media_player::MEDIA_PLAYER_REPEAT_ONE));
+        break;
+      }
+      case media_player::MEDIA_PLAYER_COMMAND_REPEAT_ALL: {
+        set_repeat_(media_player_repeat_mode_to_string(media_player::MEDIA_PLAYER_REPEAT_ALL));
+        break;
+      }
       default:
         break;
       }
@@ -210,6 +265,66 @@ void ADFMediaPlayer::unmute_() {
     muted_ = false;
     publish_state();
   }
+}
+
+void ADFMediaPlayer::set_repeat_(const std::string& repeat) {
+  this->repeat_ = repeat;
+  force_publish_ = true;
+  publish_state();
+}
+
+void ADFMediaPlayer::set_shuffle_(bool shuffle) {
+  unsigned int vid = this->playlist_.size();
+  
+  if (vid > 0) {
+    if (shuffle) {
+      auto rng = std::default_random_engine {};
+      std::shuffle(std::begin(playlist_), std::end(playlist_), rng);
+    }
+    else {
+      sort(playlist_.begin(), playlist_.end());
+    }
+    for(unsigned int i = 0; i < vid; i++)
+    {
+      //esph_log_d(TAG, "Playlist: %s", playlist_[i].uri.c_str());
+      this->playlist_[i].is_played = false;
+    }
+    
+    this->shuffle_ = shuffle;
+    force_publish_ = true;
+    publish_state();
+    this->play_intent_ = true;
+    this->play_track_id_ = 0;
+    pipeline.stop();
+  }
+}
+
+void ADFMediaPlayer::playlist_add_(const std::string& uri) {
+  
+  esph_log_d(TAG, "playlist_add_: %s", uri.c_str());
+
+  unsigned int vid = this->playlist_.size();
+
+  if (uri.find("m3u") != std::string::npos) {
+    playlist_found_ = true;
+    int pl = parse_m3u_into_playlist_(uri.c_str());
+  }
+  else {
+    if (this->playlist_.size() == 0 && current_uri_ != "") {
+      ADFPlaylistTrack track;
+      track.uri = current_uri_;
+      track.order = vid;
+      playlist_.push_back(track);
+      playlist_found_ = true;
+      vid++;
+    }
+    ADFPlaylistTrack track;
+    track.uri = uri;
+    track.order = vid;
+    playlist_.push_back(track);
+  }
+  
+  esph_log_d(TAG, "Number of playlist tracks = %d", playlist_.size());
 }
 
 void ADFMediaPlayer::set_volume_(float volume, bool publish) {
@@ -247,6 +362,9 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
       if (this->play_intent_ && !pipeline.is_destroy_on_stop()) {
         pipeline.start();
       }
+      else {
+        current_uri_ = "";
+      }
       if (this->turning_off_ && !pipeline.is_destroy_on_stop()) {
         this->state = media_player::MEDIA_PLAYER_STATE_OFF;
         publish_state();
@@ -267,6 +385,9 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
       if (this->play_intent_ && pipeline.is_destroy_on_stop()) {
         pipeline.start();
       }
+      else {
+        current_uri_ = "";
+      }
       if (this->turning_off_ && pipeline.is_destroy_on_stop()) {
         this->state = media_player::MEDIA_PLAYER_STATE_OFF;
         publish_state();
@@ -285,15 +406,28 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
 
 void ADFMediaPlayer::play_next_track_on_playlist_(int track_id) {
   if (playlist_found_) {
-    set_playlist_track_as_played_(track_id);
+    if (repeat_ != media_player_repeat_mode_to_string(media_player::MEDIA_PLAYER_REPEAT_ONE)) {
+      set_playlist_track_as_played_(track_id);
+    }
     int id = next_playlist_track_id_();
     if (id > -1) {
       std::string uri = playlist_[id].uri;
       http_and_decoder_.set_stream_uri(uri);
     }
     else {
-      clean_playlist_track_();
-      this->play_intent_ = false;
+      if (repeat_ == media_player_repeat_mode_to_string(media_player::MEDIA_PLAYER_REPEAT_ALL)) {
+        unsigned int vid = this->playlist_.size();
+        for(unsigned int i = 0; i < vid; i++)
+        {
+          this->playlist_[i].is_played = false;
+        }
+        std::string uri = playlist_[0].uri;
+        http_and_decoder_.set_stream_uri(uri);
+      }
+      else {
+        clean_playlist_track_();
+        this->play_intent_ = false;
+      }
     }
   }
 }
@@ -309,6 +443,8 @@ void ADFMediaPlayer::clean_playlist_track_()
     }
     */
     this->playlist_.clear();
+    play_track_id_ = -1;
+    current_uri_ = "";
   }
 }
 
@@ -375,6 +511,8 @@ void ADFMediaPlayer::set_playlist_track_as_played_(int track_id)
 
 int ADFMediaPlayer::parse_m3u_into_playlist_(const char *url)
 {
+  
+    unsigned int vid = this->playlist_.size();
     esp_http_client_config_t config = {
         .url = url
     };
@@ -436,7 +574,9 @@ int ADFMediaPlayer::parse_m3u_into_playlist_(const char *url)
               if (strchr(cLine,'#') == NULL) {
                 ADFPlaylistTrack track;
                 track.uri = cLine;
+                track.order = vid;
                 playlist_.push_back(track);
+                vid++;
               }
               free(cLine);
             }
@@ -452,6 +592,17 @@ int ADFMediaPlayer::parse_m3u_into_playlist_(const char *url)
     }
     esp_http_client_close(client);
     esp_http_client_cleanup(client);
+    
+    if (shuffle_) {
+      auto rng = std::default_random_engine {};
+      std::shuffle(std::begin(playlist_), std::end(playlist_), rng);
+      unsigned int vid = this->playlist_.size();
+      for(unsigned int i = 0; i < vid; i++)
+      {
+        esph_log_d(TAG, "Playlist: %s", playlist_[i].uri.c_str());
+        this->playlist_[i].is_played = false;
+      }
+    }
     return rc;
 }
 

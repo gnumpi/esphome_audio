@@ -12,8 +12,15 @@ namespace esp_adf {
 
 class ADFPlaylistTrack {
   public:
+    unsigned int order{0};
     std::string uri{""};
     bool is_played{false};
+    
+    // Overloading < operator 
+    bool operator<(const ADFPlaylistTrack& obj) const
+    { 
+        return order < obj.order; 
+    } 
 };
 
 class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineController {
@@ -30,6 +37,8 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
 
   // MediaPlayer implementations
   bool is_muted() const override { return this->muted_; }
+  std::string repeat() const { return this->repeat_; }
+  bool is_shuffle() const override { return this->shuffle_; }
   media_player::MediaPlayerTraits get_traits() override;
 
   //
@@ -46,12 +55,17 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
 
   void mute_();
   void unmute_();
+  void set_repeat_(const std::string& repeat);
+  void set_shuffle_(bool shuffle);
   void set_volume_(float volume, bool publish = true);
 
   bool muted_{false};
+  std::string repeat_{"off"};
+  bool shuffle_{false};
   bool play_intent_{false};
   bool turning_off_{false};
-  //optional<std::string> current_uri_{};
+  std::string current_uri_{};
+  bool force_publish_{false};
 
   HTTPStreamReaderAndDecoder http_and_decoder_;
 
@@ -64,6 +78,7 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   int next_playlist_track_id_();
   int previous_playlist_track_id_();
   void set_playlist_track_as_played_(int track_id);
+  void playlist_add_(const std::string& new_uri);
   int parse_m3u_into_playlist_(const char *url);
 };
 
