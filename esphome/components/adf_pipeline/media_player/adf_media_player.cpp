@@ -20,6 +20,7 @@ void ADFMediaPlayer::dump_config() {
   esph_log_config(TAG, "ESP-ADF-MediaPlayer:");
   int components = pipeline.get_number_of_elements();
   esph_log_config(TAG, "  Number of ASPComponents: %d", components);
+  set_volume_(.01);
 }
 
 void ADFMediaPlayer::publish_state() {
@@ -49,9 +50,25 @@ void ADFMediaPlayer::set_stream_uri(const std::string& new_uri) {
     esph_log_d(TAG, "Number of playlist tracks = %d", playlist_.size());
     int id = next_playlist_track_id_();
 
-    uri = playlist_[id].uri;
+    set_playlist_track_(playlist_[id]);
   }
-  http_and_decoder_.set_stream_uri(uri);
+  else {
+    set_title_(uri);
+    http_and_decoder_.set_stream_uri(uri);
+  }
+}
+
+void ADFMediaPlayer::set_playlist_track_(ADFPlaylistTrack track) {
+  esph_log_d(TAG, "%s %s %s", track.artist.c_str(), track.album.c_str(), track.title.c_str());
+  set_artist_(track.artist);
+  set_album_(track.album);
+  if (track.title == "") {
+    set_title_(track.uri);
+  }
+  else {
+    set_title_(track.title);
+  }
+  http_and_decoder_.set_stream_uri(track.uri);
 }
 
 void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
@@ -80,6 +97,10 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
         pipeline.stop();
         return;
       } else {
+        if (state == media_player::MEDIA_PLAYER_STATE_OFF) {
+          state = media_player::MEDIA_PLAYER_STATE_ON;
+          publish_state();
+        }
         pipeline.start();
       }
     }
@@ -113,8 +134,11 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
         
           int id = next_playlist_track_id_();
           if (id > -1) {
-            std::string uri = playlist_[id].uri;
-            http_and_decoder_.set_stream_uri(uri);
+            set_playlist_track_(playlist_[id]);
+          }
+          if (state == media_player::MEDIA_PLAYER_STATE_OFF) {
+            state = media_player::MEDIA_PLAYER_STATE_ON;
+            publish_state();
           }
           pipeline.start();
         }
@@ -349,6 +373,9 @@ void ADFMediaPlayer::on_pipeline_state_change(PipelineState state) {
       publish_state();
       break;
     case PipelineState::STOPPING:
+      set_artist_("");
+      set_album_("");
+      set_title_("");
       this->state = media_player::MEDIA_PLAYER_STATE_IDLE;
       publish_state();
       break;
@@ -411,8 +438,7 @@ void ADFMediaPlayer::play_next_track_on_playlist_(int track_id) {
     }
     int id = next_playlist_track_id_();
     if (id > -1) {
-      std::string uri = playlist_[id].uri;
-      http_and_decoder_.set_stream_uri(uri);
+      set_playlist_track_(playlist_[id]);
     }
     else {
       if (repeat_ == media_player_repeat_mode_to_string(media_player::MEDIA_PLAYER_REPEAT_ALL)) {
@@ -421,8 +447,7 @@ void ADFMediaPlayer::play_next_track_on_playlist_(int track_id) {
         {
           this->playlist_[i].is_played = false;
         }
-        std::string uri = playlist_[0].uri;
-        http_and_decoder_.set_stream_uri(uri);
+        set_playlist_track_(playlist_[0]);
       }
       else {
         clean_playlist_track_();
@@ -545,6 +570,9 @@ int ADFMediaPlayer::parse_m3u_into_playlist_(const char *url)
           char *ptr;
           char *buffer = response;
           bool keeplooping = true;
+          std::string artist = "";
+          std::string album = "";
+          std::string title = "";
           while (keeplooping) {
             ptr = strchr(buffer , '\n' );
             if (ptr != NULL)
@@ -571,10 +599,28 @@ int ADFMediaPlayer::parse_m3u_into_playlist_(const char *url)
               }
               sprintf (cLine,"%.*s", lngth, buffer);
               cLine[lngth] = '\0';
-              if (strchr(cLine,'#') == NULL) {
+              esph_log_d(TAG, "%s", cLine);
+              if (strstr(cLine,"#EXTART:") != NULL) {
+                artist = cLine + 8;
+              }
+              else if (strstr(cLine,"#EXTALB:") != NULL) {
+                if (strchr(cLine,'-') != NULL) {
+                  album = strchr(cLine,'-') + 1;
+                }
+                else {
+                  album = cLine + 8;
+                }
+              }
+              else if (strstr(cLine,"#EXTINF:") != NULL) {
+                title = strchr(cLine,',') + 1;
+              }
+              else if (strchr(cLine,'#') == NULL) {
                 ADFPlaylistTrack track;
                 track.uri = cLine;
                 track.order = vid;
+                track.artist = artist;
+                track.album = album;
+                track.title = title;
                 playlist_.push_back(track);
                 vid++;
               }
@@ -599,7 +645,7 @@ int ADFMediaPlayer::parse_m3u_into_playlist_(const char *url)
       unsigned int vid = this->playlist_.size();
       for(unsigned int i = 0; i < vid; i++)
       {
-        esph_log_d(TAG, "Playlist: %s", playlist_[i].uri.c_str());
+        esph_log_v(TAG, "Playlist: %s", playlist_[i].uri.c_str());
         this->playlist_[i].is_played = false;
       }
     }

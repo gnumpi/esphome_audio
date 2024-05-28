@@ -15,6 +15,9 @@ class ADFPlaylistTrack {
     unsigned int order{0};
     std::string uri{""};
     bool is_played{false};
+    std::string artist{""};
+    std::string album{""};
+    std::string title{""};
     
     // Overloading < operator 
     bool operator<(const ADFPlaylistTrack& obj) const
@@ -39,6 +42,9 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   bool is_muted() const override { return this->muted_; }
   std::string repeat() const { return this->repeat_; }
   bool is_shuffle() const override { return this->shuffle_; }
+  std::string artist() const { return this->artist_; }
+  std::string album() const { return this->album_; }
+  std::string title() const { return this->title_; }
   media_player::MediaPlayerTraits get_traits() override;
 
   //
@@ -57,11 +63,17 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   void unmute_();
   void set_repeat_(const std::string& repeat);
   void set_shuffle_(bool shuffle);
+  void set_artist_(const std::string& artist) {artist_ = artist;}
+  void set_album_(const std::string& album) {album_ = album;}
+  void set_title_(const std::string& title) {title_ = title;}
   void set_volume_(float volume, bool publish = true);
 
   bool muted_{false};
   std::string repeat_{"off"};
   bool shuffle_{false};
+  std::string artist_{""};
+  std::string album_{""};
+  std::string title_{""};
   bool play_intent_{false};
   bool turning_off_{false};
   std::string current_uri_{};
@@ -80,6 +92,7 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   void set_playlist_track_as_played_(int track_id);
   void playlist_add_(const std::string& new_uri);
   int parse_m3u_into_playlist_(const char *url);
+  void set_playlist_track_(ADFPlaylistTrack track);
 };
 
 }  // namespace esp_adf
