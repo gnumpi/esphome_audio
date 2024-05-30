@@ -5,6 +5,8 @@
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
 
+//#include "es8311_const.h"
+
 namespace esphome {
 namespace i2s_audio {
 

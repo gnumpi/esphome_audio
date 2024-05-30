@@ -22,6 +22,7 @@ public:
   virtual bool set_volume( float volume ){return true;}
 
   void set_gpio_enable(GPIOPin* enable_pin){this->enable_pin_ = enable_pin;}
+
 protected:
   GPIOPin* enable_pin_{nullptr};
 };
@@ -38,6 +39,14 @@ class ES8388 : public ExternalDAC {
   bool apply_i2s_settings(const i2s_driver_config_t&  i2s_cfg) override;
   bool set_mute_audio( bool mute );
 };
+
+class ES8311 : public ExternalDAC {
+  bool init_device() override;
+  bool apply_i2s_settings(const i2s_driver_config_t&  i2s_cfg) override;
+  bool set_mute_audio( bool mute );
+  bool set_volume( float volume );
+};
+
 
 
 }
