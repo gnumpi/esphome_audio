@@ -361,7 +361,7 @@ return true;
 
 bool ES8311::set_volume( float volume ){
   volume = clamp(volume, 0.0f, 1.0f);
-  uint8_t reg32 = remap<uint8_t, float>(volume, 0.0f, 1.0f, 0, 255);
+  uint8_t reg32 = remap<uint8_t, float>(volume, 0.0f, 1.0f, 0, 200);
   this->reg(ES8311_REG32_DAC) = reg32;
   return true;
 }
