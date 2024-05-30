@@ -30,7 +30,7 @@ bool HTTPStreamReaderAndDecoder::init_adf_elements_() {
 
   http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
   http_cfg.task_core = 0;
-  http_cfg.out_rb_size = 1024 * 1024;
+  http_cfg.out_rb_size = 256 * 1024;
   http_cfg.event_handle = http_event_handler;
   http_stream_reader_ = http_stream_init(&http_cfg);
   //http_stream_reader_->buf_size =  1024;
@@ -40,9 +40,12 @@ bool HTTPStreamReaderAndDecoder::init_adf_elements_() {
   sdk_element_tags_.push_back("http");
 
   audio_decoder_t auto_decode[] = {
+        /*
         DEFAULT_ESP_AMRNB_DECODER_CONFIG(),
         DEFAULT_ESP_AMRWB_DECODER_CONFIG(),
+        */
         DEFAULT_ESP_FLAC_DECODER_CONFIG(),
+
         DEFAULT_ESP_OGG_DECODER_CONFIG(),
         DEFAULT_ESP_OPUS_DECODER_CONFIG(),
         DEFAULT_ESP_MP3_DECODER_CONFIG(),
@@ -50,9 +53,10 @@ bool HTTPStreamReaderAndDecoder::init_adf_elements_() {
         DEFAULT_ESP_AAC_DECODER_CONFIG(),
         DEFAULT_ESP_M4A_DECODER_CONFIG(),
         DEFAULT_ESP_TS_DECODER_CONFIG(),
+
   };
   esp_decoder_cfg_t auto_dec_cfg = DEFAULT_ESP_DECODER_CONFIG();
-  auto_dec_cfg.out_rb_size = 500 * 1024;
+  auto_dec_cfg.out_rb_size = 256 * 1024;
   decoder_ = esp_decoder_init(&auto_dec_cfg, auto_decode, 10);
 
   sdk_audio_elements_.push_back(this->decoder_);

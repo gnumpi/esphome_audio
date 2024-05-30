@@ -21,8 +21,20 @@ void USBAudioComponent::setup_usb(){
         .spk_ch_num = UAC_CH_ANY,
         .spk_bit_resolution = UAC_BITS_ANY,
         .spk_samples_frequence = UAC_FREQUENCY_ANY,
-        .spk_buf_size = 192000,// 96000,
+        .spk_buf_size = 25600,// 96000, // size of speaker send buffer, should be a multiple of spk_ep_mps
+
+        .mic_interface = 0,              /*!< (optional) microphone stream interface number, set 0 if not use */
+        .mic_ep_addr = 0,                /*!< (optional) microphone interface endpoint address */
+        .mic_ep_mps = 0,                 /*!< (optional) microphone interface endpoint mps */
+                                      /*!< (optional) speaker stream interface number, set 0 if not use */
+        //spk_ep_addr;                /*!< (optional) speaker interface endpoint address */
+        .spk_ep_mps = 512,   //max 512              /*!< (optional) speaker interface endpoint mps */
+        //ac_interface;               /*!< (optional) audio control interface number, set 0 if not use */
+        //mic_fu_id;                  /*!< (optional) microphone feature unit id, set 0 if not use */
+        //spk_fu_id;                  /*!< (optional) speaker feature unit id, set 0 if not use */
+
         .flags = 0 //FLAG_UAC_SPK_SUSPEND_AFTER_START
+
     };
     ESP_ERROR_CHECK(uac_streaming_config(&uac_config));
     ESP_ERROR_CHECK(usb_streaming_state_register(&stream_state_changed_cb, this));
