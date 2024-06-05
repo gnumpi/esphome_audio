@@ -23,7 +23,7 @@ ADFMediaPlayer = esp_adf_ns.class_(
 
 
 ADFCodec = esp_adf_ns.enum("ADFCodec", is_class=True)
-CODECS = {"MP3": ADFCodec.MP3}
+CODECS = {"auto": "ADFCodec.AUTO", "MP3": ADFCodec.MP3}
 
 CONF_BITS_PER_SAMPLE = "bits_per_sample"
 CONF_CODEC = "codec"
@@ -43,6 +43,7 @@ CONFIG_SCHEMA = media_player.MEDIA_PLAYER_SCHEMA.extend(
     {
         cv.GenerateID(): cv.declare_id(ADFMediaPlayer),
         cv.Optional(CONF_ANNOUNCEMENT_AUDIO): FIXED_AUDIO_SETTINGS_SCHEMA,
+        cv.Optional(CONF_CODEC, default="MP3"): cv.enum(CODECS),
     }
 ).extend(ADF_PIPELINE_CONTROLLER_SCHEMA)
 
@@ -71,6 +72,9 @@ async def to_code(config):
                     caa[CONF_NUM_CHANNELS],
                 )
             )
+
+    if config[CONF_CODEC] == "auto":
+        cg.add_define("ESP_AUTO_DECODER")
 
     await cg.register_component(var, config)
     await setup_pipeline_controller(var, config)

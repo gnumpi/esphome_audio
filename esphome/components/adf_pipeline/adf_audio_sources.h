@@ -1,5 +1,7 @@
 #pragma once
 
+#include "esphome/core/defines.h"
+
 #ifdef USE_ESP_IDF
 
 #include "adf_audio_element.h"
@@ -9,7 +11,7 @@
 namespace esphome {
 namespace esp_adf {
 
-enum class ADFCodec : uint8_t {AAC = 0, AMR, FLAC, MP3, OGG, OPUS, WAV};
+enum class ADFCodec : uint8_t {AUTO = 0, AAC, AMR, FLAC, MP3, OGG, OPUS, WAV};
 
 class Track {
 public:

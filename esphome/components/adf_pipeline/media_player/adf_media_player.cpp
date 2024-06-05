@@ -17,6 +17,9 @@ void ADFMediaPlayer::dump_config() {
 #ifdef MP_ANNOUNCE
   esph_log_config(TAG, "  MP_ANNOUNCE enabled");
 #endif
+#ifdef ESP_AUTO_DECODER
+  esph_log_config(TAG, "  Auto-detect codec is enabled");
+#endif
   int components = pipeline.get_number_of_elements();
   esph_log_config(TAG, "  Number of ADFComponents: %d", components);
 }

@@ -3,7 +3,11 @@
 #ifdef USE_ESP_IDF
 
 #include <http_stream.h>
+#ifdef ESP_AUTO_DECODER
 #include <esp_decoder.h>
+#else
+#include <mp3_decoder.h>
+#endif
 #include <raw_stream.h>
 
 #include "sdk_ext.h"
@@ -16,6 +20,13 @@ static const char *const TAG = "esp_audio_sources";
 /*
 =========== HTTPStreamReaderAndDecoder ==========
 */
+
+#ifdef ESP_AUTO_DECODER
+static const int HTTP_STREAM_RB_SIZE = 256 * 1024;
+#else
+static const int HTTP_STREAM_RB_SIZE = 4 * 1024;
+#endif
+
 
 static int http_event_handler(http_stream_event_msg_t *msg){
   if( msg->event_id != HTTP_STREAM_ON_RESPONSE ){
@@ -39,6 +50,7 @@ bool HTTPStreamReaderAndDecoder::init_adf_elements_() {
   sdk_audio_elements_.push_back(this->http_stream_reader_);
   sdk_element_tags_.push_back("http");
 
+#ifdef ESP_AUTO_DECODER
   audio_decoder_t auto_decode[] = {
         /*
         DEFAULT_ESP_AMRNB_DECODER_CONFIG(),
@@ -53,11 +65,16 @@ bool HTTPStreamReaderAndDecoder::init_adf_elements_() {
         DEFAULT_ESP_AAC_DECODER_CONFIG(),
         DEFAULT_ESP_M4A_DECODER_CONFIG(),
         DEFAULT_ESP_TS_DECODER_CONFIG(),
-
   };
   esp_decoder_cfg_t auto_dec_cfg = DEFAULT_ESP_DECODER_CONFIG();
   auto_dec_cfg.out_rb_size = 256 * 1024;
   decoder_ = esp_decoder_init(&auto_dec_cfg, auto_decode, 10);
+#else
+  mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
+  mp3_cfg.out_rb_size = 4 * 1024;
+  mp3_cfg.task_prio = 2;
+  decoder_ = mp3_decoder_init(&mp3_cfg);
+#endif
 
   sdk_audio_elements_.push_back(this->decoder_);
   sdk_element_tags_.push_back("decoder");
