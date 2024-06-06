@@ -29,8 +29,11 @@ esp32:
       CONFIG_ESP32S3_DATA_CACHE_64KB:      "y"
       CONFIG_ESP32S3_DATA_CACHE_LINE_64B:  "y"
 
-      CONFIG_LOG_DEFAULT_LEVEL_DEBUG: "y"
-      CONFIG_LOG_DEFAULT_LEVEL: "4"
+
+      CONFIG_SPIRAM_CACHE_WORKAROUND: "y"
+
+      #CONFIG_LOG_DEFAULT_LEVEL_DEBUG: "y"
+      #CONFIG_LOG_DEFAULT_LEVEL: "4"
 
 psram:
   mode: quad
@@ -56,11 +59,33 @@ external_components:
 # Enable logging
 logger:
   deassert_rts_dtr: true
-  level: VERBOSE
+  level: DEBUG
   logs:
     micro_wake_word: DEBUG
     touchscreen: WARN
     FT63X6: WARN
+
+debug:
+  update_interval: 5s
+
+text_sensor:
+  - platform: debug
+    device:
+      name: "Device Info"
+    reset_reason:
+      name: "Reset Reason"
+
+sensor:
+  - platform: debug
+    free:
+      name: "Heap Free"
+    block:
+      name: "Heap Max Block"
+    loop_time:
+      name: "Loop Time"
+    psram:
+      name: "Free PSRAM"
+
 
 packages:
   wifi: !include common/wifi.yaml
@@ -134,7 +159,7 @@ media_player:
     keep_pipeline_alive: true
     pipeline:
       - self
-      - resampler
+      #- resampler
       - adf_usb_out
 
     on_idle:

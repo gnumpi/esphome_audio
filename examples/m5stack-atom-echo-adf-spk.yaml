@@ -3,7 +3,7 @@ external_components:
   - source:
       #type: git
       #url: https://github.com/gnumpi/esphome_audio
-      #ref: main
+      #ref: dev-next
       type: local
       path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
     components: [ adf_pipeline, i2s_audio ]
@@ -69,12 +69,10 @@ microphone:
       - adf_i2s_in
       - self
 
-media_player:
+speaker:
   - platform: adf_pipeline
-    id: adf_media_player
-    name: m5stack-atom-echo
+    id: adf_speaker
     keep_pipeline_alive: false
-    internal: false
     pipeline:
       - self
       - adf_i2s_out
@@ -84,7 +82,7 @@ media_player:
 voice_assistant:
   id: va
   microphone: echo_microphone
-  media_player: adf_media_player
+  speaker: adf_speaker
   noise_suppression_level: 2
   auto_gain: 31dBFS
   volume_multiplier: 4.0
@@ -113,11 +111,7 @@ voice_assistant:
         green: 0%
         brightness: 100%
         effect: none
-  on_end:
-    - delay: 100ms
-    - wait_until:
-        not:
-          media_player.is_playing:
+
 
     - script.execute: reset_led
   on_error:

@@ -1,0 +1,166 @@
+substitutions:
+  node_name: esp32-s3-n16r8-arduino
+
+esphome:
+  name: ${node_name}
+  min_version: 2023.12.7
+  platformio_options:
+    board_build.flash_mode: dio
+    board_upload.maximum_size: 16777216
+    #board_build.partitions: "../../../esp32-s3/custom_partitions_16MB.csv"
+
+  on_boot:
+    priority: 600
+    then:
+      # Run the script to refresh the LED status
+      # If after 30 seconds, the device is still initializing (It did not yet connect to Home Assistant), turn off the init_in_progress variable and run the script to refresh the LED status
+      - delay: 30s
+      - if:
+          condition:
+            lambda: return id(init_in_progress);
+          then:
+            - lambda: id(init_in_progress) = false;
+
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: ESP32S3
+  flash_size: 16MB
+  framework:
+    type: arduino
+
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+packages:
+  wifi: !include common/wifi.yaml
+  ha: !include common/ha.yaml
+  va: !include common/va.yaml
+  #scripts: !include common/va_scripts.yaml
+
+logger:
+  hardware_uart : UART0
+  level: DEBUG
+
+ota:
+  platform: esphome
+
+external_components:
+  - source: github://pr#6849
+    components: i2s_audio
+    refresh: 0s
+
+
+
+
+i2s_audio:
+  - id: i2s_in
+    i2s_lrclk_pin: GPIO5
+    i2s_bclk_pin: GPIO6
+  - id: i2s_out
+    i2s_lrclk_pin: GPIO46
+    i2s_bclk_pin: GPIO9
+
+
+microphone:
+  - platform: i2s_audio
+    id: i2s_microphone
+    i2s_audio_id: i2s_in
+    i2s_din_pin: GPIO4
+    adc_type: external
+    pdm: false
+    channel: left
+    sample_rate: 16000
+    bits_per_sample: 32bit
+
+media_player:
+  - platform: i2s_audio
+    i2s_audio_id: i2s_out
+    id: arduino_media_player
+    dac_type: external
+    i2s_dout_pin: GPIO10
+    name: arduino_media_player
+
+voice_assistant:
+  microphone: i2s_microphone
+  media_player: arduino_media_player
+  use_wake_word: True
+
+  noise_suppression_level: 4
+  auto_gain: 31dBFS
+  volume_multiplier: 8.0
+
+  on_client_connected:
+    - lambda: id(init_in_progress) = false;
+    - if:
+        condition:
+          switch.is_on: use_wake_word
+        then:
+          - voice_assistant.start_continuous:
+          - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+        else:
+          - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
+
+  on_client_disconnected:
+    - lambda: id(voice_assistant_phase) = ${voice_assist_not_ready_phase_id};
+    - voice_assistant.stop
+
+
+switch:
+  - platform: template
+    name: Enable Voice Assistant
+    id: use_wake_word
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    icon: mdi:assistant
+    # When the switch is turned on (on Home Assistant):
+    # Start the voice assistant component
+    # Set the correct phase and run the script to refresh the LED status
+    on_turn_on:
+      - if:
+          condition:
+            lambda: return !id(init_in_progress);
+          then:
+            - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+            - if:
+                condition:
+                  not:
+                    - voice_assistant.is_running
+                then:
+                  - voice_assistant.start_continuous
+    on_turn_off:
+      - if:
+          condition:
+            lambda: return !id(init_in_progress);
+          then:
+            - voice_assistant.stop
+            - lambda: id(voice_assistant_phase) = ${voice_assist_muted_phase_id};
+
+light:
+  - platform: esp32_rmt_led_strip
+    rgb_order: GRB
+    pin: GPIO48
+    num_leds: 1
+    rmt_channel: 0
+    chipset: WS2812
+    name: "led"
+    id: led
+    disabled_by_default: false
+    #entity_category: diagnostic
+    icon: mdi:led-on
+    default_transition_length: 0s
+    effects:
+      - pulse:
+          name: "Slow Pulse"
+          transition_length: 250ms
+          update_interval: 250ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 100ms
+          update_interval: 100ms
+          min_brightness: 50%
+          max_brightness: 100%

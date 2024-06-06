@@ -2,6 +2,30 @@
 substitutions:
   name: esp32-s3-box-3
   friendly_name: ESP32 S3 Box 3
+  loading_illustration_file: https://github.com/esphome/firmware/raw/main/voice-assistant/casita/loading_320_240.png
+  idle_illustration_file: https://github.com/esphome/firmware/raw/main/voice-assistant/casita/idle_320_240.png
+  listening_illustration_file: https://github.com/esphome/firmware/raw/main/voice-assistant/casita/listening_320_240.png
+  thinking_illustration_file: https://github.com/esphome/firmware/raw/main/voice-assistant/casita/thinking_320_240.png
+  replying_illustration_file: https://github.com/esphome/firmware/raw/main/voice-assistant/casita/replying_320_240.png
+  error_illustration_file: https://github.com/esphome/firmware/raw/main/voice-assistant/casita/error_320_240.png
+
+  loading_illustration_background_color: "000000"
+  idle_illustration_background_color: "000000"
+  listening_illustration_background_color: "FFFFFF"
+  thinking_illustration_background_color: "FFFFFF"
+  replying_illustration_background_color: "FFFFFF"
+  error_illustration_background_color: "000000"
+
+  voice_assist_idle_phase_id: "1"
+  voice_assist_listening_phase_id: "2"
+  voice_assist_thinking_phase_id: "3"
+  voice_assist_replying_phase_id: "4"
+  voice_assist_not_ready_phase_id: "10"
+  voice_assist_error_phase_id: "11"
+  voice_assist_muted_phase_id: "12"
+
+  # These unqiue characters have been extracted from every test file of every language available on https://github.com/home-assistant/intents (14 March 2024)
+  allowed_characters: " !#%'()+,-./0123456789:;<>?@ABCDEFGHIJKLMNOPQRSTUVWYZ[]_abcdefghijklmnopqrstuvwxyz{|}°²³µ¿ÁÂÄÅÉÖÚßàáâãäåæçèéêëìíîðñòóôõöøùúûüýþāăąćčďĐđēėęěğĮįıļľŁłńňőřśšťũūůűųźŻżŽžơưșțΆΈΌΐΑΒΓΔΕΖΗΘΚΜΝΠΡΣΤΥΦάέήίαβγδεζηθικλμνξοπρςστυφχψωϊόύώАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЪЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяёђєіїјљњћאבגדהוזחטיכלםמןנסעפץצקרשת،ءآأإئابةتجحخدذرزسشصضطظعغفقكلمنهوىيٹپچڈکگںھہیےংকচতধনফবযরলশষস়ািু্చయలిెొ్ംഅആഇഈഉഎഓകഗങചജഞടഡണതദധനപഫബഭമയരറലളവശസഹാിീുൂെേൈ്ൺൻർൽൾაბგდევზთილმნოპრსტუფქყშჩცძჭხạảấầẩậắặẹẽếềểệỉịọỏốồổỗộớờởợụủứừửữựỳ—、一上不个中为主乾了些亮人任低佔何作供依侧係個側偵充光入全关冇冷几切到制前動區卧厅厨及口另右吊后吗启吸呀咗哪唔問啟嗎嘅嘛器圍在场執場外多大始安定客室家密寵对將小少左已帘常幫幾库度庫廊廚廳开式後恆感態成我戲戶户房所扇手打执把拔换掉控插摄整斯新明是景暗更最會有未本模機檯櫃欄次正氏水沒没洗活派温測源溫漏潮激濕灯為無煙照熱燈燥物狀玄现現瓦用發的盞目着睡私空窗立笛管節簾籬紅線红罐置聚聲脚腦腳臥色节著行衣解設調請謝警设调走路車车运連遊運過道邊部都量鎖锁門閂閉開關门闭除隱離電震霧面音頂題顏颜風风食餅餵가간감갔강개거게겨결경고공과관그금급기길깥꺼껐꼽나난내네놀누는능니다닫담대더데도동됐되된됨둡드든등디때떤뜨라래러렇렌려로료른를리림링마많명몇모무문물뭐바밝방배변보부불블빨뽑사산상색서설성세센션소쇼수스습시신실싱아안않알았애야어얼업없었에여연열옆오온완외왼요운움워원위으은을음의이인일임입있작잠장재전절정제져조족종주줄중줘지직진짐쪽차창천최추출충치침커컴켜켰쿠크키탁탄태탬터텔통트튼티파팬퍼폰표퓨플핑한함해했행혀현화활후휴힘，？"
 
 esphome:
   name: ${name}
@@ -26,7 +50,7 @@ esphome:
             - script.execute: draw_display
 
 esp32:
-  board: esp32s3box
+  board: esp32-s3-devkitc-1 #esp32s3box
   flash_size: 16MB
   framework:
     type: esp-idf
@@ -37,6 +61,11 @@ esp32:
       CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
       CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
 
+    #components:
+    #  - name: esp32_s3_box_3_board
+    #    source: github://jesserockz/esp32-s3-box-3-board@main
+    #    refresh: 0s
+
 psram:
   mode: octal
   speed: 80MHz
@@ -45,11 +74,11 @@ external_components:
   - source:
       #type: git
       #url: https://github.com/gnumpi/esphome_audio
-      #ref: dev-next
+      #ref: main
       type: local
       path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
 
-    components: [ adf_pipeline, i2s_audio ]
+    components: [ i2s_audio ]
 
 api:
   on_client_connected:
@@ -59,14 +88,16 @@ api:
 
 ota:
   platform: esphome
-
 logger:
   deassert_rts_dtr: true
   hardware_uart: USB_SERIAL_JTAG
 
+dashboard_import:
+  package_import_url: github://esphome/firmware/voice-assistant/esp32-s3-box-3.yaml@main
+
 packages:
-  substitutions: !include common/substitutions.yaml
   wifi: !include common/wifi.yaml
+
 
 wifi:
   on_connect:
@@ -103,64 +134,6 @@ binary_sensor:
         then:
           - button.press: factory_reset_btn
 
-  - platform: gt911
-    name: Home Button
-    index: 0
-    on_press:
-      then:
-        - logger.log: "Home pressed"
-
-  - platform: touchscreen
-    name: Volume Minus
-    x_min: 0
-    x_max: 80
-    y_min: 160
-    y_max: 234
-    on_press:
-      then:
-        - logger.log: "Volume Minus pressed"
-        - lambda: |-
-            if (id(speaker_volume) > 0) {
-              id(speaker_volume) -= 1;
-            }
-        - component.update: s3_box_lcd
-        - script.execute: set_volume
-
-  - platform: touchscreen
-    name: Volume Plus
-    x_min: 260
-    x_max: 320
-    y_min: 160
-    y_max: 234
-    on_press:
-      then:
-        - logger.log: "Volume Plus pressed"
-        - lambda: |-
-            if (id(speaker_volume) < 10) {
-              id(speaker_volume) += 1;
-            }
-        - component.update: s3_box_lcd
-        - script.execute: set_volume
-
-  - platform: touchscreen
-    name: Play Pause
-    x_min: 120
-    x_max: 200
-    y_min: 160
-    y_max: 234
-    on_press:
-      then:
-        - if:
-            condition:
-              media_player.is_idle:
-            then:
-              - media_player.play
-            else:
-              - media_player.stop
-
-        - logger.log: "Play Paused pressed"
-
-
 
 output:
   - platform: ledc
@@ -188,15 +161,14 @@ i2s_audio:
     i2s_lrclk_pin: GPIO45
     i2s_bclk_pin: GPIO17
     i2s_mclk_pin: GPIO2
-    access_mode: duplex
+    access_mode: exclusive
 
-adf_pipeline:
+speaker:
   - platform: i2s_audio
-    type: audio_out
-    id: adf_i2s_out
+    id: box_speaker
     i2s_audio_id: i2s_shared
     i2s_dout_pin: GPIO15
-    adf_alc: false
+    dac_type: external
     dac:
       model: es8311
       address: 0x18
@@ -204,71 +176,36 @@ adf_pipeline:
 
     sample_rate: 16000
     bits_per_sample: 16bit
+    mode: mono
+    channel: right_left
     fixed_settings: true
 
+microphone:
   - platform: i2s_audio
-    type: audio_in
-    id: adf_i2s_in
+    id: box_mic
     i2s_audio_id: i2s_shared
     i2s_din_pin: GPIO16
     pdm: false
+    adc_type: external
     adc:
       model: es7210
       address: 0x40
-
-    sample_rate: 16000
     bits_per_sample: 16bit
+    channel: right
     fixed_settings: true
 
 
-media_player:
-  - platform: adf_pipeline
-    id: adf_media_player
-    name: s3-box_media_player
-    internal: false
-    keep_pipeline_alive: true
-    codec: auto
-    announcement_audio:
-      sample_rate: 16000
-      bits_per_sample: 16
-      num_channels: 1
-    pipeline:
-      - self
-      - resampler
-      - adf_i2s_out
-
-    on_idle:
-      - display.page.show: idle_page
-      - component.update: s3_box_lcd
-
-    on_play:
-      - display.page.show: playing_music
-      - component.update: s3_box_lcd
-
-    on_announcement:
-      - display.page.show: announcing
-      - component.update: s3_box_lcd
-
-microphone:
-  - platform: adf_pipeline
-    id: box_mic
-    keep_pipeline_alive: true
-    pipeline:
-      - adf_i2s_in
-      - resampler
-      - self
 
 micro_wake_word:
   model: https://raw.githubusercontent.com/kahrendt/microWakeWord/18-add-beta-alexa-model/models/betas/alexa_v2.json
   on_wake_word_detected:
-    - media_player.pause:
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
 
 voice_assistant:
   id: va
   microphone: box_mic
-  media_player: adf_media_player
+  speaker: box_speaker
   use_wake_word: true
   noise_suppression_level: 2
   auto_gain: 31dBFS
@@ -297,13 +234,13 @@ voice_assistant:
         id: text_response
         state: !lambda return x;
 
-  #on_tts_stream_start:
-  #  - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
-  #  - script.execute: draw_display
+  on_tts_stream_start:
+    - lambda: id(voice_assistant_phase) = ${voice_assist_replying_phase_id};
+    - script.execute: draw_display
 
-  #on_tts_stream_end:
-  #  - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
-  #  - script.execute: draw_display
+  on_tts_stream_end:
+    - lambda: id(voice_assistant_phase) = ${voice_assist_idle_phase_id};
+    - script.execute: draw_display
 
   on_end:
     - if:
@@ -370,11 +307,6 @@ voice_assistant:
 
 
 script:
-  - id: set_volume
-    then:
-      - media_player.volume_set:
-          volume: !lambda return 0.5 + id(speaker_volume) * 0.05 ;
-
   - id: draw_display
     then:
       - if:
@@ -522,10 +454,6 @@ globals:
     type: int
     restore_value: false
     initial_value: ${voice_assist_not_ready_phase_id}
-  - id: speaker_volume
-    type: int
-    restore_value: no
-    initial_value: '5'
 
 image:
   - file: ${error_illustration_file}
@@ -533,12 +461,12 @@ image:
     resize: 320x240
     type: RGB24
     use_transparency: true
-  - file: ${idle_gnumpi_file}
+  - file: ${idle_illustration_file}
     id: casita_idle
     resize: 320x240
     type: RGB24
     use_transparency: true
-  - file: ${listening_gnumpi_file}
+  - file: ${listening_illustration_file}
     id: casita_listening
     resize: 320x240
     type: RGB24
@@ -558,15 +486,6 @@ image:
     resize: 320x240
     type: RGB24
     use_transparency: true
-  - file: ${playing_music_gnumpi_file}
-    id: gnumpi_dj
-    resize: 320x240
-    type: RGB24
-  - file: ${announcing_gnumpi_file}
-    id: gnumpi_megaphone
-    resize: 320x240
-    type: RGB24
-
   - file: https://github.com/esphome/firmware/raw/main/voice-assistant/error_box_illustrations/error-no-wifi.png
     id: error_no_wifi
     resize: 320x240
@@ -577,6 +496,14 @@ image:
     resize: 320x240
     type: RGB24
     use_transparency: true
+  - file: "../../assets/gnumpi_dj.png"
+    id: gnumpi_dj
+    resize: 320x240
+    type: RGB24
+  - file: "../../assets/gnumpi_megaphone.png"
+    id: gnumpi_megaphone
+    resize: 320x240
+    type: RGB24
 
 
 font:
@@ -701,14 +628,3 @@ display:
       - id: muted_page
         lambda: |-
           it.fill(Color::BLACK);
-
-
-touchscreen:
-  - platform: gt911
-    i2c_id: bus_a
-    interrupt_pin: GPIO3
-    update_interval: 20ms
-    on_touch:
-      - logger.log:
-          format: Touch %d at (%d, %d)
-          args: [touch.id, touch.x, touch.y]
