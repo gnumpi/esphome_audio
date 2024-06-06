@@ -21,9 +21,13 @@ public:
   virtual bool set_mute_audio( bool mute ){return true;}
   virtual bool set_volume( float volume ){return true;}
 
+  void reset_volume(){ set_volume( this->init_volume_); }
+
+  void set_init_volume( float volume ){ this->init_volume_ = volume; }
   void set_gpio_enable(GPIOPin* enable_pin){this->enable_pin_ = enable_pin;}
 
 protected:
+  float init_volume_{.9};
   GPIOPin* enable_pin_{nullptr};
 };
 

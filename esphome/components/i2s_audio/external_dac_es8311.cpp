@@ -246,12 +246,8 @@ bool ES8311::init_device(){
 
   if( this->enable_pin_ != nullptr ){
     this->enable_pin_->setup();
-    ESP_LOGD(TAG, "Enabling PA.. state was %d", !!this->enable_pin_->digital_read());
-
     this->enable_pin_->digital_write(true);
-    ESP_LOGD(TAG, "state is now %d", !!this->enable_pin_->digital_read());
   }
-
   return true;
 }
 

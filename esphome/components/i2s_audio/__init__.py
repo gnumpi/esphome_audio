@@ -6,12 +6,7 @@ import esphome.codegen as cg
 
 from esphome import pins
 from esphome.components import i2c
-from esphome.const import (
-    CONF_ENABLE_PIN,
-    CONF_ID,
-    CONF_MODE,
-    CONF_MODEL,
-)
+from esphome.const import CONF_ENABLE_PIN, CONF_ID, CONF_MODE, CONF_MODEL, CONF_VOLUME
 from esphome.components.esp32 import get_esp32_variant
 from esphome.components.esp32.const import (
     VARIANT_ESP32,
@@ -110,6 +105,12 @@ ES7210 = i2s_audio_ns.class_("ES7210", ExternalADC, i2c.I2CDevice)
 I2S_AUDIO_IN = "audio_in"
 I2S_AUDIO_OUT = "audio_out"
 
+CONFIG_SCHEMA_DAC_ENTRY = cv.Schema(
+    {
+        cv.Optional(CONF_ENABLE_PIN): pins.gpio_output_pin_schema,
+        cv.Optional(CONF_VOLUME): cv.float_range(0, 1.0),
+    }
+)
 
 CONFIG_SCHEMA_DAC = cv.typed_schema(
     {
@@ -237,6 +238,8 @@ async def register_i2s_writer(writer, config: dict) -> None:
             if CONF_ENABLE_PIN in dac_cfg:
                 en_pin = await cg.gpio_pin_expression(dac_cfg[CONF_ENABLE_PIN])
                 cg.add(dac.set_gpio_enable(en_pin))
+            if CONF_VOLUME in dac_cfg:
+                cg.add(dac.set_init_volume(dac_cfg[CONF_VOLUME]))
 
 
 async def register_i2s_reader(reader, config: dict) -> None:
