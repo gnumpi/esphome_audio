@@ -1,5 +1,5 @@
 # ESPHome - Audio Components
-**Target Version: ESPHome-2023.12.9**
+**Min-Version: ESPHome-2024.4**
 
 [![ESPHome-target](https://github.com/gnumpi/esphome_audio/actions/workflows/tox-target.yml/badge.svg)](https://github.com/gnumpi/esphome_audio/actions/workflows/tox-target.yml)
 [![ESPHome-latest](https://github.com/gnumpi/esphome_audio/actions/workflows/tox-latest.yml/badge.svg)](https://github.com/gnumpi/esphome_audio/actions/workflows/tox-latest.yml)
