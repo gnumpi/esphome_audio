@@ -47,7 +47,7 @@ bool ADFElementI2SOut::init_adf_elements_() {
       .stack_in_ext = false,
       .multi_out_num = 0,
       .uninstall_drv = false,
-      .need_expand = false,
+      .need_expand = i2s_config.bits_per_sample != I2S_BITS_PER_SAMPLE_16BIT,
       .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,
   };
 
@@ -126,11 +126,11 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
   if (request.final_sampling_rate == -1) {
     esph_log_d(TAG, "Set final i2s settings: %d", this->sample_rate_);
     request.final_sampling_rate = this->sample_rate_;
-    request.final_bit_depth = this->bits_per_sample_;
+    request.final_bit_depth = 16;
     request.final_number_of_channels = this->num_of_channels();
   } else if (
        request.final_sampling_rate != this->sample_rate_
-    || request.final_bit_depth != this->bits_per_sample_
+    || request.final_bit_depth != 16
     || request.final_number_of_channels != this->num_of_channels()
   )
   {
