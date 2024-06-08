@@ -121,18 +121,18 @@ CONFIG_SCHEMA_DAC = cv.typed_schema(
                 cv.Required(CONF_MODE): cv.enum(i2s.INTERNAL_DAC_OPTIONS, lower=True),
             }
         ),
-        "aw88298": cv.Schema(
+        "aw88298": CONFIG_SCHEMA_DAC_ENTRY.extend(
             {
                 cv.GenerateID(): cv.declare_id(AW88298),
                 cv.Optional(CONF_ENABLE_PIN): pins.gpio_output_pin_schema,
             }
         ).extend(i2c.i2c_device_schema(0x36)),
-        "es8388": cv.Schema(
+        "es8388": CONFIG_SCHEMA_DAC_ENTRY.extend(
             {
                 cv.GenerateID(): cv.declare_id(ES8388),
             }
         ).extend(i2c.i2c_device_schema(0x10)),
-        "es8311": cv.Schema(
+        "es8311": CONFIG_SCHEMA_DAC_ENTRY.extend(
             {
                 cv.GenerateID(): cv.declare_id(ES8311),
                 cv.Optional(CONF_ENABLE_PIN): pins.gpio_output_pin_schema,

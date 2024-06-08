@@ -20,10 +20,6 @@ static const char *const TAG = "i2s_audio.speaker";
 void I2SAudioSpeaker::setup() {
   ESP_LOGCONFIG(TAG, "Setting up I2S Audio Speaker...");
 
-  this->set_bits_per_sample(I2S_BITS_PER_SAMPLE_16BIT);
-  this->set_channel(I2S_CHANNEL_FMT_ONLY_RIGHT);
-  this->set_sample_rate(16000);
-
   this->buffer_queue_ = xQueueCreate(BUFFER_COUNT, sizeof(DataEvent));
   if (this->buffer_queue_ == nullptr) {
     ESP_LOGE(TAG, "Failed to create buffer queue");
@@ -94,15 +90,7 @@ void I2SAudioSpeaker::player_task(void *params) {
   }
 
 #if SOC_I2S_SUPPORTS_DAC
-  if (this_speaker->internal_dac_mode_ == I2S_DAC_CHANNEL_DISABLE) {
-#endif
-#if 0
-    i2s_pin_config_t pin_config = this_speaker->parent_->get_pin_config();
-    pin_config.data_out_num = this_speaker->dout_pin_;
-    i2s_set_pin(this_speaker->parent_->get_port(), &pin_config);
-#endif
-#if SOC_I2S_SUPPORTS_DAC
-  } else {
+  if (this_speaker->internal_dac_mode_ != I2S_DAC_CHANNEL_DISABLE) {
     i2s_set_dac_mode(this_speaker->internal_dac_mode_);
   }
 #endif
@@ -128,9 +116,10 @@ void I2SAudioSpeaker::player_task(void *params) {
       xQueueReset(this_speaker->buffer_queue_);  // Flush queue
       break;
     }
+
     size_t bytes_written;
     esp_err_t err = i2s_write(this_speaker->parent_->get_port(), data_event.data, data_event.len, &bytes_written,
-                                (10 / portTICK_PERIOD_MS));
+                                (32 / portTICK_PERIOD_MS));
     if (err != ESP_OK) {
       event = {.type = TaskEventType::WARNING, .err = err};
       xQueueSend(this_speaker->event_queue_, &event, portMAX_DELAY);
@@ -225,6 +214,7 @@ size_t I2SAudioSpeaker::play(const uint8_t *data, size_t length) {
   if (this->state_ != speaker::STATE_RUNNING && this->state_ != speaker::STATE_STARTING) {
     this->start();
   }
+
   size_t remaining = length;
   size_t index = 0;
   while (remaining > 0) {
