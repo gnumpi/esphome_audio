@@ -67,6 +67,7 @@ class I2SAudioSpeaker : public Component, public speaker::Speaker, public I2SWri
   QueueHandle_t buffer_queue_;
   QueueHandle_t event_queue_;
 
+  bool task_created_{false};
 #if SOC_I2S_SUPPORTS_DAC
   i2s_dac_mode_t internal_dac_mode_{I2S_DAC_CHANNEL_DISABLE};
 #endif
