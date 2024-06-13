@@ -13,6 +13,7 @@ static const char *const TAG = "esp_adf.speaker";
 
 void ADFSpeaker::setup() {
   ESP_LOGCONFIG(TAG, "Setting up ESP ADF Speaker...");
+  pipeline.set_finish_timeout_ms(100);
 }
 
 void ADFSpeaker::dump_config() {
@@ -92,6 +93,8 @@ void ADFSpeaker::request_pipeline_settings_(){
     request.sampling_rate = 16000;
     request.bit_depth = 16;
     request.number_of_channels = 1;
+    request.finish_on_timeout = 5000; //ms
+    request.target_volume = 1.;
     if (!this->pipeline.request_settings(request)) {
       esph_log_e(TAG, "Requested audio settings, didn't get accepted");
       this->pipeline.on_settings_request_failed(request);

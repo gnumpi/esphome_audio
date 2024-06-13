@@ -40,6 +40,8 @@ class AudioPipelineSettingsRequest {
   int final_number_of_channels{-1};
   float final_volume{-1.};
 
+  int finish_on_timeout{0};
+
   bool failed{false};
   int error_code{0};
   ADFPipelineElement *requested_by{nullptr};

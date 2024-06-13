@@ -371,7 +371,7 @@ void ADFPipeline::watch_() {
       if(this->requested_ == PipelineRequest::STOPPED){
         set_state_(PipelineState::STOPPED);
       }
-      else if ( millis() - this->finish_timeout_invoke_ > 16000){
+      else if ( millis() - this->finish_timeout_invoke_ > this->wait_for_finish_timeout_ms_){
         this->requested_ = PipelineRequest::STOPPED;
         set_state_(PipelineState::ABORTING);
       }

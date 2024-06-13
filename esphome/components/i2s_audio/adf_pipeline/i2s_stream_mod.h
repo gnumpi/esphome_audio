@@ -53,7 +53,20 @@ typedef struct {
     bool                    uninstall_drv;      /*!< whether uninstall the i2s driver when stream destroyed*/
     bool                    need_expand;        /*!< whether to expand i2s data */
     i2s_bits_per_sample_t   expand_src_bits;    /*!< The source bits per sample when data expand */
+    bool                    finish_on_timeout;  /*!< send finish message when input data timeout occurs */
 } i2s_stream_cfg_t;
+
+typedef struct i2s_stream {
+    audio_stream_type_t type;
+    i2s_stream_cfg_t    config;
+    bool                is_open;
+    bool                use_alc;
+    void                *volume_handle;
+    int                 volume;
+    bool                uninstall_drv;
+    bool                finish_on_timeout;
+} i2s_stream_t;
+
 
 #define I2S_STREAM_TASK_STACK           (3072+512)
 #define I2S_STREAM_BUF_SIZE             (2048)

@@ -78,6 +78,7 @@ class ADFPipeline {
   void loop() { this->watch_(); }
 
   void set_destroy_on_stop(bool value){ this->destroy_on_stop_ = value; }
+  void set_finish_timeout_ms(int timeout){ this->wait_for_finish_timeout_ms_ = timeout; }
 
   void append_element(ADFPipelineElement *element);
   int get_number_of_elements() { return pipeline_elements_.size(); }
@@ -99,6 +100,7 @@ class ADFPipeline {
   bool check_all_finished_();
   bool check_all_destroyed_();
   uint32_t finish_timeout_invoke_{0};
+  int wait_for_finish_timeout_ms_{16000};
 
   enum CheckState { CHECK_PREPARED, CHECK_PAUSED, CHECK_RESUMED, CHECK_STOPPED, NUM_STATE_CHECKS };
   std::vector<std::string> check_state_name = {"PREPARING", "PAUSING", "RESUMING", "STOPPING","WRONG_IDX"};
@@ -115,6 +117,8 @@ class ADFPipeline {
 
   bool build_adf_pipeline_();
   void deinit_all_();
+
+
 
   audio_pipeline_handle_t adf_pipeline_{};
   audio_event_iface_handle_t adf_pipeline_event_{};
