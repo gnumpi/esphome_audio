@@ -55,6 +55,7 @@ class ADFPipeline {
   void pause();
   void resume();
   void destroy();
+  bool reset(bool force);
 
   PipelineState getState() { return state_; }
   void loop() { this->watch_(); }

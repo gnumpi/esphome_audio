@@ -378,8 +378,12 @@ bool ADFPipeline::build_adf_pipeline_() {
 }
 
 bool ADFPipeline::reset_() {
+  return reset(false);
+}
+
+bool ADFPipeline::reset(bool force) {
   bool ret = false;
-  if ( this->destroy_on_stop_ ){
+  if ( this->destroy_on_stop_ || force ){
     ret = deinit_();
   }
   else {

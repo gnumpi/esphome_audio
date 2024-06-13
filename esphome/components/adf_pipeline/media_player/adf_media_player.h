@@ -40,7 +40,7 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
 
   // MediaPlayer implementations
   bool is_muted() const override { return this->muted_; }
-  std::string repeat() const { return this->repeat_; }
+  std::string repeat() const { return media_player_repeat_mode_to_string(this->repeat_); }
   bool is_shuffle() const override { return this->shuffle_; }
   std::string artist() const { return this->artist_; }
   std::string album() const { return this->album_; }
@@ -48,9 +48,8 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   media_player::MediaPlayerTraits get_traits() override;
 
   //
-  void set_stream_uri(const std::string& new_uri);
-  void start() {pipeline.start();}
-  void stop()  {pipeline.stop();}
+  void start();
+  void stop();
 
  protected:
   // MediaPlayer implementation
@@ -59,9 +58,21 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   // Pipeline implementations
   void on_pipeline_state_change(PipelineState state);
 
+  bool mrm_listen_requested_{false};
+  void mrm_listen_();
+  void mrm_unlisten_();
+  void mrm_turn_on_();
+  void mrm_turn_off_();
+  void mrm_volume_();
+  void mrm_mute_();
+  void mrm_unmute_();
+  void mrm_start_();
+  void mrm_stop_();
+
   void mute_();
   void unmute_();
-  void set_repeat_(const std::string& repeat);
+  void set_mrm_(media_player::MediaPlayerMRM mrm);
+  void set_repeat_(media_player::MediaPlayerRepeatMode repeat);
   void set_shuffle_(bool shuffle);
   void set_artist_(const std::string& artist) {artist_ = artist;}
   void set_album_(const std::string& album) {album_ = album;}
@@ -69,30 +80,32 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   void set_volume_(float volume, bool publish = true);
 
   bool muted_{false};
-  std::string repeat_{"off"};
+  media_player::MediaPlayerMRM mrm_{media_player::MEDIA_PLAYER_MRM_OFF};
+  media_player::MediaPlayerRepeatMode repeat_{media_player::MEDIA_PLAYER_REPEAT_OFF};
   bool shuffle_{false};
   std::string artist_{""};
   std::string album_{""};
   std::string title_{""};
+  std::string group_members_{""};
   bool play_intent_{false};
   bool turning_off_{false};
-  std::string current_uri_{};
   bool force_publish_{false};
 
   HTTPStreamReaderAndDecoder http_and_decoder_;
 
   std::vector<ADFPlaylistTrack > playlist_;
-  bool playlist_found_{false};
   int play_track_id_{-1};
   
+  void update_playlist_order(unsigned int start_order);
   void play_next_track_on_playlist_(int track_id);
   void clean_playlist_track_();
   int next_playlist_track_id_();
   int previous_playlist_track_id_();
   void set_playlist_track_as_played_(int track_id);
-  void playlist_add_(const std::string& new_uri);
-  int parse_m3u_into_playlist_(const char *url);
+  void playlist_add_(const std::string& new_uri, bool toBack);
+  int parse_m3u_into_playlist_(const char *url, bool toBack);
   void set_playlist_track_(ADFPlaylistTrack track);
+  bool mrm_leader_started_{false};
 };
 
 }  // namespace esp_adf

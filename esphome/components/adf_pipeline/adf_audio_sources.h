@@ -7,8 +7,6 @@
 namespace esphome {
 namespace esp_adf {
 
-enum class ADFEncoding : uint8_t { AAC = 0, AMR, FLAC, MP3, OGG, OPUS, WAV};
-
 class ADFPipelineSourceElement : public ADFPipelineElement {
  public:
   AudioPipelineElementType get_element_type() const { return AudioPipelineElementType::AUDIO_PIPELINE_SOURCE; }
