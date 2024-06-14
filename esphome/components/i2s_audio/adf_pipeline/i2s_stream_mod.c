@@ -152,10 +152,12 @@ static esp_err_t _i2s_open(audio_element_handle_t self)
         return ESP_OK;
     }
 
+    /*
     if (i2s->type == AUDIO_STREAM_WRITER) {
         audio_element_set_input_timeout(self, 10 / portTICK_RATE_MS);
         ESP_LOGI(TAG, "AUDIO_STREAM_WRITER");
     }
+    */
     i2s->is_open = true;
     if (i2s->use_alc) {
         i2s->volume_handle = alc_volume_setup_open();
@@ -275,6 +277,7 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
 #endif
         {
             if( i2s->finish_on_timeout ){
+                ESP_LOGI(TAG, "Sending finish status after time out occurred." );
                 audio_element_report_status(self, AEL_STATUS_STATE_FINISHED);
                 return 0;
             }
