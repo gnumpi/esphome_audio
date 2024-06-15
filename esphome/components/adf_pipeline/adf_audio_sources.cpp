@@ -311,9 +311,7 @@ int PCMSource::stream_write(char *buffer, int len) {
     return 0;
   }
   int ret = audio_element_output(this->adf_raw_stream_writer_, buffer, len);
-  if (ret == AEL_IO_TIMEOUT) {
-    //audio_element_report_status(this->adf_raw_stream_writer_, AEL_STATUS_STATE_FINISHED);
-  } else if (ret < 0) {
+  if (ret < 0) {
     return 0;
   }
   return ret;

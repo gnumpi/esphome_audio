@@ -70,7 +70,7 @@ size_t ADFSpeaker::play(const uint8_t *data, size_t length) {
   }
 
   if (this->state_ != speaker::STATE_RUNNING) {
-    ESP_LOGW(TAG, "Trying to play audio while speaker not running.");
+    ESP_LOGV(TAG, "Trying to play audio while speaker not running.");
     return 0;
   }
 

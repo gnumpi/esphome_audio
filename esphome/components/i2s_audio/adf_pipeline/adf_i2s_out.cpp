@@ -40,7 +40,7 @@ bool ADFElementI2SOut::init_adf_elements_() {
       .i2s_port = this->parent_->get_port(),
       .use_alc = this->use_adf_alc_,
       .volume = 0,
-      .out_rb_size = (4 * 1024),
+      .out_rb_size = (20 * 1024),
       .task_stack = I2S_STREAM_TASK_STACK,
       .task_core = I2S_STREAM_TASK_CORE,
       .task_prio = I2S_STREAM_TASK_PRIO,
