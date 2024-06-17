@@ -90,6 +90,13 @@ void ADFElementI2SIn::clear_adf_elements_(){
   this->valid_settings_ = false;
 }
 
+bool ADFElementI2SIn::prepare_elements(bool initial_call){
+  if( initial_call ){
+    this->valid_settings_ = false;
+  }
+  return ADFPipelineElement::prepare_elements(initial_call);
+}
+
 
 }  // namespace i2s_audio
 }  // namespace esphome

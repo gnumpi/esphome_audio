@@ -21,7 +21,7 @@ class ADFElementI2SIn : public I2SReader, public ADFPipelineSourceElement, publi
   const std::string get_name() override { return "I2S_Reader"; }
   void dump_config() override { this->dump_i2s_settings(); }
   bool is_ready() override;
-
+  bool prepare_elements(bool initial_call) override;
   protected:
 
   bool valid_settings_{false};
