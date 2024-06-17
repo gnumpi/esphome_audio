@@ -195,14 +195,15 @@ void ADFPipeline::check_if_components_are_ready_(){
 }
 
 void ADFPipeline::check_for_pipeline_events_(){
+  
   audio_event_iface_msg_t msg;
   esp_err_t ret = audio_event_iface_listen(this->adf_pipeline_event_, &msg, 0);
   if (ret == ESP_OK) {
     forward_event_to_pipeline_elements_(msg);
 
-      if (parent_ != nullptr) {
-        parent_->pipeline_event_handler(msg);
-      }
+    if (parent_ != nullptr) {
+      parent_->pipeline_event_handler(msg);
+    }
 
     assert( this->state_ != PipelineState::PREPARING );
 

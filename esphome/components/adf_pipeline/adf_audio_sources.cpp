@@ -5,6 +5,7 @@
 #include <http_stream.h>
 #include <raw_stream.h>
 #include <esp_decoder.h>
+#include "esphome/core/hal.h"
 
 #include "sdk_ext.h"
 
@@ -138,8 +139,8 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
     audio_element_info_t music_info{};
     audio_element_getinfo(decoder, &music_info);
 
-    esph_log_i(get_name().c_str(), "[ * ] Receive music info from decoder, sample_rates=%d, bits=%d, ch=%d",
-               music_info.sample_rates, music_info.bits, music_info.channels);
+    esph_log_i(TAG, "[ * ] Receive music info from decoder, sample_rates=%d, bits=%d, ch=%d, pos=%lld",
+               music_info.sample_rates, music_info.bits, music_info.channels, music_info.byte_pos);
 
     AudioPipelineSettingsRequest request{this};
     request.sampling_rate = music_info.sample_rates;
@@ -149,13 +150,18 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
       esph_log_e(TAG, "Requested audio settings, didn't get accepted");
       pipeline_->on_settings_request_failed(request);
     }
-
     // necessary audio information has been received, terminate preparation pipeline
     if( this->element_state_ == PipelineElementState::PREPARING )
     {
       this->terminate_prepare_pipeline_();
     }
   }
+}
+
+int64_t HTTPStreamReaderAndDecoder::get_position() {
+  audio_element_info_t music_info{};
+  audio_element_getinfo(decoder_, &music_info);
+  return music_info.byte_pos;
 }
 
 /*
