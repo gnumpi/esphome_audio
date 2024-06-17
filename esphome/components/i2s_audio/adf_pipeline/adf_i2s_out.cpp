@@ -40,7 +40,7 @@ bool ADFElementI2SOut::init_adf_elements_() {
       .i2s_port = this->parent_->get_port(),
       .use_alc = this->use_adf_alc_,
       .volume = 0,
-      .out_rb_size = (4 * 1024),
+      .out_rb_size = (20 * 1024),
       .task_stack = I2S_STREAM_TASK_STACK,
       .task_core = I2S_STREAM_TASK_CORE,
       .task_prio = I2S_STREAM_TASK_PRIO,
@@ -49,12 +49,15 @@ bool ADFElementI2SOut::init_adf_elements_() {
       .uninstall_drv = false,
       .need_expand = i2s_config.bits_per_sample != I2S_BITS_PER_SAMPLE_16BIT,
       .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,
+      .finish_on_timeout = false, //don't set it yet, set it in the preparation phase instead
   };
 
   this->adf_i2s_stream_writer_ = i2s_stream_init(&i2s_cfg);
   this->adf_i2s_stream_writer_->buf_size = 1 * 1024;
 
   this->install_i2s_driver(i2s_config);
+  audio_element_set_input_timeout(this->adf_i2s_stream_writer_, 1000 / portTICK_PERIOD_MS);
+  this->finish_on_timeout_ms_ = 0;
 
 #ifdef I2S_EXTERNAL_DAC
   if (this->external_dac_ != nullptr){
@@ -112,6 +115,8 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
       audio_element_set_music_info(this->adf_i2s_stream_writer_,this->sample_rate_, this->num_of_channels(), this->bits_per_sample_ );
 
       esph_log_d(TAG, "update i2s clk settings: rate:%d bits:%d ch:%d",this->sample_rate_, this->bits_per_sample_, this->num_of_channels());
+      i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(this->adf_i2s_stream_writer_);
+      i2s->config.i2s_config.bits_per_sample = this->bits_per_sample_;
       if (i2s_stream_set_clk(this->adf_i2s_stream_writer_, this->sample_rate_, this->bits_per_sample_,
                             this->num_of_channels()) != ESP_OK) {
         esph_log_e(TAG, "error while setting sample rate and bit depth,");
@@ -120,6 +125,15 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
         return;
       }
     }
+  }
+
+  if ( request.finish_on_timeout != this->finish_on_timeout_ms_ ){
+    esph_log_d(TAG, "Setting finish_on_timout to (ms): %d", request.finish_on_timeout);
+    this->finish_on_timeout_ms_ = request.finish_on_timeout;
+    i2s_stream_t *i2s = (i2s_stream_t *) audio_element_getdata(this->adf_i2s_stream_writer_);
+    esph_log_d(TAG, "finish on timeout was: %s",i2s->finish_on_timeout ? "true":"false");
+    i2s->finish_on_timeout = this->finish_on_timeout_ms_ > 0;
+    audio_element_set_input_timeout(this->adf_i2s_stream_writer_, this->finish_on_timeout_ms_ / portTICK_PERIOD_MS);
   }
 
   // final pipeline settings are unset

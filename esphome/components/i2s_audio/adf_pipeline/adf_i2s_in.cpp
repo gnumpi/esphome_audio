@@ -44,6 +44,7 @@ bool ADFElementI2SIn::init_adf_elements_() {
       .uninstall_drv = false,
       .need_expand = false,
       .expand_src_bits = I2S_BITS_PER_SAMPLE_16BIT,
+      .finish_on_timeout = false,
   };
 
   this->adf_i2s_stream_reader_ = i2s_stream_init(&i2s_stream_cfg);

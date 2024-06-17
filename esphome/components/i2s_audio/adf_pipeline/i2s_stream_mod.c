@@ -37,7 +37,7 @@
 #include "audio_common.h"
 #include "audio_mem.h"
 #include "audio_element.h"
-#include "i2s_stream.h"
+#include "i2s_stream_mod.h"
 #include "esp_alc.h"
 #include "board_pins_config.h"
 #include "audio_idf_version.h"
@@ -53,15 +53,6 @@ static const char *TAG = "I2S_STREAM";
 #endif
 #endif
 
-typedef struct i2s_stream {
-    audio_stream_type_t type;
-    i2s_stream_cfg_t    config;
-    bool                is_open;
-    bool                use_alc;
-    void                *volume_handle;
-    int                 volume;
-    bool                uninstall_drv;
-} i2s_stream_t;
 #ifdef SOC_I2S_SUPPORTS_ADC_DAC
 static esp_err_t i2s_mono_fix(int bits, uint8_t *sbuff, uint32_t len)
 {
@@ -161,10 +152,12 @@ static esp_err_t _i2s_open(audio_element_handle_t self)
         return ESP_OK;
     }
 
+    /*
     if (i2s->type == AUDIO_STREAM_WRITER) {
         audio_element_set_input_timeout(self, 10 / portTICK_RATE_MS);
         ESP_LOGI(TAG, "AUDIO_STREAM_WRITER");
     }
+    */
     i2s->is_open = true;
     if (i2s->use_alc) {
         i2s->volume_handle = alc_volume_setup_open();
@@ -283,7 +276,14 @@ static int _i2s_process(audio_element_handle_t self, char *in_buffer, int in_len
         } else
 #endif
         {
-            memset(in_buffer, 0x00, in_len);
+            if( i2s->finish_on_timeout ){
+                ESP_LOGI(TAG, "Sending finish status after time out occurred." );
+                audio_element_report_status(self, AEL_STATUS_STATE_FINISHED);
+                return 0;
+            }
+            else {
+                memset(in_buffer, 0x00, in_len);
+            }
         }
         r_size = in_len;
         audio_element_multi_output(self, in_buffer, r_size, 0);
@@ -375,6 +375,7 @@ audio_element_handle_t i2s_stream_init(i2s_stream_cfg_t *config)
     i2s->use_alc = config->use_alc;
     i2s->volume = config->volume;
     i2s->uninstall_drv = config->uninstall_drv;
+    i2s->finish_on_timeout = config->finish_on_timeout;
 
     if (config->type == AUDIO_STREAM_READER) {
         cfg.read = _i2s_read;

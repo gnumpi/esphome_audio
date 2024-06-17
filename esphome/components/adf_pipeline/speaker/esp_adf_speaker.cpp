@@ -13,6 +13,7 @@ static const char *const TAG = "esp_adf.speaker";
 
 void ADFSpeaker::setup() {
   ESP_LOGCONFIG(TAG, "Setting up ESP ADF Speaker...");
+  pipeline.set_finish_timeout_ms(10000);
 }
 
 void ADFSpeaker::dump_config() {
@@ -67,11 +68,12 @@ size_t ADFSpeaker::play(const uint8_t *data, size_t length) {
     ESP_LOGE(TAG, "Failed to play audio, speaker is in failed state.");
     return 0;
   }
-  /*
-  if (this->state_ != speaker::STATE_RUNNING && this->state_ != speaker::STATE_STARTING) {
-    this->start();
+
+  if (this->state_ != speaker::STATE_RUNNING) {
+    ESP_LOGV(TAG, "Trying to play audio while speaker not running.");
+    return 0;
   }
-  */
+
   size_t remaining = length;
   size_t index = 0;
   while (remaining > 0) {
@@ -92,6 +94,8 @@ void ADFSpeaker::request_pipeline_settings_(){
     request.sampling_rate = 16000;
     request.bit_depth = 16;
     request.number_of_channels = 1;
+    request.finish_on_timeout = 1000; //ms
+    request.target_volume = 1.;
     if (!this->pipeline.request_settings(request)) {
       esph_log_e(TAG, "Requested audio settings, didn't get accepted");
       this->pipeline.on_settings_request_failed(request);

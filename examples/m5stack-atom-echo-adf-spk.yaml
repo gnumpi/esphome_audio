@@ -26,6 +26,7 @@ esp32:
 logger:
 api:
 ota:
+  platform: esphome
 
 packages:
   wifi: !include common/wifi.yaml
@@ -49,6 +50,12 @@ adf_pipeline:
     id: adf_i2s_out
     i2s_audio_id: i2s_dplx
     i2s_dout_pin: GPIO22
+    adf_alc: true
+    alc_max: 0.6
+
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: right
     fixed_settings: false
 
   - platform: i2s_audio

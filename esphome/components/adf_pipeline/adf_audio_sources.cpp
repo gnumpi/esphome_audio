@@ -306,10 +306,12 @@ bool PCMSource::init_adf_elements_() {
 }
 
 int PCMSource::stream_write(char *buffer, int len) {
+  if( !this->adf_raw_stream_writer_ ){
+    ESP_LOGE(TAG, "Attempt writing to PCM stream buffer which has not been created.");
+    return 0;
+  }
   int ret = audio_element_output(this->adf_raw_stream_writer_, buffer, len);
-  if (ret == AEL_IO_TIMEOUT) {
-    audio_element_report_status(this->adf_raw_stream_writer_, AEL_STATUS_STATE_FINISHED);
-  } else if (ret < 0) {
+  if (ret < 0) {
     return 0;
   }
   return ret;
@@ -319,6 +321,8 @@ bool PCMSource::has_buffered_data() const {
   ringbuf_handle_t rb = audio_element_get_output_ringbuf(adf_raw_stream_writer_);
   return rb_bytes_filled(rb) > 0;
 }
+
+
 
 }  // namespace esp_adf
 }  // namespace esphome
