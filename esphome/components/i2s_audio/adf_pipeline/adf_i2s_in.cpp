@@ -63,6 +63,7 @@ bool ADFElementI2SIn::init_adf_elements_() {
   sdk_audio_elements_.push_back(this->adf_i2s_stream_reader_);
   sdk_element_tags_.push_back("i2s_in");
 
+  this->valid_settings_ = false;
   return true;
 };
 
@@ -86,6 +87,7 @@ void ADFElementI2SIn::clear_adf_elements_(){
   this->sdk_audio_elements_.clear();
   this->sdk_element_tags_.clear();
   this->uninstall_i2s_driver();
+  this->valid_settings_ = false;
 }
 
 

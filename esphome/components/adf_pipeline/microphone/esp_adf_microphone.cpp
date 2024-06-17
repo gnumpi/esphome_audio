@@ -22,6 +22,7 @@ void ADFMicrophone::dump_config() {
 }
 
 void ADFMicrophone::start() {
+  esph_log_d(TAG, "start request while ine state %d", this->state_);
   if ( this->state_ == microphone::STATE_RUNNING){
     return;
   }
