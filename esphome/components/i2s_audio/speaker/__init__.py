@@ -35,9 +35,6 @@ INTERNAL_DAC_OPTIONS = {
     "stereo": i2s_dac_mode_t.I2S_DAC_CHANNEL_BOTH_EN,
 }
 
-
-EXTERNAL_DAC_OPTIONS = ["mono", "stereo"]
-
 NO_INTERNAL_DAC_VARIANTS = [esp32.const.VARIANT_ESP32S2]
 
 
@@ -67,15 +64,16 @@ CONFIG_SCHEMA = cv.All(
                     cv.Required(
                         CONF_I2S_DOUT_PIN
                     ): pins.internal_gpio_output_pin_number,
-                    cv.Optional(CONF_MODE, default="mono"): cv.one_of(
-                        *EXTERNAL_DAC_OPTIONS, lower=True
-                    ),
                     cv.Optional(
                         CONF_I2S_DAC, default={CONF_MODEL: "generic"}
                     ): CONFIG_SCHEMA_DAC,
                 }
             )
-            .extend(i2s.CONFIG_SCHEMA_I2S_COMMON)
+            .extend(
+                i2s.get_i2s_config_schema(
+                    default_channel="right", default_rate=16000, default_bits="16bit"
+                )
+            )
             .extend(cv.COMPONENT_SCHEMA),
         },
         key=CONF_DAC_TYPE,
@@ -94,7 +92,4 @@ async def to_code(config):
     if config[CONF_DAC_TYPE] == "internal":
         cg.add(var.set_internal_dac_mode(config[CONF_MODE]))
     else:
-        # cg.add(var.set_dout_pin(config[CONF_I2S_DOUT_PIN]))
-        cg.add(var.set_external_dac_channels(2 if config[CONF_MODE] == "stereo" else 1))
-
         await register_i2s_writer(var, config)

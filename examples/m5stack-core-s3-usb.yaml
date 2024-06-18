@@ -1,0 +1,432 @@
+esphome:
+  name: m5_core_s3_media_player
+  min_version: 2023.12.7
+  platformio_options:
+    board_build.flash_mode: dio
+    board_upload.maximum_size: 16777216
+
+  on_boot:
+    priority: 600
+    then:
+      - component.update: m5cores3_lcd
+      - delay: 30s
+      - if:
+          condition:
+            lambda: return id(init_in_progress);
+          then:
+            - lambda: id(init_in_progress) = false;
+
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      # need to set a s3 compatible board for the adf-sdk to compile
+      # board specific code is not used though
+      CONFIG_ESP32_S3_BOX_BOARD: "y"
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32S3_DATA_CACHE_64KB:      "y"
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B:  "y"
+
+
+      CONFIG_SPIRAM_CACHE_WORKAROUND: "y"
+
+      #CONFIG_LOG_DEFAULT_LEVEL_DEBUG: "y"
+      #CONFIG_LOG_DEFAULT_LEVEL: "4"
+
+psram:
+  mode: quad
+  speed: 80MHz
+
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/gnumpi/esphome_m5stack_core_s3
+    components: [ esp32_m5stack_core_s3, aw9523 ]
+
+  - source:
+      #type: git
+      #url: https://github.com/gnumpi/esphome_audio
+      #ref: main
+      type: local
+      path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
+
+    components: [ adf_pipeline, i2s_audio, usb_audio ]
+
+
+# Enable logging
+logger:
+  deassert_rts_dtr: true
+  level: DEBUG
+  logs:
+    micro_wake_word: DEBUG
+    touchscreen: WARN
+    FT63X6: WARN
+
+debug:
+  update_interval: 5s
+
+text_sensor:
+  - platform: debug
+    device:
+      name: "Device Info"
+    reset_reason:
+      name: "Reset Reason"
+
+sensor:
+  - platform: debug
+    free:
+      name: "Heap Free"
+    block:
+      name: "Heap Max Block"
+    loop_time:
+      name: "Loop Time"
+    psram:
+      name: "Free PSRAM"
+
+
+packages:
+  wifi: !include common/wifi.yaml
+
+ota:
+api:
+
+i2c:
+  - id: bus_a
+    sda: GPIO12
+    scl: GPIO11
+    scan: True
+
+i2s_audio:
+  - id: i2s_shared
+    i2s_lrclk_pin: GPIO33
+    i2s_bclk_pin: GPIO34
+    i2s_mclk_pin: GPIO0
+    access_mode: exclusive
+
+aw9523:
+  id: aw9523_1
+  address: 0x58
+
+esp32_m5stack_core_s3:
+  aw9523:
+  usb_otg_en: true
+
+usb_audio:
+
+# expose the i2s components as pipeline elements
+adf_pipeline:
+  - platform: i2s_audio
+    type: audio_in
+    id: adf_i2s_in
+    i2s_audio_id: i2s_shared
+    i2s_din_pin: GPIO14
+    pdm: false
+    adc:
+      model: es7210
+      address: 0x40
+    bits_per_sample: 16bit
+    channel: right
+    fixed_settings: true
+
+  - platform: usb_audio
+    id: adf_usb_out
+
+globals:
+  - id: init_in_progress
+    type: bool
+    restore_value: no
+    initial_value: 'true'
+
+  - id: speaker_volume
+    type: int
+    restore_value: no
+    initial_value: '5'
+
+  - id: mp_state
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+
+media_player:
+  - platform: adf_pipeline
+    id: adf_media_player
+    name: s3-dev_media_player
+    internal: false
+    keep_pipeline_alive: true
+    pipeline:
+      - self
+      #- resampler
+      - adf_usb_out
+
+    on_idle:
+      - lambda: id(mp_state) = 0;
+      - display.page.show: relaxing
+      - component.update: m5cores3_lcd
+
+    on_play:
+      - lambda: id(mp_state) = 1;
+      - display.page.show: playing_music
+      - component.update: m5cores3_lcd
+
+    on_announcement:
+      - lambda: id(mp_state) = 2;
+      - display.page.show: announcing
+      - component.update: m5cores3_lcd
+
+microphone:
+  #- platform: adf_pipeline
+  #  id: i2s_microphone
+  #  i2s_audio: adf_i2s_in
+    #i2s_din_pin: GPIO14
+    #pdm: false
+    #adc_type: external
+    #adc:
+    #  model: es7210
+    #  address: 0x40
+    #sample_rate: 16000
+    #bits_per_sample: 16bit
+    #channel: right
+    #fixed_settings: true
+  - platform: adf_pipeline
+    id: i2s_microphone
+    keep_pipeline_alive: true
+    pipeline:
+      - adf_i2s_in
+      #- resampler
+      - self
+
+
+
+micro_wake_word:
+  model: https://raw.githubusercontent.com/kahrendt/microWakeWord/18-add-beta-alexa-model/models/betas/alexa_v2.json
+  #model: okay_nabu
+  on_wake_word_detected:
+      - media_player.pause:
+      - voice_assistant.start:
+      - display.page.show: listening
+      - component.update: m5cores3_lcd
+
+
+voice_assistant:
+  microphone: i2s_microphone
+  media_player: adf_media_player
+
+  use_wake_word: false
+  #vad_threshold: 3
+
+  noise_suppression_level: 4
+  auto_gain: 31dBFS
+  volume_multiplier: 4.0
+
+  on_client_connected:
+    - if:
+        condition:
+          switch.is_on: use_wake_word
+        then:
+          - micro_wake_word.start:
+          - display.page.show: relaxing
+
+  on_client_disconnected:
+    - voice_assistant.stop
+    - micro_wake_word.stop
+
+  on_end:
+      then:
+        - voice_assistant.stop
+        - wait_until:
+            not:
+              voice_assistant.is_running:
+        - if:
+            condition:
+              - switch.is_on: use_wake_word
+            then:
+              - micro_wake_word.start:
+              - if:
+                  condition:
+                    - media_player.is_idle:
+                  then:
+                    - display.page.show: relaxing
+                    - component.update: m5cores3_lcd
+
+  on_error:
+      then:
+        - voice_assistant.stop
+        - wait_until:
+            not:
+              voice_assistant.is_running:
+        - if:
+            condition:
+              switch.is_on: use_wake_word
+            then:
+              - micro_wake_word.start:
+              - display.page.show: relaxing
+              - component.update: m5cores3_lcd
+
+switch:
+  - platform: template
+    name: Enable Voice Assistant
+    id: use_wake_word
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    icon: mdi:assistant
+    on_turn_on:
+      - if:
+          condition:
+                - not:
+                   - voice_assistant.is_running
+                - lambda: return !id(init_in_progress);
+          then:
+            - micro_wake_word.start:
+
+    on_turn_off:
+        - voice_assistant.stop
+        - micro_wake_word.stop
+
+spi:
+  clk_pin: GPIO36
+  mosi_pin: GPIO37
+
+
+image:
+  - file: "../../assets/gnumpi_headset.png"
+    id: gnumpi_headset
+    resize: 320x240
+    type: RGB24
+
+  - file: "../../assets/gnumpi_listening.png"
+    id: gnumpi_listening
+    resize: 320x240
+    type: RGB24
+
+  - file: "../../assets/gnumpi_dj.png"
+    id: gnumpi_dj
+    resize: 320x240
+    type: RGB24
+
+  - file: "../../assets/gnumpi_megaphone.png"
+    id: gnumpi_megaphone
+    resize: 320x240
+    type: RGB24
+
+  - file: mdi:volume-minus
+    id: volume_minus
+    resize: 50x50
+  - file: mdi:volume-plus
+    id: volume_plus
+    resize: 50x50
+
+  - file: mdi:play
+    id: play
+    resize: 80x80
+  - file: mdi:stop
+    id: icon_stop
+    resize: 80x80
+
+font:
+  - file: "gfonts://Roboto"
+    id: roboto
+    size: 36
+
+
+display:
+  - platform: ili9xxx
+    id: m5cores3_lcd
+    model: M5Stack
+    dimensions: 320x240
+    cs_pin: GPIO3
+    dc_pin: GPIO35
+    reset_pin:
+      aw9523: aw9523_1
+      port: 1
+      pin: 1
+      mode:
+        output: true
+
+    update_interval: never
+    pages:
+      - id: relaxing
+        lambda: |-
+          it.image(0, 0, id(gnumpi_headset));
+      - id: listening
+        lambda: |-
+          it.image(0, 0, id(gnumpi_listening));
+      - id: announcing
+        lambda: |-
+          it.image(0, 0, id(gnumpi_megaphone));
+      - id: playing_music
+        lambda: |-
+          auto blue = Color(87,0,248);
+          it.image(0, 0, id(gnumpi_dj));
+
+touchscreen:
+  - platform: ft63x6
+    i2c_id: bus_a
+    update_interval: 20ms
+    on_touch:
+      - logger.log:
+          format: Touch %d at (%d, %d)
+          args: [touch.id, touch.x, touch.y]
+
+
+
+binary_sensor:
+  - platform: touchscreen
+    name: Volume Minus
+    x_min: 0
+    x_max: 80
+    y_min: 89
+    y_max: 120
+    on_press:
+      then:
+        - logger.log: "Volume Minus pressed"
+        - lambda: |-
+            if (id(speaker_volume) > 0) {
+              id(speaker_volume) -= 1;
+            }
+        - component.update: m5cores3_lcd
+        - script.execute: set_volume
+
+  - platform: touchscreen
+    name: Volume Plus
+    x_min: 260
+    x_max: 320
+    y_min: 89
+    y_max: 120
+    on_press:
+      then:
+        - logger.log: "Volume Plus pressed"
+        - lambda: |-
+            if (id(speaker_volume) < 10) {
+              id(speaker_volume) += 1;
+            }
+        - component.update: m5cores3_lcd
+        - script.execute: set_volume
+
+  - platform: touchscreen
+    name: Play Pause
+    x_min: 120
+    x_max: 200
+    y_min: 89
+    y_max: 120
+    on_press:
+      then:
+        - if:
+            condition:
+              media_player.is_idle:
+            then:
+              - media_player.play
+            else:
+              - media_player.stop
+
+        - logger.log: "Play Paused pressed"
+
+
+script:
+  - id: set_volume
+    then:
+      - media_player.volume_set:
+          volume: !lambda return 0.5 + id(speaker_volume) * 0.05 ;

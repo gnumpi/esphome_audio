@@ -14,6 +14,7 @@ class ADFMicrophone : public microphone::Microphone, public ADFPipelineControlle
  public:
   // Pipeline implementations
   void append_own_elements() { add_element_to_pipeline((ADFPipelineElement *) &(this->pcm_stream_)); }
+  const std::string get_name() {return "ADFMicrophone";}
 
   // ESPHome-Component implementations
   float get_setup_priority() const override { return esphome::setup_priority::LATE; }
@@ -30,7 +31,7 @@ class ADFMicrophone : public microphone::Microphone, public ADFPipelineControlle
  protected:
   void on_pipeline_state_change(PipelineState state) override;
 
-  uint8_t gain_log2_{3};
+  uint8_t gain_log2_{0};
   PCMSink pcm_stream_;
 };
 

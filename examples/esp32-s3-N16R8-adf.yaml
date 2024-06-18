@@ -3,11 +3,11 @@ substitutions:
 
 external_components:
   - source:
-      type: git
-      url: https://github.com/gnumpi/esphome_audio
-      ref: main
-      #type: local
-      #path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
+      #type: git
+      #url: https://github.com/gnumpi/esphome_audio
+      #ref: main
+      type: local
+      path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
     components: [ adf_pipeline, i2s_audio ]
 
 
@@ -91,6 +91,8 @@ adf_pipeline:
     id: adf_i2s_out
     i2s_audio_id: i2s_out
     i2s_dout_pin: GPIO10
+    adf_alc: true
+    alc_max: .5
 
   - platform: i2s_audio
     type: audio_in

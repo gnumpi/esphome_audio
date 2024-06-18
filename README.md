@@ -1,5 +1,5 @@
 # ESPHome - Audio Components
-**Target Version: ESPHome-2023.12.9**
+**Min-Version: ESPHome-2024.4**
 
 [![ESPHome-target](https://github.com/gnumpi/esphome_audio/actions/workflows/tox-target.yml/badge.svg)](https://github.com/gnumpi/esphome_audio/actions/workflows/tox-target.yml)
 [![ESPHome-latest](https://github.com/gnumpi/esphome_audio/actions/workflows/tox-latest.yml/badge.svg)](https://github.com/gnumpi/esphome_audio/actions/workflows/tox-latest.yml)
@@ -36,6 +36,16 @@ external_components:
       url: https://github.com/gnumpi/esphome_audio
       ref: main
     components: [ adf_pipeline, i2s_audio ]
+
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      # need to set a s3 compatible board for the adf-sdk to compile
+      # board specific code is not used though
+      CONFIG_ESP32_S3_BOX_BOARD: "y"
 ```
 #### I2S-Settings:
 - **i2s_audio_id** (*Optional*, :ref:`config-id`): The ID of the :ref:`I²S Audio <i2s_audio>` you wish to use for this component.
@@ -53,6 +63,27 @@ For configuration examples not utilizing the *adf_pipeline*, please refer to the
 - **esp32-s3-N16R8-spk.yaml**: Uses a dedicated I2S port for both microphone and speaker.
 - **m5stack-atom-echo-spk.yaml**: Shared I2S port with exclusive access.
 - **m5stack-core-s3-spk.yaml**: includes the use of external DACs and ADCs
+
+#### ADF-MediaPlayer announcement configurations:
+When playing an audio stream the stream is additionally started once silently in the preparation phase in order to detect the audio format and set the pipeline components accordingly. In order to safe some time this detection phase can be skipped for announcements which always have the same audio settings:
+
+```yaml
+media_player:
+  - platform: adf_pipeline
+    id: adf_media_player
+    name: s3-dev_media_player
+    internal: false
+    keep_pipeline_alive: false
+    announcement_audio:
+      sample_rate: 16000
+      bits_per_sample: 16
+      num_channels: 1
+    pipeline:
+      - self
+      - resampler
+      - adf_i2s_out
+
+```
 
 #### ADF-Pipeline configurations:
 

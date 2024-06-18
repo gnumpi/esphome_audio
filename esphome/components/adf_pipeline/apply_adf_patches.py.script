@@ -5,6 +5,8 @@ Import("env")
 FRAMEWORK_DIR = env.PioPlatform().get_package_dir("framework-espidf")
 patchflag_path = join(FRAMEWORK_DIR, ".adf-patching-done")
 
+print( FRAMEWORK_DIR, f"Already Patched: {'yes' if patchflag_path else 'no'}")
+
 PROJECT_DIR = env.get('PROJECT_DIR')
 
 PATCH_FILE = join(PROJECT_DIR, "esp_adf_patches", "idf_v4.4_freertos.patch")

@@ -18,13 +18,13 @@ class ADFResampler : public ADFPipelineProcessElement {
 
  protected:
   bool init_adf_elements_() override;
-  //void clear_adf_elements_() override;
   void on_settings_request(AudioPipelineSettingsRequest &request) override;
 
   int src_rate_{16000};
   int dst_rate_{16000};
   int src_num_channels_{2};
   int dst_num_channels_{2};
+  int src_bit_depth_{16};
 
   audio_element_handle_t sdk_resampler_;
 };

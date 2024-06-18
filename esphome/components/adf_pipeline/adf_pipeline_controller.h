@@ -22,6 +22,7 @@ class ADFPipelineController : public Component {
 public:
   ADFPipelineController() : pipeline(this) {}
   ~ADFPipelineController() {}
+  virtual const std::string get_name() = 0;
 
   virtual void append_own_elements() {}
   void add_element_to_pipeline(ADFPipelineElement *element) { pipeline.append_element(element); }

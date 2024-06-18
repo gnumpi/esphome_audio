@@ -44,11 +44,11 @@ external_components:
     components: [ esp32_m5stack_core_s3, aw9523 ]
 
   - source:
-      type: git
-      url: https://github.com/gnumpi/esphome_audio
-      ref: main
-      #type: local
-      #path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
+      #type: git
+      #url: https://github.com/gnumpi/esphome_audio
+      #ref: main
+      type: local
+      path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
 
     components: [ adf_pipeline, i2s_audio ]
 
@@ -62,6 +62,7 @@ packages:
   wifi: !include common/wifi.yaml
 
 api:
+ota:
 
 i2c:
   - id: bus_a

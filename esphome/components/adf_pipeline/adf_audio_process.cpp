@@ -5,6 +5,7 @@
 #include "adf_pipeline.h"
 
 #include <filter_resample.h>
+#include "sdk_ext.h"
 
 namespace esphome {
 namespace esp_adf {
@@ -28,7 +29,7 @@ bool ADFResampler::init_adf_elements_(){
       .dest_rate = this->dst_rate_,
       .dest_bits = 16,
       .dest_ch = this->dst_num_channels_,
-      .src_bits = 16,
+      .src_bits = this->src_bit_depth_,
       .mode = RESAMPLE_DECODE_MODE,
       .max_indata_bytes = RSP_FILTER_BUFFER_BYTE,
       .out_len_bytes = RSP_FILTER_BUFFER_BYTE,
@@ -49,6 +50,7 @@ bool ADFResampler::init_adf_elements_(){
 }
 
 void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
+
   bool settings_changed = false;
   if( request.sampling_rate > -1 ){
     if( request.sampling_rate != this->src_rate_ )
@@ -76,7 +78,23 @@ void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
       settings_changed = true;
     }
   }
-  esph_log_d(TAG, "New settings: SRC: rate: %d, ch: %d DST: rate: %d, ch: %d ", this->src_rate_,this->src_num_channels_, this->dst_rate_, this->dst_num_channels_);
+
+  if( request.bit_depth > -1 ){
+    if( request.bit_depth != this->src_bit_depth_ )
+    {
+      this->src_bit_depth_ = request.bit_depth;
+      settings_changed = true;
+    }
+  }
+
+  if ( request.final_bit_depth > -1 && request.final_bit_depth != 16 ){
+    request.bit_depth = 16;
+    request.final_bit_depth = 16;
+    request.requested_by = this;
+    this->pipeline_->request_settings(request);
+  }
+
+
 
   if( this->sdk_resampler_ && settings_changed)
   {
@@ -85,14 +103,25 @@ void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
       audio_element_stop(this->sdk_resampler_);
       audio_element_wait_for_stop(this->sdk_resampler_);
     }
-    esph_log_d(TAG, "New settings: SRC: rate: %d, ch: %d DST: rate: %d, ch: %d ", this->src_rate_, this->src_num_channels_, this->dst_rate_, this->dst_num_channels_);
+    ADFPipelineElement* el = request.requested_by;
+    if( el != nullptr ){
+     esph_log_d(TAG, "Received request from: %s", el->get_name().c_str());
+    }
+    else {
+    esph_log_d(TAG, "Called from invalid caller");
+    }
+    esph_log_d(TAG, "New settings: SRC: rate: %d, ch: %d bits: %d, DST: rate: %d, ch: %d, bits %d", this->src_rate_, this->src_num_channels_, this->src_bit_depth_, this->dst_rate_, this->dst_num_channels_, 16);
     rsp_filter_t *filter = (rsp_filter_t *)audio_element_getdata(this->sdk_resampler_);
     resample_info_t &resample_info = *(filter->resample_info);
     resample_info.src_rate = this->src_rate_;
     resample_info.dest_rate = this->dst_rate_;
     resample_info.src_ch = this->src_num_channels_;
     resample_info.dest_ch = this->dst_num_channels_;
+    resample_info.src_bits = this->src_bit_depth_;
+    resample_info.dest_bits = 16;
   }
+
+  esph_log_d(TAG, "Current settings: SRC: rate: %d, ch: %d bits: %d, DST: rate: %d, ch: %d, bits %d", this->src_rate_, this->src_num_channels_, this->src_bit_depth_, this->dst_rate_, this->dst_num_channels_, 16);
 }
 
 }  // namespace esp_adf

@@ -67,3 +67,17 @@ CONFIG_SCHEMA_I2S_COMMON = cv.Schema(
         cv.Optional(CONF_FIXED_SETTINGS, default=False): cv.boolean,
     }
 )
+
+
+def get_i2s_config_schema(default_channel, default_rate, default_bits):
+    return cv.Schema(
+        {
+            cv.Optional(CONF_CHANNEL, default=default_channel): cv.enum(CHANNEL_FORMAT),
+            cv.Optional(CONF_SAMPLE_RATE, default=default_rate): cv.int_range(min=1),
+            cv.Optional(CONF_BITS_PER_SAMPLE, default=default_bits): cv.All(
+                _validate_bits, cv.enum(BITS_PER_SAMPLE)
+            ),
+            cv.Optional(CONF_USE_APLL, default=False): cv.boolean,
+            cv.Optional(CONF_FIXED_SETTINGS, default=False): cv.boolean,
+        }
+    )

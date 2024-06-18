@@ -1,0 +1,258 @@
+---
+external_components:
+  - source:
+      #type: git
+      #url: https://github.com/gnumpi/esphome_audio
+      #ref: dev-next
+      type: local
+      path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
+    components: [ adf_pipeline, i2s_audio ]
+
+
+esphome:
+  name: m5stack-atom-echo
+  friendly_name: M5Stack Atom Echo
+  name_add_mac_suffix: true
+  project:
+    name: m5stack.atom-echo-voice-assistant
+    version: "1.0"
+  min_version: 2023.11.1
+
+esp32:
+  board: m5stack-atom
+  framework:
+    type: esp-idf
+
+logger:
+api:
+ota:
+  platform: esphome
+
+packages:
+  wifi: !include common/wifi.yaml
+
+
+button:
+  - platform: factory_reset
+    id: factory_reset_btn
+    name: Factory reset
+
+i2s_audio:
+  - id: i2s_dplx
+    i2s_lrclk_pin: GPIO33
+    i2s_bclk_pin: GPIO19
+    access_mode: exclusive
+
+
+adf_pipeline:
+  - platform: i2s_audio
+    type: audio_out
+    id: adf_i2s_out
+    i2s_audio_id: i2s_dplx
+    i2s_dout_pin: GPIO22
+    adf_alc: true
+    alc_max: 0.6
+
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    channel: right
+    fixed_settings: false
+
+  - platform: i2s_audio
+    type: audio_in
+    id: adf_i2s_in
+    i2s_audio_id: i2s_dplx
+    i2s_din_pin: GPIO23
+    pdm: true
+    bits_per_sample: 32bit
+    channel: right
+    fixed_settings: true
+
+microphone:
+  - platform: adf_pipeline
+    id: echo_microphone
+    keep_pipeline_alive: false
+    pipeline:
+      - adf_i2s_in
+      - self
+
+speaker:
+  - platform: adf_pipeline
+    id: adf_speaker
+    keep_pipeline_alive: false
+    pipeline:
+      - self
+      - adf_i2s_out
+
+
+
+voice_assistant:
+  id: va
+  microphone: echo_microphone
+  speaker: adf_speaker
+  noise_suppression_level: 2
+  auto_gain: 31dBFS
+  volume_multiplier: 4.0
+  use_wake_word: true
+  #vad_threshold: 3
+
+  on_listening:
+    - light.turn_on:
+        id: led
+        blue: 100%
+        red: 0%
+        green: 0%
+        effect: "Slow Pulse"
+  on_stt_vad_end:
+    - light.turn_on:
+        id: led
+        blue: 100%
+        red: 0%
+        green: 0%
+        effect: "Fast Pulse"
+  on_tts_start:
+    - light.turn_on:
+        id: led
+        blue: 100%
+        red: 0%
+        green: 0%
+        brightness: 100%
+        effect: none
+
+
+    - script.execute: reset_led
+  on_error:
+    - light.turn_on:
+        id: led
+        red: 100%
+        green: 0%
+        blue: 0%
+        brightness: 100%
+        effect: none
+    - delay: 1s
+    - script.execute: reset_led
+  #on_client_connected:
+  #  - if:
+  #      condition:
+  #        switch.is_on: use_wake_word
+  #      then:
+  #        - voice_assistant.start_continuous:
+  #        - script.execute: reset_led
+  on_client_disconnected:
+    - if:
+        condition:
+          switch.is_on: use_wake_word
+        then:
+          - voice_assistant.stop:
+          - light.turn_off: led
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO39
+      inverted: true
+    name: Button
+    disabled_by_default: true
+    entity_category: diagnostic
+    id: echo_button
+    on_multi_click:
+      - timing:
+          - ON for at least 250ms
+          - OFF for at least 50ms
+        then:
+          - if:
+              condition:
+                switch.is_off: use_wake_word
+              then:
+                - if:
+                    condition: voice_assistant.is_running
+                    then:
+                      - voice_assistant.stop:
+                      - script.execute: reset_led
+                    else:
+                      - voice_assistant.start:
+              else:
+                - voice_assistant.stop
+                - delay: 1s
+                - script.execute: reset_led
+                - script.wait: reset_led
+                - voice_assistant.start_continuous:
+      - timing:
+          - ON for at least 10s
+        then:
+          - button.press: factory_reset_btn
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: led
+    name: None
+    disabled_by_default: true
+    entity_category: config
+    pin: GPIO27
+    default_transition_length: 0s
+    chipset: SK6812
+    num_leds: 1
+    rgb_order: grb
+    rmt_channel: 0
+    effects:
+      - pulse:
+          name: "Slow Pulse"
+          transition_length: 250ms
+          update_interval: 250ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 100ms
+          update_interval: 100ms
+          min_brightness: 50%
+          max_brightness: 100%
+
+script:
+  - id: reset_led
+    then:
+      - if:
+          condition:
+            - switch.is_on: use_wake_word
+            - switch.is_on: use_listen_light
+          then:
+            - light.turn_on:
+                id: led
+                red: 100%
+                green: 89%
+                blue: 71%
+                brightness: 60%
+                effect: none
+          else:
+            - light.turn_off: led
+
+switch:
+  - platform: template
+    name: Use wake word
+    id: use_wake_word
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    entity_category: config
+    on_turn_on:
+      - lambda: id(va).set_use_wake_word(true);
+      - if:
+          condition:
+            not:
+              - voice_assistant.is_running
+          then:
+            - voice_assistant.start_continuous
+      - script.execute: reset_led
+    on_turn_off:
+      - voice_assistant.stop
+      - lambda: id(va).set_use_wake_word(false);
+      - script.execute: reset_led
+  - platform: template
+    name: Use listen light
+    id: use_listen_light
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    entity_category: config
+    on_turn_on:
+      - script.execute: reset_led
+    on_turn_off:
+      - script.execute: reset_led

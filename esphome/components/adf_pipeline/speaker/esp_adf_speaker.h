@@ -1,6 +1,11 @@
 #pragma once
 
+#include "esphome/core/defines.h"
+
 #ifdef USE_ESP_IDF
+
+#include "esphome/core/component.h"
+#include "esphome/core/helpers.h"
 
 #include "esphome/components/speaker/speaker.h"
 
@@ -16,6 +21,7 @@ class ADFSpeaker : public speaker::Speaker, public ADFPipelineController {
  public:
   // Pipeline implementations
   void append_own_elements(){ add_element_to_pipeline( (ADFPipelineElement*) &(this->pcm_stream_) ); }
+  const std::string get_name() {return "ADF-Speaker";}
 
   // ESPHome-Component implementations
   float get_setup_priority() const override { return esphome::setup_priority::LATE; }

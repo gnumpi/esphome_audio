@@ -29,6 +29,14 @@ esp32:
       CONFIG_ESP32S3_DATA_CACHE_64KB:      "y"
       CONFIG_ESP32S3_DATA_CACHE_LINE_64B:  "y"
 
+      CONFIG_ESP32_WIFI_STATIC_RX_BUFFER_NUM: "16"
+      CONFIG_ESP32_WIFI_DYNAMIC_RX_BUFFER_NUM: "512"
+      CONFIG_TCPIP_RECVMBOX_SIZE: "512"
+
+      CONFIG_TCP_SND_BUF_DEFAULT: "65535"
+      CONFIG_TCP_WND_DEFAULT: "512000"
+      CONFIG_TCP_RECVMBOX_SIZE: "512"
+
       #CONFIG_LOG_DEFAULT_LEVEL_DEBUG: "y"
       #CONFIG_LOG_DEFAULT_LEVEL: "4"
 
@@ -44,11 +52,11 @@ external_components:
     components: [ esp32_m5stack_core_s3, aw9523 ]
 
   - source:
-      type: git
-      url: https://github.com/gnumpi/esphome_audio
-      ref: main
-      #type: local
-      #path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
+      #type: git
+      #url: https://github.com/gnumpi/esphome_audio
+      #ref: main
+      type: local
+      path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
 
     components: [ adf_pipeline, i2s_audio ]
 
@@ -61,6 +69,7 @@ logger:
 packages:
   wifi: !include common/wifi.yaml
 
+ota:
 api:
 
 i2c:
@@ -81,6 +90,8 @@ aw9523:
   address: 0x58
 
 esp32_m5stack_core_s3:
+  aw9523:
+  usb_otg_en: false
 
 # expose the i2s components as pipeline elements
 adf_pipeline:
@@ -101,6 +112,7 @@ adf_pipeline:
           output: true
     sample_rate: 16000
     bits_per_sample: 16bit
+    channel: right
     fixed_settings: true
 
 
@@ -115,6 +127,7 @@ adf_pipeline:
       address: 0x40
     bits_per_sample: 16bit
     fixed_settings: true
+    channel: right
 
 globals:
   - id: init_in_progress
@@ -139,20 +152,29 @@ media_player:
     name: s3-dev_media_player
     internal: false
     keep_pipeline_alive: true
+    announcement_audio:
+      sample_rate: 16000
+      bits_per_sample: 16
+      num_channels: 1
     pipeline:
       - self
       - resampler
       - adf_i2s_out
 
-    on_play:
-      - lambda: id(mp_state) = 1;
-      - display.page.show: playing_music
-      - component.update: m5cores3_lcd
     on_idle:
       - lambda: id(mp_state) = 0;
       - display.page.show: relaxing
       - component.update: m5cores3_lcd
 
+    on_play:
+      - lambda: id(mp_state) = 1;
+      - display.page.show: playing_music
+      - component.update: m5cores3_lcd
+
+    on_announcement:
+      - lambda: id(mp_state) = 2;
+      - display.page.show: announcing
+      - component.update: m5cores3_lcd
 
 
 microphone:
@@ -161,7 +183,7 @@ microphone:
     keep_pipeline_alive: true
     pipeline:
       - adf_i2s_in
-      - resampler
+      #- resampler
       - self
 
 
@@ -169,7 +191,7 @@ micro_wake_word:
   model: https://raw.githubusercontent.com/kahrendt/microWakeWord/18-add-beta-alexa-model/models/betas/alexa_v2.json
   #model: okay_nabu
   on_wake_word_detected:
-      - media_player.stop:
+      - media_player.pause:
       - voice_assistant.start:
       - display.page.show: listening
       - component.update: m5cores3_lcd
@@ -209,8 +231,12 @@ voice_assistant:
               - switch.is_on: use_wake_word
             then:
               - micro_wake_word.start:
-              - display.page.show: relaxing
-              - component.update: m5cores3_lcd
+              - if:
+                  condition:
+                    - media_player.is_idle:
+                  then:
+                    - display.page.show: relaxing
+                    - component.update: m5cores3_lcd
 
   on_error:
       then:
@@ -267,6 +293,11 @@ image:
     resize: 320x240
     type: RGB24
 
+  - file: "../../assets/gnumpi_megaphone.png"
+    id: gnumpi_megaphone
+    resize: 320x240
+    type: RGB24
+
   - file: mdi:volume-minus
     id: volume_minus
     resize: 50x50
@@ -309,6 +340,9 @@ display:
       - id: listening
         lambda: |-
           it.image(0, 0, id(gnumpi_listening));
+      - id: announcing
+        lambda: |-
+          it.image(0, 0, id(gnumpi_megaphone));
       - id: playing_music
         lambda: |-
           auto blue = Color(87,0,248);

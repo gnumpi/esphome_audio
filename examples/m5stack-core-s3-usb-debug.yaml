@@ -1,0 +1,144 @@
+esphome:
+  name: m5_core_s3_media_player
+  min_version: 2023.12.7
+  platformio_options:
+    board_build.flash_mode: dio
+    board_upload.maximum_size: 16777216
+
+  on_boot:
+    priority: 600
+    then:
+      - delay: 30s
+      - if:
+          condition:
+            lambda: return id(init_in_progress);
+          then:
+            - lambda: id(init_in_progress) = false;
+
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      # need to set a s3 compatible board for the adf-sdk to compile
+      # board specific code is not used though
+      CONFIG_ESP32_S3_BOX_BOARD: "y"
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32S3_DATA_CACHE_64KB:      "y"
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B:  "y"
+
+      #CONFIG_LOG_DEFAULT_LEVEL_DEBUG: "y"
+      #CONFIG_LOG_DEFAULT_LEVEL: "5"
+      #CONFIG_LOG_MAXIMUM_LEVEL: "5"
+
+psram:
+  mode: quad
+  speed: 80MHz
+
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/gnumpi/esphome_m5stack_core_s3
+    components: [ esp32_m5stack_core_s3, aw9523 ]
+
+  - source:
+      #type: git
+      #url: https://github.com/gnumpi/esphome_audio
+      #ref: main
+      type: local
+      path: /Users/siekmann/Privat/Projects/espHome/esphome_audio/esphome/components
+
+    components: [ adf_pipeline, i2s_audio, usb_audio ]
+
+
+# Enable logging
+logger:
+  deassert_rts_dtr: true
+  level: DEBUG
+
+packages:
+  wifi: !include common/wifi.yaml
+
+ota:
+api:
+
+i2c:
+  - id: bus_a
+    sda: GPIO12
+    scl: GPIO11
+    scan: True
+
+i2s_audio:
+  - id: i2s_shared
+    i2s_lrclk_pin: GPIO33
+    i2s_bclk_pin: GPIO34
+    i2s_mclk_pin: GPIO0
+    access_mode: exclusive
+
+aw9523:
+  id: aw9523_1
+  address: 0x58
+
+esp32_m5stack_core_s3:
+  aw9523:
+  usb_otg_en: true
+
+usb_audio:
+
+# expose the i2s components as pipeline elements
+adf_pipeline:
+  - platform: i2s_audio
+    type: audio_in
+    id: adf_i2s_in
+    i2s_audio_id: i2s_shared
+    i2s_din_pin: GPIO14
+    pdm: false
+    adc:
+      model: es7210
+      address: 0x40
+    bits_per_sample: 16bit
+    fixed_settings: true
+
+  - platform: usb_audio
+    id: adf_usb_out
+
+
+globals:
+  - id: init_in_progress
+    type: bool
+    restore_value: no
+    initial_value: 'true'
+
+  - id: speaker_volume
+    type: int
+    restore_value: no
+    initial_value: '5'
+
+  - id: mp_state
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+
+media_player:
+  - platform: adf_pipeline
+    id: adf_media_player
+    name: s3-dev_media_player
+    internal: false
+    keep_pipeline_alive: true
+    pipeline:
+      - self
+      - resampler
+      - adf_usb_out
+
+
+microphone:
+  - platform: adf_pipeline
+    id: adf_microphone
+    keep_pipeline_alive: true
+    pipeline:
+      - adf_i2s_in
+      - resampler
+      - self

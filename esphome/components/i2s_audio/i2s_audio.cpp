@@ -64,6 +64,7 @@ bool I2SAudioComponent::release_access_(uint8_t access){
 bool I2SAudioComponent::install_i2s_driver_(i2s_driver_config_t i2s_cfg, uint8_t access){
   bool success = false;
   this->lock();
+  esph_log_d(TAG, "Install driver requested by %s", access == I2SAccess::RX ? "Reader" : "Writer");
   if( this->access_state_ == I2SAccess::FREE || this->access_state_ == access ){
     if(this->access_mode_ == I2SAccessMode::DUPLEX){
       i2s_cfg.mode = (i2s_mode_t) (i2s_cfg.mode | I2S_MODE_TX | I2S_MODE_RX);
@@ -100,7 +101,7 @@ bool I2SAudioComponent::uninstall_i2s_driver_(uint8_t access){
   bool success = false;
   this->lock();
   // check that i2s is not occupied by others
-  if( (this->access_state_ & ~access) == 0 ){
+  if( (this->access_state_ & access) == access && (this->access_state_ & ~access) == 0 ){
     i2s_zero_dma_buffer(this->get_port());
     esp_err_t err = i2s_driver_uninstall(this->get_port());
     if (err == ESP_OK) {
@@ -114,7 +115,7 @@ bool I2SAudioComponent::uninstall_i2s_driver_(uint8_t access){
     // other component hasn't released yet
     // don't uninstall driver, just release caller
     esph_log_d(TAG, "Other component hasn't released");
-    this->release_access_(access);
+    this->access_state_ = this->access_state_ & (~access);
   }
   this->unlock();
   return success;

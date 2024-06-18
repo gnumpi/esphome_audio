@@ -17,22 +17,26 @@ static const LogString *pipeline_state_to_string(PipelineState state) {
   switch (state) {
     case PipelineState::UNINITIALIZED:
       return LOG_STR("UNINITIALIZED");
+    case PipelineState::INITIALIZING:
+      return LOG_STR("INITIALIZING");
+    case PipelineState::CREATED:
+      return LOG_STR("CREATED");
     case PipelineState::PREPARING:
       return LOG_STR("PREPARING");
+    case PipelineState::STOPPED:
+      return LOG_STR("STOPPED");
     case PipelineState::STARTING:
       return LOG_STR("STARTING");
     case PipelineState::RUNNING:
       return LOG_STR("RUNNING");
-    case PipelineState::STOPPING:
-      return LOG_STR("STOPPING");
-    case PipelineState::STOPPED:
-      return LOG_STR("STOPPED");
+    case PipelineState::FINISHING:
+      return LOG_STR("FINISHING");
     case PipelineState::PAUSING:
       return LOG_STR("PAUSING");
     case PipelineState::PAUSED:
       return LOG_STR("PAUSED");
-    case PipelineState::RESUMING:
-      return LOG_STR("RESUMING");
+    case PipelineState::ABORTING:
+      return LOG_STR("ABORTING");
     case PipelineState::DESTROYING:
       return LOG_STR("DESTROYING");
     default:
@@ -46,212 +50,349 @@ void ADFPipeline::dump_element_configs(){
   }
 }
 
+void ADFPipeline::restart() {
+  esph_log_d(TAG, "Starting request, current state %s", LOG_STR_ARG(pipeline_state_to_string(this->state_)));
+  this->requested_ = PipelineRequest::RESTARTING;
+  return;
+}
+
 void ADFPipeline::start() {
   esph_log_d(TAG, "Starting request, current state %s", LOG_STR_ARG(pipeline_state_to_string(this->state_)));
-  switch( this->state_ ){
-    case PipelineState::UNINITIALIZED:
-      if( init_() ){
-        prepare_elements_();
-      }
-      else{
-        deinit_();
-      }
-      break;
-    case PipelineState::STOPPING:
-    case PipelineState::DESTROYING:
-      break;
-    case PipelineState::STOPPED:
-    case PipelineState::PAUSED:
-      prepare_elements_();
-      break;
-    case PipelineState::RUNNING:
-      set_state_(PipelineState::RUNNING);
-      break;
-    default:
-      break;
-  };
+  if( this->state_  == PipelineState::PAUSED ){
+    this->requested_ = PipelineRequest::RESTARTING;
+    return;
+  }
+
+  this->requested_ = PipelineRequest::RUNNING;
 }
 
 void ADFPipeline::stop() {
-  switch (this->state_ ){
-    case PipelineState::PREPARING:
-    case PipelineState::STARTING:
-    case PipelineState::RUNNING:
-    case PipelineState::PAUSED:
-      stop_();
-      set_state_(PipelineState::STOPPING);
-      break;
-    default:
-      esph_log_d(TAG, "Called 'stop' while in %s state.",LOG_STR_ARG(pipeline_state_to_string(this->state_)) );
-      break;
-  }
+  esph_log_d(TAG, "Called 'stop' while in %s state.",LOG_STR_ARG(pipeline_state_to_string(this->state_)) );
+  this->requested_ = PipelineRequest::STOPPED;
 }
 
 void ADFPipeline::pause() {
-  if (state_ == PipelineState::RUNNING) {
-    set_state_(PipelineState::PAUSING);
-    pause_();
-  } else {
-    esph_log_d(TAG, "Pipeline was not RUNNING while calling pause! Current state: %s",LOG_STR_ARG(pipeline_state_to_string(this->state_)) );
-  }
+  esph_log_d(TAG, "Calling pause! Current state: %s",LOG_STR_ARG(pipeline_state_to_string(this->state_)) );
+  this->requested_ = PipelineRequest::PAUSED;
+
 }
 
 void ADFPipeline::resume() {
-  if (state_ == PipelineState::PAUSED) {
-    set_state_(PipelineState::RESUMING);
-    resume_();
-  }
-  else {
-    esph_log_d(TAG, "Pipeline was not PAUSED while calling resume! Current state: %s",LOG_STR_ARG(pipeline_state_to_string(this->state_)) );
-  }
+  esph_log_d(TAG, "Calling resume! Current state: %s",LOG_STR_ARG(pipeline_state_to_string(this->state_)) );
+  this->requested_ = PipelineRequest::RUNNING;
 }
 
 void ADFPipeline::destroy() {
-  if (state_ == PipelineState::STOPPED) {
-    set_state_(PipelineState::DESTROYING);
-    this->deinit_all_();
-  }
+  esph_log_d(TAG, "Calling destroy! Current state: %s",LOG_STR_ARG(pipeline_state_to_string(this->state_)) );
+  this->destroy_on_stop_ = true;
+  this->requested_ = PipelineRequest::STOPPED;
 }
 
-void ADFPipeline::prepare_elements_(){
-  this->preparation_started_at_ = millis();
-  for (auto &element : pipeline_elements_) {
-    element->prepare_elements();
-  }
-  this->set_state_(PipelineState::PREPARING);
-}
 
-void ADFPipeline::check_all_started_(){
-  if( this->state_ != PipelineState::STARTING)
-  {
-    return;
-  }
+bool ADFPipeline::check_all_finished_(){
+  this->finish_timeout_invoke_ = millis();
+  bool stopped = true;
   for (auto &comp : pipeline_elements_) {
-    for (auto el : comp->get_adf_elements()) {
-      esph_log_d(TAG, "Check element [%s] status, %d", audio_element_get_tag(el), audio_element_get_state(el));
-      if (audio_element_get_state(el) != AEL_STATE_RUNNING){
-        return;
-      }
+    stopped &= comp->elements_have_stopped();
+    if( !stopped ){
+      return false;
     }
   }
-  set_state_(PipelineState::RUNNING);
+  return true;
 }
 
 
-void ADFPipeline::check_all_stopped_(){
-  static uint32_t timeout_invoke = 0;
-  if(timeout_invoke == 0){
-    timeout_invoke = millis();
-  }
-
-  for (auto &comp : pipeline_elements_) {
-    for (auto el : comp->get_adf_elements()) {
-      //esph_log_d(TAG, "Check element for stop [%s] status, %d", audio_element_get_tag(el), audio_element_get_state(el));
-      if ( (millis() - timeout_invoke < 3000 ) &&
-           (
-            audio_element_get_state(el) == AEL_STATE_INITIALIZING ||
-            audio_element_get_state(el) == AEL_STATE_RUNNING ||
-            audio_element_get_state(el) == AEL_STATE_PAUSED
-           )
-         ){
-        return;
-      }
-    }
-  }
-  timeout_invoke = 0;
-  /*
-  In one of this states:
-  AEL_STATE_NONE          = 0,
-  AEL_STATE_INIT          = 1,
-  AEL_STATE_STOPPED       = 5,
-  AEL_STATE_FINISHED      = 6,
-  AEL_STATE_ERROR         = 7
-  */
-  reset_();
-}
-
-
-void ADFPipeline::check_if_components_are_ready_(){
-  bool ready = true;
-  for (auto &element : this->pipeline_elements_) {
-    ready = ready && element->is_ready();
-  }
-  if (ready) {
-    this->set_state_(PipelineState::STARTING);
-    this->start_();
-  }
-  else {
-    if ( millis() - this->preparation_started_at_ > PIPELINE_PREPARATION_TIMEOUT_MS ){
-      esph_log_i(TAG, "Pipeline preparation timeout!");
-      this->stop();
-      return;
-    }
-    audio_event_iface_msg_t msg;
-    esp_err_t ret = audio_event_iface_listen(this->adf_pipeline_event_, &msg, 0);
-    if (ret == ESP_OK) {
-      forward_event_to_pipeline_elements_(msg);
-    }
-  }
-}
 
 void ADFPipeline::check_for_pipeline_events_(){
   audio_event_iface_msg_t msg;
   esp_err_t ret = audio_event_iface_listen(this->adf_pipeline_event_, &msg, 0);
+
   if (ret == ESP_OK) {
     forward_event_to_pipeline_elements_(msg);
 
-      if (parent_ != nullptr) {
-        parent_->pipeline_event_handler(msg);
-      }
+    if (parent_ != nullptr) {
+      parent_->pipeline_event_handler(msg);
+    }
 
     assert( this->state_ != PipelineState::PREPARING );
 
+    if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.cmd == AEL_MSG_CMD_REPORT_POSITION){
+     audio_element_info_t music_info{};
+     audio_element_handle_t el = (audio_element_handle_t) msg.source;
+     audio_element_getinfo(el, &music_info);
+     esph_log_i(TAG, "[ %s ] byte_pos: %lld, total: %lld", audio_element_get_tag(el), music_info.byte_pos, music_info.total_bytes);
+    }
+
+
     //trigger state changes on events received from pipeline
-      if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.cmd == AEL_MSG_CMD_REPORT_STATUS){
-        audio_element_status_t status;
-        std::memcpy(&status, &msg.data, sizeof(audio_element_status_t));
-        audio_element_handle_t el = (audio_element_handle_t) msg.source;
-        esph_log_i(TAG, "[ %s ] status: %d", audio_element_get_tag(el), status);
-        switch (status) {
-          case AEL_STATUS_STATE_STOPPED:
-          case AEL_STATUS_STATE_FINISHED:
-            if( this->state_ == PipelineState::RUNNING){
-              this->set_state_(PipelineState::STOPPING);
-              check_all_stopped_();
+    if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.cmd == AEL_MSG_CMD_REPORT_STATUS){
+      audio_element_status_t status;
+      std::memcpy(&status, &msg.data, sizeof(audio_element_status_t));
+      audio_element_handle_t el = (audio_element_handle_t) msg.source;
+      esph_log_i(TAG, "[ %s ] status: %d", audio_element_get_tag(el), status);
+      switch (status) {
+        case AEL_STATUS_STATE_FINISHED:
+          esph_log_i(TAG, "current state: %s",LOG_STR_ARG(pipeline_state_to_string(this->state_)) );
+          if(    this->state_ == PipelineState::RUNNING
+              || this->state_ == PipelineState::STARTING )
+          {
+            this->set_state_(PipelineState::FINISHING);
+            if( check_all_finished_() )
+            {
+              this->requested_ = PipelineRequest::STOPPED;
             }
-            break;
-          case AEL_STATUS_STATE_RUNNING:
-            check_all_started_();
-            break;
-          case AEL_STATUS_STATE_PAUSED:
-            set_state_(PipelineState::PAUSED);
-            break;
-          default:
-            break;
-        }
+          }
+          else if( this->state_ == PipelineState::FINISHING )
+          {
+            if( check_all_finished_() )
+            {
+              this->requested_ = PipelineRequest::STOPPED;
+            }
+          }
+          break;
+
+        case AEL_STATUS_STATE_STOPPED:
+        case AEL_STATUS_STATE_RUNNING:
+          break;
+
+      case AEL_STATUS_ERROR_OPEN:
+      case AEL_STATUS_ERROR_INPUT:
+      case AEL_STATUS_ERROR_PROCESS:
+      case AEL_STATUS_ERROR_OUTPUT:
+      case AEL_STATUS_ERROR_CLOSE:
+      case AEL_STATUS_ERROR_TIMEOUT:
+      case AEL_STATUS_ERROR_UNKNOWN:
+        this->stop_on_error();
+        break;
+
+      default:
+        break;
       }
     }
+  }
+}
+
+bool ADFPipeline::check_all_created_(){
+  if( adf_pipeline_ == nullptr ){
+    if( init_() ){
+      return true;
     }
+  }
+  return false;
+}
+
+
+bool ADFPipeline::check_all_destroyed_(){
+  return deinit_();
+}
+
+
+template <ADFPipeline::CheckState E>
+bool ADFPipeline::call_and_check() {
+  uint32_t &timeout_invoke = check_timeout_invoke_[E];
+  bool &first_loop = check_first_loop_[E];
+  bool &all_ready = check_all_ready_[E];
+  std::vector<ADFPipelineElement*>::iterator &check_it = check_comp_it[E];
+
+  if(timeout_invoke == 0){
+    timeout_invoke = millis();
+    check_it = this->pipeline_elements_.begin();
+    first_loop = true;
+  }
+
+  switch(E){
+    case CHECK_PREPARED:
+      all_ready &= (*check_it)->prepare_elements(first_loop);
+      //esph_log_d(TAG, "%s reported. All ready? %s", (*check_it)->get_name().c_str(),all_ready ? "yes" : "no" );
+      break;
+    case CHECK_PAUSED:
+      all_ready &= (*check_it)->pause_elements(first_loop);
+      break;
+    case CHECK_RESUMED:
+      all_ready &= (*check_it)->resume_elements(first_loop);
+      break;
+    case CHECK_STOPPED:
+      all_ready &= (*check_it)->stop_elements(first_loop);
+      break;
+    default:
+      break;
+  };
+
+  if( (*check_it)->in_error_state() )
+  {
+    esph_log_e(TAG, "%s got in error state while %s. Stopping pipeline!", (*check_it)->get_name().c_str(),check_state_name[E].c_str() );
+    timeout_invoke = 0;
+    if( !(E == CHECK_STOPPED) ){
+      this->stop_on_error();
+    } else {
+      this->force_destroy();
+    }
+  }
+
+  check_it++;
+  if(check_it == this->pipeline_elements_.end())
+  {
+    check_it = this->pipeline_elements_.begin();
+    if( all_ready ){
+      timeout_invoke = 0;
+      return true;
+    }
+    all_ready = true;
+    first_loop = false;
+  }
+
+  if( millis() - timeout_invoke > 6000 )
+  {
+    esph_log_e(TAG, "Timeout while %s. Stopping pipeline!", check_state_name[E].c_str() );
+    timeout_invoke = 0;
+    if( !(E == CHECK_STOPPED) ){
+      this->stop_on_error();
+    } else {
+      this->force_destroy();
+    }
+  }
+
+  return false;
+}
+
+template bool ADFPipeline::call_and_check<ADFPipeline::CHECK_PREPARED>();
+template bool ADFPipeline::call_and_check<ADFPipeline::CHECK_PAUSED>();
+template bool ADFPipeline::call_and_check<ADFPipeline::CHECK_RESUMED>();
+template bool ADFPipeline::call_and_check<ADFPipeline::CHECK_STOPPED>();
+
+
+void ADFPipeline::stop_on_error(){
+  this->requested_ = PipelineRequest::STOPPED;
+  this->set_state_(PipelineState::ABORTING);
+}
+
+void ADFPipeline::force_destroy(){
+  this->requested_ = PipelineRequest::DESTROYED;
+  this->set_state_(PipelineState::DESTROYING);
+}
+
 
 void ADFPipeline::watch_() {
   switch(this->state_){
+
     case PipelineState::UNINITIALIZED:
+      if(    this->requested_ == PipelineRequest::RUNNING
+          || this->requested_ == PipelineRequest::RESTARTING ){
+        set_state_(PipelineState::INITIALIZING);
+        return;
+      }
+      break;
+
+    case PipelineState::CREATED:
+      // intended for pipeline creation during setup
+      if(    this->requested_ == PipelineRequest::RUNNING
+          || this->requested_ == PipelineRequest::RESTARTING ){
+        set_state_(PipelineState::PREPARING);
+      }
+      break;
+
+    case PipelineState::STOPPED:
+      if(    this->requested_ == PipelineRequest::RUNNING
+          || this->requested_ == PipelineRequest::RESTARTING ){
+        set_state_(PipelineState::PREPARING);
+        return;
+      }
+      if( this->destroy_on_stop_){
+        set_state_(PipelineState::DESTROYING);
+        return;
+      }
+      break;
+
     case PipelineState::PAUSED:
-    case PipelineState::DESTROYING:
+      if( this->requested_ == PipelineRequest::RESTARTING){
+        set_state_(PipelineState::ABORTING);
+        this->requested_ = PipelineRequest::RUNNING;
+        return;
+      }
+      if( this->requested_ == PipelineRequest::RUNNING){
+        set_state_(PipelineState::STARTING);
+        return;
+      }
+      if( this->requested_ == PipelineRequest::STOPPED){
+        set_state_(PipelineState::ABORTING);
+        return;
+      }
       break;
-    case PipelineState::PREPARING:
-      check_if_components_are_ready_();
-      break;
-    case PipelineState::STARTING:
+
     case PipelineState::RUNNING:
-    case PipelineState::PAUSING:
-    case PipelineState::RESUMING:
+      check_for_pipeline_events_();
+      if( this->requested_ == PipelineRequest::STOPPED ){
+        set_state_(PipelineState::ABORTING);
+      }
+      else if (this->requested_ == PipelineRequest::PAUSED){
+        set_state_(PipelineState::PAUSING);
+      }
+      break;
+
+    case PipelineState::INITIALIZING:
+      if( check_all_created_()){
+        set_state_(PipelineState::CREATED);
+        return;
+      }
+      set_state_(PipelineState::DESTROYING);
+      break;
+
+    case PipelineState::PREPARING:
+      if ( call_and_check<CHECK_PREPARED>() ){
+        esph_log_d(TAG, "wait for preparation, done");
+        if( this->requested_ == PipelineRequest::RESTARTING ){
+          this->requested_ = PipelineRequest::RUNNING;
+        }
+        if( this->requested_ == PipelineRequest::RUNNING ){
+            set_state_(PipelineState::STARTING);
+            return;
+        }
+        this->set_state_(PipelineState::ABORTING);
+      }
+      {
+        audio_event_iface_msg_t msg;
+        esp_err_t ret = audio_event_iface_listen(this->adf_pipeline_event_, &msg, 0);
+        if (ret == ESP_OK) {
+          forward_event_to_pipeline_elements_(msg);
+        }
+      }
+      break;
+
+    case PipelineState::STARTING:
+      if( call_and_check<CHECK_RESUMED>() ){
+        set_state_(PipelineState::RUNNING);
+      }
       check_for_pipeline_events_();
       break;
-    case PipelineState::STOPPING:
-      check_all_stopped_();
+
+
+    case PipelineState::FINISHING:
+      check_for_pipeline_events_();
+      if(this->requested_ == PipelineRequest::STOPPED){
+        set_state_(PipelineState::STOPPED);
+      }
+      else if ( millis() - this->finish_timeout_invoke_ > this->wait_for_finish_timeout_ms_){
+        this->requested_ = PipelineRequest::STOPPED;
+        set_state_(PipelineState::ABORTING);
+      }
       break;
-    case PipelineState::STOPPED:
+
+    case PipelineState::PAUSING:
+      if( call_and_check<CHECK_PAUSED>() ){
+        set_state_(PipelineState::PAUSED);
+      }
+      break;
+
+    case PipelineState::ABORTING:
+      if( call_and_check<CHECK_STOPPED>() ) {
+        set_state_(PipelineState::STOPPED);
+      }
+      break;
+
+    case PipelineState::DESTROYING:
+      if( check_all_destroyed_() ){
+        set_state_(PipelineState::UNINITIALIZED);
+      }
       break;
   }
 }
@@ -293,13 +434,18 @@ bool ADFPipeline::request_settings(AudioPipelineSettingsRequest &request) {
     if (*it != request.requested_by) {
       (*it)->on_settings_request(request);
     }
+    else {
+      break;
+    }
   }
   return !request.failed;
 }
 
 void ADFPipeline::set_state_(PipelineState state) {
-  esph_log_d(TAG, "State changed from %s to %s", LOG_STR_ARG(pipeline_state_to_string(this->state_)),
-             LOG_STR_ARG(pipeline_state_to_string(state)));
+  esph_log_d(TAG, "[%s] Pipeline changed from %s to %s. (REQ: %d)",
+    this->parent_->get_name().c_str(),
+    LOG_STR_ARG(pipeline_state_to_string(this->state_)),
+             LOG_STR_ARG(pipeline_state_to_string(state)), (int) this->requested_);
   state_ = state;
   for (auto element : pipeline_elements_) {
     element->on_pipeline_status_change();
@@ -311,13 +457,6 @@ void ADFPipeline::set_state_(PipelineState state) {
 
 bool ADFPipeline::init_() { return build_adf_pipeline_(); }
 
-bool ADFPipeline::start_() { return audio_pipeline_run(adf_pipeline_) == ESP_OK; }
-
-bool ADFPipeline::stop_() { return audio_pipeline_stop(adf_pipeline_) == ESP_OK; }
-
-bool ADFPipeline::pause_() { return audio_pipeline_pause(adf_pipeline_) == ESP_OK; }
-
-bool ADFPipeline::resume_() { return audio_pipeline_resume(adf_pipeline_) == ESP_OK; }
 
 bool ADFPipeline::deinit_() {
   this->deinit_all_();
@@ -365,8 +504,6 @@ bool ADFPipeline::build_adf_pipeline_() {
   }
   delete link_tag_ptrs;
 
-  adf_last_element_in_pipeline_ = pipeline_elements_.back()->get_adf_elements().back();
-
   esph_log_d(TAG, "Setting up event listener.");
   audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();
   adf_pipeline_event_ = audio_event_iface_init(&evt_cfg);
@@ -377,28 +514,18 @@ bool ADFPipeline::build_adf_pipeline_() {
   return true;
 }
 
-bool ADFPipeline::reset_() {
-  bool ret = false;
-  if ( this->destroy_on_stop_ ){
-    ret = deinit_();
-  }
-  else {
-    audio_pipeline_handle_t pipeline = this->adf_pipeline_;
-    ret = (    audio_pipeline_reset_ringbuffer(pipeline) == ESP_OK
-            && audio_pipeline_reset_elements(pipeline) == ESP_OK
-            && audio_pipeline_change_state(pipeline, AEL_STATE_INIT) == ESP_OK
-    );
-    for (auto &element : pipeline_elements_) {
-      element->reset_();
-    }
-    set_state_(PipelineState::STOPPED);
-  }
-  return ret;
-}
-
 void ADFPipeline::deinit_all_() {
   esph_log_d(TAG, "Called deinit_all" );
   audio_pipeline_deinit(this->adf_pipeline_);
+  // includes:
+  //  audio_pipeline_terminate(pipeline);
+  //  audio_pipeline_unlink(pipeline);
+  //  for each el:
+  //    audio_element_deinit
+  //    audio_pipeline_unregister
+  //  mutex_destroy
+  //  audio_free
+
   if ( this->adf_pipeline_event_){
     audio_event_iface_destroy(this->adf_pipeline_event_);
   }
@@ -408,7 +535,6 @@ void ADFPipeline::deinit_all_() {
   }
   this->adf_pipeline_ = nullptr;
   this->adf_pipeline_event_ = nullptr;
-  this->set_state_(PipelineState::UNINITIALIZED);
 }
 
 }  // namespace esp_adf
