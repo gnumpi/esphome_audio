@@ -29,7 +29,7 @@ bool ADFResampler::init_adf_elements_(){
       .dest_rate = this->dst_rate_,
       .dest_bits = 16,
       .dest_ch = this->dst_num_channels_,
-      .src_bits = 16,
+      .src_bits = this->src_bit_depth_,
       .mode = RESAMPLE_DECODE_MODE,
       .max_indata_bytes = RSP_FILTER_BUFFER_BYTE,
       .out_len_bytes = RSP_FILTER_BUFFER_BYTE,
@@ -50,6 +50,7 @@ bool ADFResampler::init_adf_elements_(){
 }
 
 void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
+
   bool settings_changed = false;
   if( request.sampling_rate > -1 ){
     if( request.sampling_rate != this->src_rate_ )
@@ -86,6 +87,15 @@ void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
     }
   }
 
+  if ( request.final_bit_depth > -1 && request.final_bit_depth != 16 ){
+    request.bit_depth = 16;
+    request.final_bit_depth = 16;
+    request.requested_by = this;
+    this->pipeline_->request_settings(request);
+  }
+
+
+
   if( this->sdk_resampler_ && settings_changed)
   {
     if( audio_element_get_state(this->sdk_resampler_) == AEL_STATE_RUNNING)
@@ -110,6 +120,8 @@ void ADFResampler::on_settings_request(AudioPipelineSettingsRequest &request){
     resample_info.src_bits = this->src_bit_depth_;
     resample_info.dest_bits = 16;
   }
+
+  esph_log_d(TAG, "Current settings: SRC: rate: %d, ch: %d bits: %d, DST: rate: %d, ch: %d, bits %d", this->src_rate_, this->src_num_channels_, this->src_bit_depth_, this->dst_rate_, this->dst_num_channels_, 16);
 }
 
 }  // namespace esp_adf

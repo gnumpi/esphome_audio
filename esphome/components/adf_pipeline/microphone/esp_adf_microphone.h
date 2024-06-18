@@ -31,7 +31,7 @@ class ADFMicrophone : public microphone::Microphone, public ADFPipelineControlle
  protected:
   void on_pipeline_state_change(PipelineState state) override;
 
-  uint8_t gain_log2_{3};
+  uint8_t gain_log2_{0};
   PCMSink pcm_stream_;
 };
 

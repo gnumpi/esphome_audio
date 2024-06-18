@@ -434,6 +434,9 @@ bool ADFPipeline::request_settings(AudioPipelineSettingsRequest &request) {
     if (*it != request.requested_by) {
       (*it)->on_settings_request(request);
     }
+    else {
+      break;
+    }
   }
   return !request.failed;
 }
