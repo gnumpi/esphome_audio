@@ -66,9 +66,10 @@ void HTTPStreamReaderAndDecoder::reset_() {
   this->element_state_ = PipelineElementState::INITIALIZED;
 }
 
-void HTTPStreamReaderAndDecoder::set_stream_uri(const std::string& new_url) {
+void HTTPStreamReaderAndDecoder::set_stream_uri(const std::string& new_url, bool isAnnouncement) {
   esph_log_v(TAG, "Set URI: %s", new_url.c_str());
   this->current_url_ = new_url;
+  this->announcement_ = isAnnouncement;
 }
 
 void HTTPStreamReaderAndDecoder::prepare_elements(){

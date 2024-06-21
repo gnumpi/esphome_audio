@@ -6,6 +6,7 @@
 
 #include "../adf_pipeline_controller.h"
 #include "../adf_audio_sources.h"
+#include "udp_mrm.h"
 
 namespace esphome {
 namespace esp_adf {
@@ -54,10 +55,8 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   int duration() const { return this->duration_; }
   int position() const { return this->position_; }
   media_player::MediaPlayerTraits get_traits() override;
-
-  //
-  void start();
-  void stop();
+  
+  void loop();
 
  protected:
   // MediaPlayer implementation
@@ -65,7 +64,14 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
 
   // Pipeline implementations
   void on_pipeline_state_change(PipelineState state);
-  
+    
+  void start_();
+  void stop_();
+
+  void mrm_process_recv_actions_() ;
+  void mrm_set_stream_uri_(const std::string url);
+  void mrm_start_();
+  void mrm_stop_();
   bool mrm_listen_requested_{false};
   void mrm_listen_();
   void mrm_unlisten_();
@@ -74,8 +80,6 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   void mrm_volume_();
   void mrm_mute_();
   void mrm_unmute_();
-  void mrm_start_();
-  void mrm_stop_();
 
   void mute_();
   void unmute_();
@@ -126,6 +130,7 @@ class ADFMediaPlayer : public media_player::MediaPlayer, public ADFPipelineContr
   void set_playlist_track_(ADFPlaylistTrack track);
 
   bool mrm_leader_started_{false};
+  UdpMRM udpMRM_;
 };
 
 }  // namespace esp_adf

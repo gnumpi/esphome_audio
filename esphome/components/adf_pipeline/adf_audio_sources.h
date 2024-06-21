@@ -14,11 +14,12 @@ class ADFPipelineSourceElement : public ADFPipelineElement {
 
 class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
  public:
-  void set_stream_uri(const std::string&  new_url);
+  void set_stream_uri(const std::string&  new_url, bool is_announcement = false);
   const std::string get_name() override { return "HTTPStreamReader"; }
   bool is_ready() override;
   void prepare_elements() override;
   int64_t get_position();
+  bool is_announcement() { return announcement_; }
 
  protected:
   bool init_adf_elements_() override;
@@ -36,6 +37,7 @@ class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
   std::string current_url_{"https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3"};
   audio_element_handle_t http_stream_reader_{};
   audio_element_handle_t decoder_{};
+  bool announcement_{false};
 };
 
 
