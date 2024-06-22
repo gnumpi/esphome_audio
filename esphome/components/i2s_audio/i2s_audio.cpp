@@ -138,6 +138,7 @@ void I2SSettings::dump_i2s_settings() const {
   else{
     esph_log_config(TAG, "I2S-Writer (%s):", init_str.c_str());
   }
+  esph_log_config(TAG, "  clk_mode: %s", this->i2s_clk_mode_ == I2S_MODE_MASTER ? "internal" : "external"  );
   esph_log_config(TAG, "  sample-rate: %d bits_per_sample: %d", this->sample_rate_, this->bits_per_sample_ );
   esph_log_config(TAG, "  channel_fmt: %d channels: %d", this->channel_fmt_, this->num_of_channels() );
   esph_log_config(TAG, "  use_apll: %s, use_pdm: %s", this->use_apll_ ? "yes": "no", this->pdm_ ? "yes": "no");
@@ -145,7 +146,7 @@ void I2SSettings::dump_i2s_settings() const {
 
 
 i2s_driver_config_t I2SSettings::get_i2s_cfg() const {
-  uint8_t mode = I2S_MODE_MASTER | ( this->i2s_access_ == I2SAccess::RX ? I2S_MODE_RX : I2S_MODE_TX);
+  uint8_t mode = this->i2s_clk_mode_ | ( this->i2s_access_ == I2SAccess::RX ? I2S_MODE_RX : I2S_MODE_TX);
 
   if( this->pdm_){
       mode = (i2s_mode_t) (mode | I2S_MODE_PDM);

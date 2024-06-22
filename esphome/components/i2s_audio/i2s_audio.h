@@ -72,7 +72,6 @@ class I2SAudioComponent : public Component {
   int bclk_pin_{I2S_PIN_NO_CHANGE};
   int lrclk_pin_;
   i2s_port_t port_{};
-
   i2s_driver_config_t installed_cfg_{};
 };
 
@@ -95,12 +94,13 @@ public:
   void set_fixed_settings(bool is_fixed){ this->is_fixed_ = is_fixed; }
   int num_of_channels() const { return (this->channel_fmt_ == I2S_CHANNEL_FMT_ONLY_RIGHT
    || this->channel_fmt_ == I2S_CHANNEL_FMT_ONLY_LEFT) ? 1 : 2; }
+  void set_clk_mode(i2s_mode_t clk_mode){ this->i2s_clk_mode_ = clk_mode; }
 
 protected:
    bool use_apll_{false};
    i2s_bits_per_sample_t bits_per_sample_;
    i2s_channel_fmt_t channel_fmt_;
-   i2s_mode_t i2s_clk_mode_;
+   i2s_mode_t i2s_clk_mode_{I2S_MODE_MASTER};
    i2s_mode_t i2s_access_mode_;
    bool pdm_{false};
    uint32_t sample_rate_;

@@ -211,6 +211,7 @@ def final_validate_device_schema(name: str) -> cv.Schema:
 
 
 async def apply_i2s_settings(var, config) -> None:
+    cg.add(var.set_clk_mode(config[i2s.CONF_CLK_MODE]))
     cg.add(var.set_channel(config[i2s.CONF_CHANNEL]))
     cg.add(var.set_sample_rate(config[i2s.CONF_SAMPLE_RATE]))
     cg.add(var.set_bits_per_sample(config[i2s.CONF_BITS_PER_SAMPLE]))

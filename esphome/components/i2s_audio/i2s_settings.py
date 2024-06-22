@@ -2,18 +2,20 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.const import CONF_CHANNEL
 
-CONF_PRIMARY = "primary"
-CONF_SECONDARY = "secondary"
+CONF_CLK_MODE = "i2s_clock_mode"
 CONF_SAMPLE_RATE = "sample_rate"
 CONF_BITS_PER_SAMPLE = "bits_per_sample"
 CONF_PDM = "pdm"
 CONF_USE_APLL = "use_apll"
 CONF_FIXED_SETTINGS = "fixed_settings"
 
+
+INTERNAL_CLK = "internal"
+EXTERNAL_CLK = "external"
 i2s_mode_t = cg.global_ns.enum("i2s_mode_t")
-I2S_CLK_MODE_OPTIONS = {
-    CONF_PRIMARY: i2s_mode_t.I2S_MODE_MASTER,  # NOLINT
-    CONF_SECONDARY: i2s_mode_t.I2S_MODE_SLAVE,  # NOLINT
+I2S_CLK_MODES = {
+    INTERNAL_CLK: i2s_mode_t.I2S_MODE_MASTER,  # NOLINT
+    EXTERNAL_CLK: i2s_mode_t.I2S_MODE_SLAVE,  # NOLINT
 }
 
 
@@ -58,6 +60,7 @@ _validate_bits = cv.float_with_unit("bits", "bit")
 
 CONFIG_SCHEMA_I2S_COMMON = cv.Schema(
     {
+        cv.Optional(CONF_CLK_MODE, default=INTERNAL_CLK): cv.enum(I2S_CLK_MODES),
         cv.Optional(CONF_CHANNEL, default="right_left"): cv.enum(CHANNEL_FORMAT),
         cv.Optional(CONF_SAMPLE_RATE, default=16000): cv.int_range(min=1),
         cv.Optional(CONF_BITS_PER_SAMPLE, default="32bit"): cv.All(
