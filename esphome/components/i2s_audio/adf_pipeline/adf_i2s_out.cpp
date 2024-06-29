@@ -40,7 +40,7 @@ bool ADFElementI2SOut::init_adf_elements_() {
       .i2s_port = this->parent_->get_port(),
       .use_alc = this->use_adf_alc_,
       .volume = 0,
-      .out_rb_size = (4 * 1024),
+      .out_rb_size = I2S_STREAM_RINGBUFFER_SIZE,
       .task_stack = I2S_STREAM_TASK_STACK,
       .task_core = I2S_STREAM_TASK_CORE,
       .task_prio = I2S_STREAM_TASK_PRIO,
@@ -52,7 +52,7 @@ bool ADFElementI2SOut::init_adf_elements_() {
   };
 
   this->adf_i2s_stream_writer_ = i2s_stream_init(&i2s_cfg);
-  this->adf_i2s_stream_writer_->buf_size = 1 * 1024;
+  //this->adf_i2s_stream_writer_->buf_size = 1 * 1024;
 
   this->install_i2s_driver(i2s_config);
 

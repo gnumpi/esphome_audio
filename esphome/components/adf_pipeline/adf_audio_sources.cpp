@@ -3,8 +3,9 @@
 #ifdef USE_ESP_IDF
 
 #include <http_stream.h>
-#include <mp3_decoder.h>
 #include <raw_stream.h>
+#include <esp_decoder.h>
+#include "esphome/core/hal.h"
 
 #include "sdk_ext.h"
 
@@ -23,19 +24,31 @@ bool HTTPStreamReaderAndDecoder::init_adf_elements_() {
     return true;
 
   http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
-  http_cfg.task_core = 0;
-  http_cfg.out_rb_size = 4 * 1024;
+  //http_cfg.task_core = 0;
+  http_cfg.out_rb_size = 500 * 1024;
   http_stream_reader_ = http_stream_init(&http_cfg);
-  http_stream_reader_->buf_size =  1024;
+  //http_stream_reader_->buf_size =  1024;
   audio_element_set_uri(this->http_stream_reader_, this->current_url_.c_str());
 
   sdk_audio_elements_.push_back(this->http_stream_reader_);
   sdk_element_tags_.push_back("http");
 
-  mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
-  mp3_cfg.out_rb_size = 4 * 1024;
-  decoder_ = mp3_decoder_init(&mp3_cfg);
-
+  audio_decoder_t auto_decode[] = {
+        DEFAULT_ESP_AMRNB_DECODER_CONFIG(),
+        DEFAULT_ESP_AMRWB_DECODER_CONFIG(),
+        DEFAULT_ESP_FLAC_DECODER_CONFIG(),
+        DEFAULT_ESP_OGG_DECODER_CONFIG(),
+        DEFAULT_ESP_OPUS_DECODER_CONFIG(),
+        DEFAULT_ESP_MP3_DECODER_CONFIG(),
+        DEFAULT_ESP_WAV_DECODER_CONFIG(),
+        DEFAULT_ESP_AAC_DECODER_CONFIG(),
+        DEFAULT_ESP_M4A_DECODER_CONFIG(),
+        DEFAULT_ESP_TS_DECODER_CONFIG(),
+  };
+  esp_decoder_cfg_t auto_dec_cfg = DEFAULT_ESP_DECODER_CONFIG();
+  auto_dec_cfg.out_rb_size = 500 * 1024;
+  decoder_ = esp_decoder_init(&auto_dec_cfg, auto_decode, 10);
+  
   sdk_audio_elements_.push_back(this->decoder_);
   sdk_element_tags_.push_back("decoder");
   this->element_state_ = PipelineElementState::INITIALIZED;
@@ -53,8 +66,10 @@ void HTTPStreamReaderAndDecoder::reset_() {
   this->element_state_ = PipelineElementState::INITIALIZED;
 }
 
-void HTTPStreamReaderAndDecoder::set_stream_uri(const std::string& new_url) {
+void HTTPStreamReaderAndDecoder::set_stream_uri(const std::string& new_url, bool isAnnouncement) {
+  esph_log_v(TAG, "Set URI: %s", new_url.c_str());
   this->current_url_ = new_url;
+  this->announcement_ = isAnnouncement;
 }
 
 void HTTPStreamReaderAndDecoder::prepare_elements(){
@@ -119,14 +134,14 @@ bool HTTPStreamReaderAndDecoder::set_ready_when_prepare_pipeline_stopped_(){
 
 //wait for audio information in stream and send new audio settings to pipeline
 void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg) {
-  audio_element_handle_t mp3_decoder = this->decoder_;
-  if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) mp3_decoder &&
+  audio_element_handle_t decoder = this->decoder_;
+  if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source == (void *) decoder &&
       msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
     audio_element_info_t music_info{};
-    audio_element_getinfo(mp3_decoder, &music_info);
+    audio_element_getinfo(decoder, &music_info);
 
-    esph_log_i(get_name().c_str(), "[ * ] Receive music info from mp3 decoder, sample_rates=%d, bits=%d, ch=%d",
-               music_info.sample_rates, music_info.bits, music_info.channels);
+    esph_log_i(TAG, "[ * ] Receive music info from decoder, sample_rates=%d, bits=%d, ch=%d, pos=%lld",
+               music_info.sample_rates, music_info.bits, music_info.channels, music_info.byte_pos);
 
     AudioPipelineSettingsRequest request{this};
     request.sampling_rate = music_info.sample_rates;
@@ -136,7 +151,6 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
       esph_log_e(TAG, "Requested audio settings, didn't get accepted");
       pipeline_->on_settings_request_failed(request);
     }
-
     // necessary audio information has been received, terminate preparation pipeline
     if( this->element_state_ == PipelineElementState::PREPARING )
     {

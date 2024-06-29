@@ -195,14 +195,15 @@ void ADFPipeline::check_if_components_are_ready_(){
 }
 
 void ADFPipeline::check_for_pipeline_events_(){
+  
   audio_event_iface_msg_t msg;
   esp_err_t ret = audio_event_iface_listen(this->adf_pipeline_event_, &msg, 0);
   if (ret == ESP_OK) {
     forward_event_to_pipeline_elements_(msg);
 
-      if (parent_ != nullptr) {
-        parent_->pipeline_event_handler(msg);
-      }
+    if (parent_ != nullptr) {
+      parent_->pipeline_event_handler(msg);
+    }
 
     assert( this->state_ != PipelineState::PREPARING );
 
@@ -215,7 +216,7 @@ void ADFPipeline::check_for_pipeline_events_(){
         switch (status) {
           case AEL_STATUS_STATE_STOPPED:
           case AEL_STATUS_STATE_FINISHED:
-            if( this->state_ == PipelineState::RUNNING){
+            if( strcmp(audio_element_get_tag(el), "i2s_out") == 0 && this->state_ == PipelineState::RUNNING){
               this->set_state_(PipelineState::STOPPING);
               check_all_stopped_();
             }
@@ -224,7 +225,9 @@ void ADFPipeline::check_for_pipeline_events_(){
             check_all_started_();
             break;
           case AEL_STATUS_STATE_PAUSED:
-            set_state_(PipelineState::PAUSED);
+            if (strcmp(audio_element_get_tag(el), "i2s_out") == 0) {
+              set_state_(PipelineState::PAUSED);
+            }
             break;
           default:
             break;
@@ -378,8 +381,12 @@ bool ADFPipeline::build_adf_pipeline_() {
 }
 
 bool ADFPipeline::reset_() {
+  return reset(false);
+}
+
+bool ADFPipeline::reset(bool force) {
   bool ret = false;
-  if ( this->destroy_on_stop_ ){
+  if ( this->destroy_on_stop_ || force ){
     ret = deinit_();
   }
   else {
