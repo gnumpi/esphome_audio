@@ -70,6 +70,7 @@ class ADFPipeline {
   // Send a settings request to all pipeline elements
   bool request_settings(AudioPipelineSettingsRequest &request);
   void on_settings_request_failed(AudioPipelineSettingsRequest request) {}
+  audio_element_handle_t get_last_audio_element() { return adf_last_element_in_pipeline_; }
 
  protected:
   bool init_();

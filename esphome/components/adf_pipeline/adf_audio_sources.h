@@ -18,8 +18,8 @@ class HTTPStreamReaderAndDecoder : public ADFPipelineSourceElement {
   const std::string get_name() override { return "HTTPStreamReader"; }
   bool is_ready() override;
   void prepare_elements() override;
-  int64_t get_position();
   bool is_announcement() { return announcement_; }
+  audio_element_handle_t get_decoder() { return decoder_; }
 
  protected:
   bool init_adf_elements_() override;

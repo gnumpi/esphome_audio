@@ -225,7 +225,9 @@ void ADFPipeline::check_for_pipeline_events_(){
             check_all_started_();
             break;
           case AEL_STATUS_STATE_PAUSED:
-            set_state_(PipelineState::PAUSED);
+            if (strcmp(audio_element_get_tag(el), "i2s_out") == 0) {
+              set_state_(PipelineState::PAUSED);
+            }
             break;
           default:
             break;

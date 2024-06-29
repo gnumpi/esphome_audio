@@ -17,17 +17,22 @@ class UdpMRMAction {
     std::string data{""};
     int64_t timestamp{};
     std::string to_string();
+    int64_t get_timestamp();
 };
 
 class UdpMRM {
   public:
+    // should be configurable through yaml
     std::string multicast_ipv4_addr{"239.255.255.252"};
-    int udp_port{1900};
-    uint8_t multicast_ttl{5};
-    bool listen_all_if{true};
+    //port 1900 is in use, avoid
+    int udp_port{1901};
+    uint8_t multicast_ttl{2};
+    bool listen_all_if{false};
+
+    // internal
+    std::string this_addr_{""};
     bool stop_multicast{false};
-    size_t multicast_buffer_size{1024};
-    int multicast_loop_sleep_ms{500};
+    size_t multicast_buffer_size{512};
     bool multicast_running{false};
     TaskHandle_t xhandle{};
     int64_t offset{};
@@ -39,6 +44,11 @@ class UdpMRM {
     void set_stream_uri(const std::string& url);
     void start();
     void stop();
+    void resume();
+    void uninitialize();
+    void send_ping();
+    void send_position(int64_t timestamp, int64_t position);
+
     media_player::MediaPlayerMRM get_mrm() { return mrm_; }
 
     int64_t get_timestamp();
@@ -46,13 +56,11 @@ class UdpMRM {
     //used by mrm_task
     int socket_add_ipv4_multicast_group(int sock, bool assign_source_if);
     int create_multicast_ipv4_socket(void);
-    int create_multicast_ipv6_socket(void);
     void process_multicast_message(std::string &message, std::string &sender);
-    std::string prepare_multicast_message();
+    int64_t ping_timestamp{};
 
   protected:
     media_player::MediaPlayerMRM mrm_{media_player::MEDIA_PLAYER_MRM_OFF};
-    int64_t ping_timestamp_{};
 };
 
 }  // namespace esp_adf

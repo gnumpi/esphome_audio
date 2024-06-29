@@ -25,7 +25,7 @@ bool HTTPStreamReaderAndDecoder::init_adf_elements_() {
 
   http_stream_cfg_t http_cfg = HTTP_STREAM_CFG_DEFAULT();
   //http_cfg.task_core = 0;
-  http_cfg.out_rb_size = 1024 * 1024;
+  http_cfg.out_rb_size = 500 * 1024;
   http_stream_reader_ = http_stream_init(&http_cfg);
   //http_stream_reader_->buf_size =  1024;
   audio_element_set_uri(this->http_stream_reader_, this->current_url_.c_str());
@@ -157,12 +157,6 @@ void HTTPStreamReaderAndDecoder::sdk_event_handler_(audio_event_iface_msg_t &msg
       this->terminate_prepare_pipeline_();
     }
   }
-}
-
-int64_t HTTPStreamReaderAndDecoder::get_position() {
-  audio_element_info_t music_info{};
-  audio_element_getinfo(decoder_, &music_info);
-  return music_info.byte_pos;
 }
 
 /*
