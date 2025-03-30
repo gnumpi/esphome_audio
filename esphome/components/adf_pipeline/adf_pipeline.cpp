@@ -498,11 +498,11 @@ bool ADFPipeline::build_adf_pipeline_() {
   }
 
   if (audio_pipeline_link(adf_pipeline_, link_tag_ptrs, tags_vector.size()) != ESP_OK) {
-    delete link_tag_ptrs;
+    delete[] link_tag_ptrs;
     esph_log_e(TAG, "Couldn't link pipeline elements");
     return false;
   }
-  delete link_tag_ptrs;
+  delete[] link_tag_ptrs;
 
   esph_log_d(TAG, "Setting up event listener.");
   audio_event_iface_cfg_t evt_cfg = AUDIO_EVENT_IFACE_DEFAULT_CFG();

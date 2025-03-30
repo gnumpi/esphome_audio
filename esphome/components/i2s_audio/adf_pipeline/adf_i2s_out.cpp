@@ -114,7 +114,7 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
 
       audio_element_set_music_info(this->adf_i2s_stream_writer_,this->sample_rate_, this->num_of_channels(), this->bits_per_sample_ );
 
-      esph_log_d(TAG, "update i2s clk settings: rate:%d bits:%d ch:%d",this->sample_rate_, this->bits_per_sample_, this->num_of_channels());
+      esph_log_d(TAG, "update i2s clk settings: rate:%ld bits:%d ch:%d",this->sample_rate_, this->bits_per_sample_, this->num_of_channels());
       i2s_stream_t *i2s = (i2s_stream_t *)audio_element_getdata(this->adf_i2s_stream_writer_);
       i2s->config.i2s_config.bits_per_sample = this->bits_per_sample_;
       if (i2s_stream_set_clk(this->adf_i2s_stream_writer_, this->sample_rate_, this->bits_per_sample_,
@@ -138,7 +138,7 @@ void ADFElementI2SOut::on_settings_request(AudioPipelineSettingsRequest &request
 
   // final pipeline settings are unset
   if (request.final_sampling_rate == -1) {
-    esph_log_d(TAG, "Set final i2s settings: %d", this->sample_rate_);
+    esph_log_d(TAG, "Set final i2s settings: %ld", this->sample_rate_);
     request.final_sampling_rate = this->sample_rate_;
     request.final_bit_depth = 16;
     request.final_number_of_channels = this->num_of_channels();

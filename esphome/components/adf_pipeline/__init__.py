@@ -109,9 +109,9 @@ async def to_code(config):
     )
 
     add_idf_component(
-        name="mdns",
+        name="esp-adf",
         repo="https://github.com/espressif/esp-adf.git",
-        ref="v2.5",
+        ref="v2.7",
         path="components",
         submodules=["components/esp-adf-libs", "components/esp-sr"],
         components=[
@@ -133,3 +133,10 @@ async def to_code(config):
             "tone_partition",
         ],
     )
+    add_idf_component(
+        name="espressif/mdns",
+        repo="https://github.com/espressif/esp-protocols.git",
+        path="components",
+        components=["mdns"]
+    )
+    cg.add_build_flag('-Icomponents/mdns/include') 

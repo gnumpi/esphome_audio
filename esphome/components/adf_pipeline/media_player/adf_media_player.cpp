@@ -146,6 +146,8 @@ void ADFMediaPlayer::control(const media_player::MediaPlayerCall &call) {
         set_volume_(new_volume);
         break;
       }
+      default:
+        break;
     }
   }
 }

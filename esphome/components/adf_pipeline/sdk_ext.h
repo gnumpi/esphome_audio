@@ -98,7 +98,7 @@ struct audio_element {
     int                         task_stack;
     int                         task_prio;
     int                         task_core;
-    xSemaphoreHandle            lock;
+    SemaphoreHandle_t           lock;
     audio_element_info_t        info;
     audio_element_info_t        *report_info;
 

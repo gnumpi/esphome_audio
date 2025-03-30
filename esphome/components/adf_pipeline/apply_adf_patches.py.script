@@ -16,7 +16,7 @@ if not isfile(patchflag_path):
     print(PATCH_FILE)
     assert isfile(PATCH_FILE)
 
-    env.Execute("patch -p1 -d %s -i %s" % (FRAMEWORK_DIR, PATCH_FILE))
+    env.Execute("patch -t -p1 -d %s -i %s" % (FRAMEWORK_DIR, PATCH_FILE))
 
     def _touch(path):
         with open(path, "w") as fp:

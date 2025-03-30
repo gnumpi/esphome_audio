@@ -85,7 +85,7 @@ bool ADFPipelineElement::pause_elements(bool initial_call){
   for( auto el : this->sdk_audio_elements_ ){
     EventBits_t uxBits = xEventGroupGetBits( el->state_event );
     if ((uxBits & PAUSED_BIT) != PAUSED_BIT) {
-      esph_log_d(TAG, "[%s] Checking Pause State, got %d", el->tag, uxBits);
+      esph_log_d(TAG, "[%s] Checking Pause State, got %ld", el->tag, uxBits);
       return false;
     }
   }
@@ -188,7 +188,7 @@ bool ADFPipelineElement::resume_elements(bool initial_call){
 
   for( auto el : this->sdk_audio_elements_ ){
     EventBits_t uxBits = xEventGroupGetBits( el->state_event );
-    esph_log_d(TAG, "[%s] Checking State, got %d", el->tag, uxBits);
+    esph_log_d(TAG, "[%s] Checking State, got %ld", el->tag, uxBits);
     if ((uxBits & RESUMED_BIT) != RESUMED_BIT) {
       return false;
     }
